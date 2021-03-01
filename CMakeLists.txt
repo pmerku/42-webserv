@@ -18,7 +18,7 @@ file(GLOB_RECURSE HEADER_FILES
 	${CMAKE_SOURCE_DIR}/src/**.hpp)
 
 # set the include directory
-include_directories(include)
+include_directories(src/includes)
 include_directories(src)
 
 # create executable and link the library
