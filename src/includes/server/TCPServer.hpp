@@ -5,7 +5,7 @@
 #ifndef TCPSERVER_HPP
 #define TCPSERVER_HPP
 
-#include "Loggable.hpp"
+#include "log/Loggable.hpp"
 
 class TCPServer: public log::ILoggable {
 public:

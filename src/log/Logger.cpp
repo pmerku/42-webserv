@@ -3,7 +3,7 @@
 //
 
 #include <string>
-#include "Logger.hpp"
+#include "log/Logger.hpp"
 
 using namespace log;
 

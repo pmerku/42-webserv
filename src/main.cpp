@@ -1,21 +1,28 @@
 #include <iostream>
-#include "Loggable.hpp"
-#include "Logger.hpp"
+#include "log/Loggable.hpp"
+#include "server/Server.hpp"
+#include "server/TCPListener.hpp"
+#include "server/StandardHandler.hpp"
+#include "server/HTTPParser.hpp"
 
-class Something: public log::ILoggable {
-public:
-	Something() {}
-};
+using namespace NotApache;
 
 int main() {
 	log::Logger logger = std::cout;
 	logger.setFlags(log::Flags::Debug | log::Flags::Color);
 
-	Something hi;
-	hi.setLogger(logger);
+	Server	server;
+	server.setLogger(logger);
 
-	hi.logItem("Hello world");
-	hi.logItem(log::DEBUG, "Debug message here");
-	hi.logItem(log::INFO, "Info message here");
+	TCPListener	*listener = new TCPListener(8080);
+	server.addListener(listener);
+
+	StandardHandler	*handler = new StandardHandler();
+	server.addHandler(handler);
+
+	HTTPParser	*parser = new HTTPParser();
+	server.addParser(parser);
+
+	server.serve();
 	return 0;
 }
