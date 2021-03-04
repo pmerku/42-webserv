@@ -5,7 +5,7 @@
 #ifndef HTTPPARSER_HPP
 #define HTTPPARSER_HPP
 
-#include "server/AParser.hpp"
+#include "server/parsers/AParser.hpp"
 
 namespace NotApache {
 
@@ -13,7 +13,7 @@ namespace NotApache {
 	public:
 		HTTPParser();
 
-		AParser::parseState	parse(Client &client) const;
+		AParser::formatState	formatCheck(Client &client) const;
 	};
 
 }

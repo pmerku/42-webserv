@@ -1,6 +1,9 @@
 //
 // Created by jelle on 3/2/2021.
 //
+#include <iostream>
+
+
 
 #include "server/Server.hpp"
 #include <unistd.h>
@@ -8,7 +11,7 @@
 using namespace NotApache;
 
 // TODO fix leaks
-Server::Server() {}
+Server::Server(): _handlerBalance(0), _readFDSet(), _writeFDSet() {}
 
 FD	Server::_maxFD() {
 	FD	max = -1;
@@ -45,7 +48,6 @@ void Server::serve() {
 		for (std::vector<AListener*>::iterator listener = _listeners.begin(); listener != _listeners.end(); ++listener) {
 			if (FD_ISSET((*listener)->getFD(), &_readFDSet)) {
 				Client *newClient = (*listener)->acceptClient();
-				logItem(log::DEBUG, "Client connected");
 				_clients.push_back(newClient);
 			}
 		}
@@ -53,19 +55,15 @@ void Server::serve() {
 		for (std::vector<Client*>::iterator c = _clients.begin(); c != _clients.end(); ++c) {
 			if (FD_ISSET((*c)->getFD(), &_readFDSet) && (*c)->getState() == READING) {
 				// handle read
-				// TODO read
-				for (std::vector<AHandler*>::iterator h = _handlers.begin(); h != _handlers.end(); ++h) {
-					(*h)->read(**c);
-					break;
-				}
+				if (_handlerBalance + 1 >= _handlers.size()) _handlerBalance = 0;
+				else _handlerBalance++;
+				(_handlers[_handlerBalance])->read(**c);
 			}
 			else if (FD_ISSET((*c)->getFD(), &_writeFDSet) && (*c)->getState() == WRITING) {
 				// handle write
-				// TODO write
-				for (std::vector<AHandler*>::iterator h = _handlers.begin(); h != _handlers.end(); ++h) {
-					(*h)->write(**c);
-					break;
-				}
+				if (_handlerBalance + 1 >= _handlers.size()) _handlerBalance = 0;
+				else _handlerBalance++;
+				(_handlers[_handlerBalance])->write(**c);
 			}
 		}
 	}
@@ -79,11 +77,16 @@ void Server::addListener(AListener *listener) {
 void Server::addHandler(AHandler *handler) {
 	handler->setLogger(*_logger);
 	handler->setParsers(&_parsers);
+	handler->setResponders(&_responders);
 	_handlers.push_back(handler);
 }
 
 void Server::addParser(AParser *parser) {
 	_parsers.push_back(parser);
+}
+
+void Server::addResponder(AResponder *responder) {
+	_responders.push_back(responder);
 }
 
 void Server::_createFDSets() {

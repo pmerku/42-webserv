@@ -5,29 +5,34 @@
 #ifndef APARSER_HPP
 #define APARSER_HPP
 
-#include <vector>
 #include "server/Client.hpp"
+#include <vector>
 
 namespace NotApache {
+
+	class Client;
+
 	class AParser {
 	protected:
 		ClientTypes	_type;
+		std::string	_dataType;
 
 	public:
-		enum parseState {
+		enum formatState {
 			UNFINISHED,
 			FINISHED,
 			PARSE_ERROR,
 		};
 
-		explicit AParser(ClientTypes type = CONNECTION);
+		explicit AParser(ClientTypes type, const std::string &dataType);
 
 		virtual ClientTypes	getType() const;
+		virtual std::string	getDataType() const;
 		virtual void 		setType(ClientTypes type);
 
-		virtual parseState	parse(Client &client) const = 0;
+		virtual formatState	formatCheck(Client &client) const = 0;
 
-		static parseState	runParsers(std::vector<AParser *> &parsers, Client &client);
+		static formatState	runFormatChecks(std::vector<AParser *> &parsers, Client &client);
 	};
 }
 

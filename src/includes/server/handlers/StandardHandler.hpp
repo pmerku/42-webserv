@@ -5,15 +5,15 @@
 #ifndef STANDARDHANDLER_HPP
 #define STANDARDHANDLER_HPP
 
-#include "server/AHandler.hpp"
+#include "server/handlers/AHandler.hpp"
 
 namespace NotApache {
 	class StandardHandler: public AHandler {
 	public:
 		StandardHandler();
 
-		void	read(Client &client);
-		void	write(Client &client);
+		virtual void	read(Client &client);
+		virtual void	write(Client &client);
 	};
 }
 
