@@ -7,14 +7,23 @@
 
 using namespace NotApache;
 
-Client::Client(FD fd, ClientTypes type): _fd(fd), _type(type), _state(READING), _dataType(), _request(), _response() {}
+Client::Client(FD readFD, FD writeFD, ClientTypes type): _readFD(readFD), _writeFD(writeFD), _type(type), _state(READING),
+_dataType(), _request(), _response(), _responseIndex(), _responseState() {}
 
-FD Client::getFD() const {
-	return _fd;
+FD Client::getReadFD() const {
+	return _readFD;
 }
 
-void Client::setFD(FD fd) {
-	_fd = fd;
+FD Client::getWriteFD() const {
+	return _writeFD;
+}
+
+void Client::setWriteFD(FD fd) {
+	_writeFD = fd;
+}
+
+void Client::setReadFD(FD fd) {
+	_readFD = fd;
 }
 
 ClientStates Client::getState() const {
@@ -77,9 +86,18 @@ void Client::setResponseState(ResponseStates state) {
 	_responseState = state;
 }
 
-void Client::close() {
-	::close(_fd);
+void Client::close(bool reachedEOF) {
+	(void)reachedEOF;
+	::close(_readFD);
 	_state = CLOSED;
 }
 
 Client::~Client() {}
+
+ssize_t Client::read(char *buf, size_t len) {
+	return ::read(_readFD, buf, len);
+}
+
+ssize_t Client::write(const char *buf, size_t len) {
+	return ::write(_writeFD, buf, len);
+}

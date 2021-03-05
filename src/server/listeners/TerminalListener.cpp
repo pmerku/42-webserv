@@ -6,7 +6,7 @@
 
 using namespace NotApache;
 
-TerminalListener::TerminalListener(): _client(new TerminalClient(0)) {}
+TerminalListener::TerminalListener(): _client(new TerminalClient(0, 1)) {}
 
 TerminalListener::~TerminalListener() {
 	delete _client;

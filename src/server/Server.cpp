@@ -20,7 +20,7 @@ FD	Server::_maxFD() {
 		if (currentFD > max) max = currentFD;
 	}
 	for (std::vector<Client*>::iterator i = _clients.begin(); i != _clients.end(); ++i) {
-		FD	currentFD = (*i)->getFD();
+		FD	currentFD = (*i)->getReadFD();
 		if (currentFD > max) max = currentFD;
 	}
 	return max;
@@ -53,13 +53,13 @@ void Server::serve() {
 		}
 
 		for (std::vector<Client*>::iterator c = _clients.begin(); c != _clients.end(); ++c) {
-			if (FD_ISSET((*c)->getFD(), &_readFDSet) && (*c)->getState() == READING) {
+			if (FD_ISSET((*c)->getReadFD(), &_readFDSet) && (*c)->getState() == READING) {
 				// handle read
 				if (_handlerBalance + 1 >= _handlers.size()) _handlerBalance = 0;
 				else _handlerBalance++;
 				(_handlers[_handlerBalance])->read(**c);
 			}
-			else if (FD_ISSET((*c)->getFD(), &_writeFDSet) && (*c)->getState() == WRITING) {
+			else if (FD_ISSET((*c)->getWriteFD(), &_writeFDSet) && (*c)->getState() == WRITING) {
 				// handle write
 				if (_handlerBalance + 1 >= _handlers.size()) _handlerBalance = 0;
 				else _handlerBalance++;
@@ -95,7 +95,7 @@ void Server::_createFDSets() {
 	for (std::vector<AListener*>::iterator i = _listeners.begin(); i != _listeners.end(); ++i)
 		FD_SET((*i)->getFD(), &_readFDSet);
 	for (std::vector<Client*>::iterator i = _clients.begin(); i != _clients.end(); ++i) {
-		if ((*i)->getState() == READING) FD_SET((*i)->getFD(), &_readFDSet);
-		else if ((*i)->getState() == WRITING) FD_SET((*i)->getFD(), &_writeFDSet);
+		if ((*i)->getState() == READING) FD_SET((*i)->getReadFD(), &_readFDSet);
+		else if ((*i)->getState() == WRITING) FD_SET((*i)->getWriteFD(), &_writeFDSet);
 	}
 }

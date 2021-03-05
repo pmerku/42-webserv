@@ -6,6 +6,7 @@
 #define CLIENT_HPP
 
 #include <string>
+#include <unistd.h>
 #include "server/ServerTypes.hpp"
 #include "server/parsers/AParser.hpp"
 
@@ -13,7 +14,8 @@ namespace NotApache {
 	///	Client connection, holds FD and the current data of the connection
 	class Client {
 	private:
-		FD				_fd;
+		FD				_readFD;
+		FD				_writeFD;
 		ClientTypes		_type;
 		ClientStates	_state;
 		std::string		_dataType;
@@ -23,10 +25,11 @@ namespace NotApache {
 		ResponseStates	_responseState;
 
 	public:
-		Client(FD fd, ClientTypes type = CONNECTION);
+		Client(FD readFD, FD writeFD, ClientTypes type = CONNECTION);
 		virtual ~Client();
 
-		FD				getFD() const;
+		FD				getReadFD() const;
+		FD				getWriteFD() const;
 		ClientStates	getState() const;
 		std::string		getRequest() const;
 		ClientTypes		getType() const;
@@ -35,7 +38,8 @@ namespace NotApache {
 		std::size_t		getResponseIndex() const;
 		ResponseStates	getResponseState() const;
 
-		void	setFD(FD fd);
+		void	setWriteFD(FD fd);
+		void	setReadFD(FD fd);
 		void 	setState(ClientStates state);
 		void 	setDataType(const std::string &str);
 		void 	setResponseState(ResponseStates state);
@@ -47,8 +51,10 @@ namespace NotApache {
 		void	setResponse(const std::string &str);
 		void 	setResponseIndex(std::size_t i);
 
-		virtual void	close();
+		virtual void	close(bool reachedEOF);
 
+		virtual ssize_t	read(char *buf, size_t len);
+		virtual ssize_t	write(const char *buf, size_t len);
 	};
 }
 

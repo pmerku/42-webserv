@@ -10,13 +10,13 @@ using namespace NotApache;
 void StandardHandler::read(Client &client) {
 	char	buf[1025];
 
-	ssize_t	ret = ::read(client.getFD(), buf, sizeof(buf)-1);
+	ssize_t	ret = client.read(buf, sizeof(buf)-1);
 	switch (ret) {
 		case 0:
 			// connection closed
 			logItem(log::DEBUG, "Reached EOF of client");
 			logItem(log::DEBUG, "Client data:\n" + client.getRequest());
-			client.close();
+			client.close(true);
 			return;
 		case -1:
 			// error reading
@@ -59,7 +59,7 @@ void StandardHandler::write(Client &client) {
 	if (client.getResponseState() == IS_WRITING) {
 		std::string response = client.getResponse();
 		ssize_t	writeLength = response.length() - client.getResponseIndex();
-		ssize_t ret = ::write(client.getFD(), response.c_str() + client.getResponseIndex(), writeLength);
+		ssize_t ret = client.write(response.c_str() + client.getResponseIndex(), writeLength);
 		switch (ret) {
 			case -1:
 				logItem(log::ERROR, "Failed to write to client");
@@ -71,7 +71,7 @@ void StandardHandler::write(Client &client) {
 				client.setResponseIndex(client.getResponseIndex() + ret);
 				if (client.getResponseIndex() == response.length()) {
 					// wrote entire response, close
-					client.close();
+					client.close(false);
 					return;
 				}
 				break;

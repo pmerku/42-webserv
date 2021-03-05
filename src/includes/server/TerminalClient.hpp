@@ -11,9 +11,9 @@ namespace NotApache {
 
 	class TerminalClient: public Client {
 	public:
-		TerminalClient(FD fd);
+		TerminalClient(FD readFD, FD writeFD);
 
-		virtual void	close();
+		virtual void	close(bool reachedEOF);
 	};
 
 }

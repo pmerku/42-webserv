@@ -5,13 +5,17 @@
 #include <iostream>
 
 #include "server/TerminalClient.hpp"
+#include <unistd.h>
 
 using namespace NotApache;
 
-TerminalClient::TerminalClient(FD fd): Client(fd, TERMINAL) {}
+TerminalClient::TerminalClient(FD readFD, FD writeFD): Client(readFD, writeFD, TERMINAL) {}
 
-// TODO EOF will infinite loop
-void TerminalClient::close() {
+void TerminalClient::close(bool reachedEOF) {
+	if (reachedEOF) {
+		setState(CLOSED);
+		return;
+	}
 	const std::string &request = getRequest();
 	setRequest(request.substr(request.find('\n')+1));
 	setState(READING);

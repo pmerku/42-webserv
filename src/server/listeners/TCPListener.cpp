@@ -62,6 +62,6 @@ Client	*TCPListener::acceptClient() {
 	}
 
 	fcntl(client_fd, F_SETFL, O_NONBLOCK);
-	Client	*out = new Client(client_fd);
+	Client	*out = new Client(client_fd, client_fd);
 	return out;
 }
