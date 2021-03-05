@@ -15,6 +15,7 @@ namespace NotApache {
 
 		std::string	generateResponse(Client &client) const;
 		std::string	generateParseError(Client &client) const;
+		std::string	generateTimeout(Client &client) const;
 	};
 
 }

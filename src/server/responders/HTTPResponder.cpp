@@ -17,3 +17,8 @@ std::string HTTPResponder::generateParseError(Client &client) const {
 	(void)client;
 	return "HTTP bad request (parse error)\n";
 }
+
+std::string HTTPResponder::generateTimeout(Client &client) const {
+	(void)client;
+	return "HTTP: connection timed out\n";
+}

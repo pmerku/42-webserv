@@ -22,6 +22,8 @@ void AHandler::respond(Client &client) {
 		if ((*i)->getType() == client.getDataType()) {
 			if (client.getResponseState() == PARSE_ERROR)
 				client.setResponse((*i)->generateParseError(client));
+			else if (client.getResponseState() == TIMED_OUT)
+				client.setResponse((*i)->generateTimeout(client));
 			else
 				client.setResponse((*i)->generateResponse(client));
 			client.setResponseIndex(0);

@@ -17,3 +17,8 @@ std::string TerminalResponder::generateParseError(Client &client) const {
 	(void)client;
 	return "Couldn't parse this command, this shouldn't happen?\n";
 }
+
+std::string TerminalResponder::generateTimeout(Client &client) const {
+	(void)client;
+	return "Terminal command timed out, this shouldn't happen?\n";
+}

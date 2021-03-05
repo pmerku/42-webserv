@@ -19,6 +19,7 @@ namespace NotApache {
 		IS_RESPONDING,
 		IS_WRITING,
 		ERRORED,
+		TIMED_OUT,
 	};
 
 	enum ClientTypes {

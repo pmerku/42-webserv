@@ -14,6 +14,7 @@ namespace NotApache {
 		TerminalClient(FD readFD, FD writeFD);
 
 		virtual void	close(bool reachedEOF);
+		virtual void 	timeout();
 	};
 
 }

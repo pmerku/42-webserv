@@ -50,7 +50,7 @@ TCPListener::~TCPListener() {
 }
 
 Client	*TCPListener::acceptClient() {
-	struct sockaddr_in	cli_addr;
+	sockaddr_in	cli_addr;
 	socklen_t sin_len = sizeof(cli_addr);
 
 	int client_fd = accept(_fd, (struct sockaddr *) &cli_addr, &sin_len);
@@ -63,5 +63,6 @@ Client	*TCPListener::acceptClient() {
 
 	fcntl(client_fd, F_SETFL, O_NONBLOCK);
 	Client	*out = new Client(client_fd, client_fd);
+	out->setTimeout(10);
 	return out;
 }

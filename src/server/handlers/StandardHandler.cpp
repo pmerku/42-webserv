@@ -46,11 +46,20 @@ void StandardHandler::read(Client &client) {
 		client.setResponseState(PARSE_ERROR);
 		return;
 	}
+
+	// handle timeout
+	client.timeout();
 }
 
 void StandardHandler::write(Client &client) {
-	if (client.getResponseState() == IS_RESPONDING || client.getResponseState() == PARSE_ERROR)
-		respond(client);
+	switch (client.getResponseState()) {
+		case IS_RESPONDING:
+		case PARSE_ERROR:
+		case TIMED_OUT:
+			respond(client);
+		default:
+			break;
+	}
 	if (client.getResponseState() == ERRORED) {
 		client.setResponse("Whoops, something went wrong :(\n");
 		client.setResponseState(IS_WRITING);

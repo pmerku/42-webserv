@@ -7,6 +7,7 @@
 
 #include <string>
 #include <unistd.h>
+#include <sys/time.h>
 #include "server/ServerTypes.hpp"
 #include "server/parsers/AParser.hpp"
 
@@ -23,6 +24,8 @@ namespace NotApache {
 		std::string		_response;
 		std::size_t		_responseIndex;
 		ResponseStates	_responseState;
+		timeval			_created;
+		unsigned long	_timeoutSeconds;
 
 	public:
 		Client(FD readFD, FD writeFD, ClientTypes type = CONNECTION);
@@ -37,9 +40,11 @@ namespace NotApache {
 		std::string		getResponse() const;
 		std::size_t		getResponseIndex() const;
 		ResponseStates	getResponseState() const;
+		const timeval	&getCreatedAt() const;
 
 		void	setWriteFD(FD fd);
 		void	setReadFD(FD fd);
+		void 	setTimeout(unsigned long seconds);
 		void 	setState(ClientStates state);
 		void 	setDataType(const std::string &str);
 		void 	setResponseState(ResponseStates state);
@@ -52,6 +57,8 @@ namespace NotApache {
 		void 	setResponseIndex(std::size_t i);
 
 		virtual void	close(bool reachedEOF);
+		/// check and handle timeout
+		virtual void 	timeout();
 
 		virtual ssize_t	read(char *buf, size_t len);
 		virtual ssize_t	write(const char *buf, size_t len);

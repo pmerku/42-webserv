@@ -20,3 +20,6 @@ void TerminalClient::close(bool reachedEOF) {
 	setRequest(request.substr(request.find('\n')+1));
 	setState(READING);
 }
+
+// no timeout on terminal commands
+void TerminalClient::timeout() {}

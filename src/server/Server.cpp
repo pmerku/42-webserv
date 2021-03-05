@@ -1,9 +1,6 @@
 //
 // Created by jelle on 3/2/2021.
 //
-#include <iostream>
-
-
 
 #include "server/Server.hpp"
 #include "server/listeners/TCPListener.hpp"
@@ -42,9 +39,11 @@ void Server::serve() {
 		// make sets
 		_createFDSets();
 
+		// timeout
+		timeval	timeout = { .tv_sec = 1, .tv_usec = 0 };
+
 		// wait for FD events
-		// TODO timeout
-		if (select(_maxFD() + 1, &_readFDSet, &_writeFDSet, NULL, NULL) == -1) {
+		if (select(_maxFD() + 1, &_readFDSet, &_writeFDSet, NULL, &timeout) == -1) {
 			logItem(log::ERROR, "Failed to listen to client connections");
 			throw ConnectionListeningFailed();
 		}
@@ -73,6 +72,9 @@ void Server::serve() {
 				if (_handlerBalance + 1 >= _handlers.size()) _handlerBalance = 0;
 				else _handlerBalance++;
 				(_handlers[_handlerBalance])->write(**c);
+			}
+			else {
+				(*c)->timeout();
 			}
 		}
 	}
@@ -103,9 +105,18 @@ void Server::_createFDSets() {
 	FD_ZERO(&_writeFDSet);
 	for (std::vector<AListener*>::iterator i = _listeners.begin(); i != _listeners.end(); ++i)
 		FD_SET((*i)->getFD(), &_readFDSet);
+	std::vector<std::vector<Client*>::iterator>	toDelete;
 	for (std::vector<Client*>::iterator i = _clients.begin(); i != _clients.end(); ++i) {
 		if ((*i)->getState() == READING) FD_SET((*i)->getReadFD(), &_readFDSet);
 		else if ((*i)->getState() == WRITING) FD_SET((*i)->getWriteFD(), &_writeFDSet);
+		else {
+			// remove client if closed
+			toDelete.push_back(i);
+		}
+	}
+	for (std::vector<std::vector<Client*>::iterator>::iterator i = toDelete.begin(); i != toDelete.end(); ++i) {
+		delete **i;
+		_clients.erase(*i);
 	}
 }
 

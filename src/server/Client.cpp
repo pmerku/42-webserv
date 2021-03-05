@@ -8,7 +8,9 @@
 using namespace NotApache;
 
 Client::Client(FD readFD, FD writeFD, ClientTypes type): _readFD(readFD), _writeFD(writeFD), _type(type), _state(READING),
-_dataType(), _request(), _response(), _responseIndex(), _responseState() {}
+_dataType(), _request(), _response(), _responseIndex(), _responseState(), _created(), _timeoutSeconds(0) {
+	::gettimeofday(&_created, NULL);
+}
 
 FD Client::getReadFD() const {
 	return _readFD;
@@ -100,4 +102,24 @@ ssize_t Client::read(char *buf, size_t len) {
 
 ssize_t Client::write(const char *buf, size_t len) {
 	return ::write(_writeFD, buf, len);
+}
+
+void Client::setTimeout(unsigned long seconds) {
+	_timeoutSeconds = seconds;
+}
+
+void Client::timeout() {
+	timeval	curTime;
+	::gettimeofday(&curTime, NULL);
+	if (curTime.tv_sec < _created.tv_sec + (__time_t)_timeoutSeconds) return;
+
+	// do timeout
+	setResponseState(TIMED_OUT);
+	setState(WRITING);
+	// set datatype to HTTP so it responds with a correct format
+	setDataType("HTTP");
+}
+
+const timeval &Client::getCreatedAt() const {
+	return _created;
 }
