@@ -31,3 +31,5 @@ void AHandler::respond(Client &client) {
 	}
 	client.setResponseState(ERRORED);
 }
+
+AHandler::~AHandler() {}

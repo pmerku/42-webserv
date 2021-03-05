@@ -3,10 +3,13 @@
 //
 
 #include "server/listeners/TerminalListener.hpp"
+#include <fcntl.h>
 
 using namespace NotApache;
 
-TerminalListener::TerminalListener(): _client(new TerminalClient(0, 1)) {}
+TerminalListener::TerminalListener(): _client(new TerminalClient(0, 1)) {
+	fcntl(_client->getReadFD(), F_SETFL, O_NONBLOCK);
+}
 
 TerminalListener::~TerminalListener() {
 	delete _client;

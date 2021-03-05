@@ -51,4 +51,6 @@ AParser::formatState	AParser::runFormatChecks(std::vector<AParser *> &parsers, C
 
 std::string AParser::getDataType() const {
 	return _dataType;
-};
+}
+
+AParser::~AParser() {}

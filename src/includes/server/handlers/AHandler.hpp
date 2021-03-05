@@ -19,6 +19,7 @@ namespace NotApache {
 
 	public:
 		AHandler();
+		virtual ~AHandler();
 
 		void	respond(Client &client);
 

@@ -24,7 +24,8 @@ namespace NotApache {
 			PARSE_ERROR,
 		};
 
-		explicit AParser(ClientTypes type, const std::string &dataType);
+		AParser(ClientTypes type, const std::string &dataType);
+		virtual ~AParser();
 
 		virtual ClientTypes	getType() const;
 		virtual std::string	getDataType() const;

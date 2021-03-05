@@ -6,11 +6,11 @@
 
 
 #include "server/Server.hpp"
+#include "server/listeners/TCPListener.hpp"
 #include <unistd.h>
 
 using namespace NotApache;
 
-// TODO fix leaks
 Server::Server(): _handlerBalance(0), _readFDSet(), _writeFDSet() {}
 
 FD	Server::_maxFD() {
@@ -28,8 +28,14 @@ FD	Server::_maxFD() {
 
 void Server::serve() {
 	// start listeners
-	for (std::vector<AListener*>::iterator first = _listeners.begin(); first != _listeners.end(); ++first)
-		(*first)->start();
+	for (std::vector<AListener*>::iterator first = _listeners.begin(); first != _listeners.end(); ++first) {
+		try {
+			(*first)->start();
+		}
+		catch (TCPListener::FailedToListen &e) {
+			throw PortBindingFailed();
+		}
+	}
 	logItem(log::INFO, "Server successfully listening");
 
 	while (true) {
@@ -39,16 +45,19 @@ void Server::serve() {
 		// wait for FD events
 		// TODO timeout
 		if (select(_maxFD() + 1, &_readFDSet, &_writeFDSet, NULL, NULL) == -1) {
-			// TODO error in select
-			logItem(log::ERROR, "Failed to listen to connections");
-			return;
+			logItem(log::ERROR, "Failed to listen to client connections");
+			throw ConnectionListeningFailed();
 		}
 
 		// accept new connections
 		for (std::vector<AListener*>::iterator listener = _listeners.begin(); listener != _listeners.end(); ++listener) {
 			if (FD_ISSET((*listener)->getFD(), &_readFDSet)) {
-				Client *newClient = (*listener)->acceptClient();
-				_clients.push_back(newClient);
+				try {
+					Client *newClient = (*listener)->acceptClient();
+					_clients.push_back(newClient);
+				} catch (TCPListener::FailedToAccept &e) {
+					logItem(log::WARNING, "Failed to accept new client");
+				}
 			}
 		}
 
@@ -98,4 +107,14 @@ void Server::_createFDSets() {
 		if ((*i)->getState() == READING) FD_SET((*i)->getReadFD(), &_readFDSet);
 		else if ((*i)->getState() == WRITING) FD_SET((*i)->getWriteFD(), &_writeFDSet);
 	}
+}
+
+Server::~Server() {
+	for (std::vector<Client*>::iterator i = _clients.begin(); i != _clients.end(); ++i) {
+		if ((*i)->getType() != TERMINAL) delete *i;
+	}
+	for (std::vector<AListener*>::iterator i = _listeners.begin(); i != _listeners.end(); ++i) delete *i;
+	for (std::vector<AHandler*>::iterator i = _handlers.begin(); i != _handlers.end(); ++i) delete *i;
+	for (std::vector<AResponder*>::iterator i = _responders.begin(); i != _responders.end(); ++i) delete *i;
+	for (std::vector<AParser*>::iterator i = _parsers.begin(); i != _parsers.end(); ++i) delete *i;
 }

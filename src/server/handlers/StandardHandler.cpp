@@ -19,6 +19,7 @@ void StandardHandler::read(Client &client) {
 			client.close(true);
 			return;
 		case -1:
+			// TODO error WOULD_BLOCK on terminal EOF with still data to read (example "command here\n unfinished(EOF)")
 			// error reading
 			logItem(log::WARNING, "Failed to read from client");
 			logItem(log::DEBUG, client.getRequest());

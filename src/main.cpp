@@ -44,6 +44,14 @@ int main() {
 	server.addParser(httpParser);
 	server.addParser(terminalParser);
 
-	server.serve();
+	try {
+		server.serve();
+	} catch (Server::PortBindingFailed &e) {
+		logger.log(log::LogItem(log::ERROR, "Failed to bind to port"));
+	} catch (Server::ConnectionListeningFailed &e) {
+		logger.log(log::LogItem(log::ERROR, "Error while trying to listen for connections"));
+	} catch (std::exception &e) {
+		logger.log(log::LogItem(log::ERROR, "Unhandled exception"));
+	}
 	return 0;
 }
