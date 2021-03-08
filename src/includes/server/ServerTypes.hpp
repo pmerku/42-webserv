@@ -11,7 +11,7 @@ namespace NotApache {
 	enum ClientStates {
 		READING,
 		WRITING,
-		CLOSED,
+		CLOSED
 	};
 
 	enum ResponseStates {
@@ -19,7 +19,7 @@ namespace NotApache {
 		IS_RESPONDING,
 		IS_WRITING,
 		ERRORED,
-		TIMED_OUT,
+		TIMED_OUT
 	};
 
 	enum ClientTypes {

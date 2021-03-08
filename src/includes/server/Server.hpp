@@ -63,6 +63,6 @@ namespace NotApache {
 			}
 		};
 	};
-};
+}
 
 #endif //SERVER_HPP

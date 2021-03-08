@@ -21,7 +21,7 @@ namespace NotApache {
 		enum formatState {
 			UNFINISHED,
 			FINISHED,
-			PARSE_ERROR,
+			PARSE_ERROR
 		};
 
 		AParser(ClientTypes type, const std::string &dataType);
