@@ -3,7 +3,7 @@
 //
 
 #include <ostream>
-#include "LogItem.hpp"
+#include "log/LogItem.hpp"
 
 using namespace log;
 
@@ -39,8 +39,9 @@ std::string LogItem::toString(Flags::flagType flags) const {
 			colorPrefix = "37m";
 			break;
 	}
+	str = "[" + str + "]";
 	if (flags & Flags::Color)
-		str = "\u001b[" + colorPrefix + "[" + str + "]" + "\u001b[0m";
+		str = "\u001b[" + colorPrefix + str + "\u001b[0m";
 	str += " " + msg;
 	return str;
 }

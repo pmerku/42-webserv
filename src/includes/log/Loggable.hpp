@@ -9,9 +9,8 @@
 #include "LogItem.hpp"
 
 namespace log {
-
 	class ILoggable {
-	private:
+	protected:
 		Logger *_logger;
 
 	public:
@@ -23,7 +22,6 @@ namespace log {
 		void logItem(LogTypes logType, const std::string &msg);
 		void logItem(const std::string &msg);
 	};
-
 }
 
 #endif

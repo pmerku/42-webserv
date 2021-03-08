@@ -2,8 +2,7 @@
 // Created by jelle on 3/1/2021.
 //
 
-#include "Loggable.hpp"
-#include "LogItem.hpp"
+#include "log/Loggable.hpp"
 
 using namespace log;
 
