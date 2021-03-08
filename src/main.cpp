@@ -1,6 +1,7 @@
 #include <iostream>
-#include "log/logger.hpp"
+#include "log/Logger.hpp"
 #include "server/Server.hpp"
+#include "config/ConfigParser.hpp"
 
 // listeners
 #include "server/listeners/TCPListener.hpp"
@@ -20,6 +21,10 @@
 using namespace NotApache;
 
 int main() {
+	{
+		config::ConfigParser parser;
+		parser.parseFile("../resources/example-configs/basic.conf");
+	}
 	log::Logger logger = std::cout;
 	logger.setFlags(log::Flags::Debug | log::Flags::Color);
 
