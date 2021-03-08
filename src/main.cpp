@@ -1,5 +1,5 @@
 #include <iostream>
-#include "log/logger.hpp"
+#include "log/Logger.hpp"
 #include "server/Server.hpp"
 
 // listeners

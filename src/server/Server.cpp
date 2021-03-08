@@ -40,7 +40,8 @@ void Server::serve() {
 		_createFDSets();
 
 		// timeout
-		timeval	timeout = { .tv_sec = 1, .tv_usec = 0 };
+		timeval	timeout = {};
+		timeout.tv_sec = 1, timeout.tv_usec = 0;
 
 		// wait for FD events
 		if (::select(_maxFD() + 1, &_readFDSet, &_writeFDSet, NULL, &timeout) == -1) {
