@@ -4,10 +4,15 @@
 
 #include "config/ConfigParser.hpp"
 #include "config/ConfigLine.hpp"
-#include "config/ConfigBlock.hpp"
+#include "config/AConfigBlock.hpp"
+#include "config/blocks/RootBlock.hpp"
+#include "config/blocks/ServerBlock.hpp"
+#include "config/blocks/RouteBlock.hpp"
 #include <unistd.h>
 #include <fcntl.h>
 
+
+// TODO remove logs
 #include <iostream>
 
 using namespace config;
@@ -40,8 +45,8 @@ void	ConfigParser::parseFile(const std::string &path) const {
 	close(fd);
 
 	// parse all lines
-	ConfigBlock	*rootBlock = new ConfigBlock(ConfigLine("root {"));
-	ConfigBlock	*currentBlock = rootBlock;
+	AConfigBlock	*rootBlock = new RootBlock(ConfigLine("root {"));
+	AConfigBlock	*currentBlock = rootBlock;
 	int blockDepth = 0;
 	std::string::size_type	i = 0;
 	do {
@@ -59,13 +64,25 @@ void	ConfigParser::parseFile(const std::string &path) const {
 		try {
 			ConfigLine parsedLine(line);
 			if (isAllowedBlock(parsedLine.getKey())) {
-				ConfigBlock	*newBlock = new ConfigBlock(parsedLine, currentBlock);
-				currentBlock->addBlock(newBlock);
+				AConfigBlock	*newBlock;
+				if (parsedLine.getKey() == "server") {
+					newBlock = new ServerBlock(parsedLine, currentBlock);
+				} else if (parsedLine.getKey() == "route") {
+					newBlock = new RouteBlock(parsedLine, currentBlock);
+				} else {
+					newBlock = new RootBlock(parsedLine, currentBlock);
+				}
+				try {
+					currentBlock->addBlock(newBlock);
+				} catch (std::exception &e) {
+					delete newBlock;
+					throw e;
+				}
 				currentBlock = newBlock;
 				blockDepth++;
 			}
 			else if (parsedLine.getKey().length() > 0 && parsedLine.getKey()[0] == '}') {
-				ConfigBlock::validateEndBlock(parsedLine);
+				AConfigBlock::validateEndBlock(parsedLine);
 				currentBlock = currentBlock->getParent();
 				if (currentBlock == 0) {
 					delete rootBlock;
@@ -83,10 +100,9 @@ void	ConfigParser::parseFile(const std::string &path) const {
 	if (blockDepth != 0) {
 		delete rootBlock;
 		throw UnbalancedBracketsException();
-		return;
 	}
 
-	// TODO run tests
+	rootBlock->runPostValidators();
 	rootBlock->print();
 	return; // TODO return block;
 //	std::cout << "--------------" << std::endl;

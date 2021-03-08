@@ -12,3 +12,6 @@ bool AConfigValidator::isPostValidator() const {
 	return _postValidator;
 }
 
+AConfigValidator::~AConfigValidator() {}
+
+AConfigBlockValidator::AConfigBlockValidator(): AConfigValidator(true) {}
