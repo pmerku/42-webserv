@@ -44,8 +44,7 @@ void Server::serve() {
 		timeout.tv_sec = 1, timeout.tv_usec = 0;
 
 		// wait for FD events
-		if (select(_maxFD() + 1, &_readFDSet, &_writeFDSet, NULL, &timeout) == -1) {
-			logItem(logger::ERROR, "Failed to listen to client connections");
+		if (::select(_maxFD() + 1, &_readFDSet, &_writeFDSet, NULL, &timeout) == -1) {
 			throw ConnectionListeningFailed();
 		}
 

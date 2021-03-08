@@ -46,12 +46,8 @@ int main() {
 
 	try {
 		server.serve();
-	} catch (Server::PortBindingFailed &e) {
-		logger.log(logger::LogItem(logger::ERROR, "Failed to bind to port"));
-	} catch (Server::ConnectionListeningFailed &e) {
-		logger.log(logger::LogItem(logger::ERROR, "Error while trying to listen for connections"));
 	} catch (std::exception &e) {
-		logger.log(logger::LogItem(logger::ERROR, "Unhandled exception"));
+		logger.log(log::LogItem(log::ERROR, e.what()));
 	}
 	return 0;
 }
