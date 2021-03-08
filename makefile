@@ -36,6 +36,7 @@ SRC	=\
 	log/Loggable.cpp\
 	log/Logger.cpp\
 	log/LogItem.cpp\
+	regex/Regex.cpp\
 	server/handlers/AHandler.cpp\
 	server/handlers/StandardHandler.cpp\
 	server/listeners/TCPListener.cpp\
@@ -54,6 +55,7 @@ HEADERS	=\
 	log/Loggable.hpp\
 	log/Logger.hpp\
 	log/LogItem.hpp\
+	regex/Regex.hpp\
 	server/handlers/AHandler.hpp\
 	server/handlers/StandardHandler.hpp\
 	server/listeners/AListener.hpp\
