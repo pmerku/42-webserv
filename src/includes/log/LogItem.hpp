@@ -7,7 +7,7 @@
 
 #include <string>
 
-namespace log {
+namespace logger {
 
 	enum LogTypes {
 		INFO,
@@ -37,6 +37,6 @@ namespace log {
 
 }
 
-std::ostream	&operator<<(std::ostream &os, const log::LogItem &item);
+std::ostream	&operator<<(std::ostream &os, const logger::LogItem &item);
 
 #endif

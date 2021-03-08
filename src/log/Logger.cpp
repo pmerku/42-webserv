@@ -5,7 +5,7 @@
 #include <string>
 #include "log/Logger.hpp"
 
-using namespace log;
+using namespace logger;
 
 Logger::Logger(std::ostream &stream) {
 	_streams.push_back(&stream);

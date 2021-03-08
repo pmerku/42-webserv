@@ -111,7 +111,7 @@ void Client::setTimeout(unsigned long seconds) {
 void Client::timeout() {
 	timeval	curTime;
 	::gettimeofday(&curTime, NULL);
-	if (curTime.tv_sec < _created.tv_sec + (__time_t)_timeoutSeconds) return;
+	if (curTime.tv_sec < _created.tv_sec + (time_t)_timeoutSeconds) return;
 
 	// do timeout
 	setResponseState(TIMED_OUT);
