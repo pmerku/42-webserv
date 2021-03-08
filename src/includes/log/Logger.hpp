@@ -9,7 +9,7 @@
 #include <ostream>
 #include "LogItem.hpp"
 
-namespace log {
+namespace logger {
 
 	class Logger {
 	private:

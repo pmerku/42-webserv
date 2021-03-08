@@ -8,7 +8,7 @@
 #include "Logger.hpp"
 #include "LogItem.hpp"
 
-namespace log {
+namespace logger {
 	class ILoggable {
 	protected:
 		Logger *_logger;

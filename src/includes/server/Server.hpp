@@ -20,7 +20,7 @@ namespace NotApache {
 
 	///	Generic server, combines listeners, parsers and handlers
 	/// All Listeners, handlers, parsers, responders and clients added will be deleted at destruction
-	class Server: public log::ILoggable {
+	class Server: public logger::ILoggable {
 	private:
 		std::vector<AListener *> _listeners;
 		std::vector<AHandler *> _handlers;

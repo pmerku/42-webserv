@@ -5,7 +5,7 @@
 #include <ostream>
 #include "log/LogItem.hpp"
 
-using namespace log;
+using namespace logger;
 
 LogItem::LogItem(const std::string &message): msg(message), logType(INFO) {}
 LogItem::LogItem(LogTypes logType, const std::string &message): msg(message), logType(logType) {}

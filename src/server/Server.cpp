@@ -33,7 +33,7 @@ void Server::serve() {
 			throw PortBindingFailed();
 		}
 	}
-	logItem(log::INFO, "Server successfully listening");
+	logItem(logger::INFO, "Server successfully listening");
 
 	while (true) {
 		// make sets
@@ -45,7 +45,7 @@ void Server::serve() {
 
 		// wait for FD events
 		if (select(_maxFD() + 1, &_readFDSet, &_writeFDSet, NULL, &timeout) == -1) {
-			logItem(log::ERROR, "Failed to listen to client connections");
+			logItem(logger::ERROR, "Failed to listen to client connections");
 			throw ConnectionListeningFailed();
 		}
 
@@ -56,7 +56,7 @@ void Server::serve() {
 					Client *newClient = (*listener)->acceptClient();
 					_clients.push_back(newClient);
 				} catch (TCPListener::FailedToAccept &e) {
-					logItem(log::WARNING, "Failed to accept new client");
+					logItem(logger::WARNING, "Failed to accept new client");
 				}
 			}
 		}

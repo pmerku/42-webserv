@@ -20,8 +20,8 @@
 using namespace NotApache;
 
 int main() {
-	log::Logger logger = std::cout;
-	logger.setFlags(log::Flags::Debug | log::Flags::Color);
+	logger::Logger logger = std::cout;
+	logger.setFlags(logger::Flags::Debug | logger::Flags::Color);
 
 	Server server;
 	server.setLogger(logger);
@@ -47,11 +47,11 @@ int main() {
 	try {
 		server.serve();
 	} catch (Server::PortBindingFailed &e) {
-		logger.log(log::LogItem(log::ERROR, "Failed to bind to port"));
+		logger.log(logger::LogItem(logger::ERROR, "Failed to bind to port"));
 	} catch (Server::ConnectionListeningFailed &e) {
-		logger.log(log::LogItem(log::ERROR, "Error while trying to listen for connections"));
+		logger.log(logger::LogItem(logger::ERROR, "Error while trying to listen for connections"));
 	} catch (std::exception &e) {
-		logger.log(log::LogItem(log::ERROR, "Unhandled exception"));
+		logger.log(logger::LogItem(logger::ERROR, "Unhandled exception"));
 	}
 	return 0;
 }
