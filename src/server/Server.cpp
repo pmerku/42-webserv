@@ -33,7 +33,7 @@ void Server::serve() {
 			throw PortBindingFailed();
 		}
 	}
-	logItem(log::INFO, "Server successfully listening");
+	logItem(logger::INFO, "Server successfully listening");
 
 	while (true) {
 		// make sets
@@ -55,7 +55,7 @@ void Server::serve() {
 					Client *newClient = (*listener)->acceptClient();
 					_clients.push_back(newClient);
 				} catch (TCPListener::FailedToAccept &e) {
-					logItem(log::WARNING, "Failed to accept new client");
+					logItem(logger::WARNING, "Failed to accept new client");
 				}
 			}
 		}
