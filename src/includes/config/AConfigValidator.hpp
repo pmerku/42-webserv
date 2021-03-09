@@ -11,7 +11,6 @@ namespace config {
 
 	class AConfigBlock;
 
-	// TODO proper logging through custom exceptions
 	class AConfigValidator {
 	protected:
 		bool		_postValidator;

@@ -3,7 +3,6 @@
 //
 
 #include "config/ConfigException.hpp"
-#include "config/AConfigBlock.hpp"
 
 using namespace config;
 

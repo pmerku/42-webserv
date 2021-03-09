@@ -3,14 +3,7 @@
 //
 
 #include "config/AConfigBlock.hpp"
-#include "config/blocks/RootBlock.hpp"
 #include "config/ParseExceptions.hpp"
-
-
-
-// TODO remove print
-#include <iostream>
-
 
 using namespace config;
 
@@ -70,27 +63,6 @@ AConfigBlock::~AConfigBlock() {
 	for (std::vector<AConfigBlock *>::iterator i = _blocks.begin(); i != _blocks.end(); ++i) {
 		delete *i;
 	}
-}
-
-void AConfigBlock::print(unsigned int spaces) const {
-	std::string prefix;
-	for (unsigned int i = 0; i < spaces; i++) prefix += " ";
-	std::cout << prefix << getType() << " {\n";
-	spaces+=2;prefix = "";
-	for (unsigned int i = 0; i < spaces; i++) prefix += " ";
-	for (std::vector<ConfigLine>::const_iterator i = _lines.begin(); i != _lines.end(); ++i) {
-		const ConfigLine &line = *i;
-		std::cout << prefix << line.getKey();
-		for (ConfigLine::arg_size j = 0; j < line.getArgLength(); ++j)
-			std::cout << " " << line.getArg(j);
-		std::cout << "\n";
-	}
-	for (std::vector<AConfigBlock*>::const_iterator i = _blocks.begin(); i != _blocks.end(); ++i) {
-		(*i)->print(spaces);
-	}
-	spaces-=2;prefix = "";
-	for (unsigned int i = 0; i < spaces; i++) prefix += " ";
-	std::cout << prefix << "}" << std::endl;
 }
 
 void AConfigBlock::validateEndBlock(const ConfigLine &line) {

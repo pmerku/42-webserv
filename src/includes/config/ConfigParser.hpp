@@ -8,6 +8,7 @@
 #include <string>
 #include <list>
 #include <exception>
+#include <config/blocks/RootBlock.hpp>
 #include "log/Loggable.hpp"
 #include "config/ConfigException.hpp"
 
@@ -17,7 +18,7 @@ class ConfigParser: public log::ILoggable {
 	public:
 		static const std::string	possibleBlocks[];
 		bool	isAllowedBlock(const std::string &key) const;
-		void parseFile(const std::string &path) const;
+		RootBlock * parseFile(const std::string &path) const;
 
 		class FailedToOpenException: public std::exception {
 		public:

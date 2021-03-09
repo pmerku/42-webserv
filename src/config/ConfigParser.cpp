@@ -3,24 +3,17 @@
 //
 
 #include "config/ConfigParser.hpp"
-#include "config/ConfigLine.hpp"
-#include "config/AConfigBlock.hpp"
 #include "config/blocks/RootBlock.hpp"
 #include "config/blocks/ServerBlock.hpp"
 #include "config/blocks/RouteBlock.hpp"
 #include <unistd.h>
 #include <fcntl.h>
-#include "config/ConfigException.hpp"
-
-
-// TODO remove logs
-#include <iostream>
 
 using namespace config;
 
 const std::string	ConfigParser::possibleBlocks[] = { "server", "route", "" };
 
-void	ConfigParser::parseFile(const std::string &path) const {
+RootBlock	*ConfigParser::parseFile(const std::string &path) const {
 	char		buf[1024];
 	::ssize_t	len = sizeof(buf)-1;
 	std::string	out;
@@ -46,7 +39,7 @@ void	ConfigParser::parseFile(const std::string &path) const {
 	close(fd);
 
 	// parse all lines
-	AConfigBlock	*rootBlock = new RootBlock(ConfigLine("root {"), 0);
+	RootBlock		*rootBlock = new RootBlock(ConfigLine("root {"), 0);
 	AConfigBlock	*currentBlock = rootBlock;
 	int blockDepth = 0;
 	int	lineCount = 1;
@@ -114,8 +107,7 @@ void	ConfigParser::parseFile(const std::string &path) const {
 		logItem(e);
 		throw;
 	}
-	rootBlock->print();
-	return; // TODO return block;
+	return rootBlock;
 }
 
 bool ConfigParser::isAllowedBlock(const std::string &key) const {

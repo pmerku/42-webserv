@@ -36,7 +36,6 @@ namespace config {
 
 		static void validateEndBlock(const ConfigLine &line);
 		virtual const std::string	getType() const = 0;
-		void 	print(unsigned int spaces = 0) const;
 
 		void	addLine(const ConfigLine &line);
 		void	addBlock(AConfigBlock *block);
