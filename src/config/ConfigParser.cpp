@@ -10,6 +10,7 @@
 #include "config/blocks/RouteBlock.hpp"
 #include <unistd.h>
 #include <fcntl.h>
+#include "config/ConfigException.hpp"
 
 
 // TODO remove logs
@@ -45,9 +46,10 @@ void	ConfigParser::parseFile(const std::string &path) const {
 	close(fd);
 
 	// parse all lines
-	AConfigBlock	*rootBlock = new RootBlock(ConfigLine("root {"));
+	AConfigBlock	*rootBlock = new RootBlock(ConfigLine("root {"), 0);
 	AConfigBlock	*currentBlock = rootBlock;
 	int blockDepth = 0;
+	int	lineCount = 1;
 	std::string::size_type	i = 0;
 	do {
 		// get line
@@ -62,21 +64,21 @@ void	ConfigParser::parseFile(const std::string &path) const {
 
 		// parse line
 		try {
-			ConfigLine parsedLine(line);
+			ConfigLine parsedLine(line, lineCount);
 			if (isAllowedBlock(parsedLine.getKey())) {
 				AConfigBlock	*newBlock;
 				if (parsedLine.getKey() == "server") {
-					newBlock = new ServerBlock(parsedLine, currentBlock);
+					newBlock = new ServerBlock(parsedLine, lineCount, currentBlock);
 				} else if (parsedLine.getKey() == "route") {
-					newBlock = new RouteBlock(parsedLine, currentBlock);
+					newBlock = new RouteBlock(parsedLine, lineCount, currentBlock);
 				} else {
-					newBlock = new RootBlock(parsedLine, currentBlock);
+					newBlock = new RootBlock(parsedLine, lineCount, currentBlock);
 				}
 				try {
 					currentBlock->addBlock(newBlock);
 				} catch (std::exception &e) {
 					delete newBlock;
-					throw e;
+					throw;
 				}
 				currentBlock = newBlock;
 				blockDepth++;
@@ -86,33 +88,34 @@ void	ConfigParser::parseFile(const std::string &path) const {
 				currentBlock = currentBlock->getParent();
 				if (currentBlock == 0) {
 					delete rootBlock;
-					throw UnbalancedBracketsException();
+					throw UnbalancedBracketsException(parsedLine, 0);
 				}
 				blockDepth--;
 			}
 			else currentBlock->addLine(parsedLine);
 		} catch (const ConfigLine::MissingKeyException &e) {}
+		catch (const ConfigException &e) {
+			logItem(e);
+			throw;
+		}
 
 		// prepare for next iteration
 		i = newline == std::string::npos ? newline : newline+1;
+		++lineCount;
 	} while (i != std::string::npos);
 
-	if (blockDepth != 0) {
-		delete rootBlock;
-		throw UnbalancedBracketsException();
+	try {
+		if (blockDepth != 0) {
+			delete rootBlock;
+			throw UnbalancedBracketsException(ConfigLine("<3", lineCount), 0);
+		}
+		rootBlock->runPostValidators();
+	} catch (const ConfigException &e) {
+		logItem(e);
+		throw;
 	}
-
-	rootBlock->runPostValidators();
 	rootBlock->print();
 	return; // TODO return block;
-//	std::cout << "--------------" << std::endl;
-//			std::cout << "Line num: " << parsedLine.getLineNumber() << std::endl;
-//			std::cout << "Arg len: " << parsedLine.getArgLength() << std::endl;
-//			std::cout << "line: '" << parsedLine.getKey() << "'" ;
-//			for (ConfigLine::arg_size i2 = 0; i2 < parsedLine.getArgLength(); ++i2) {
-//				std::cout << " '" << parsedLine.getArg(i2) << "'";
-//			}
-//			std::cout << std::endl;
 }
 
 bool ConfigParser::isAllowedBlock(const std::string &key) const {

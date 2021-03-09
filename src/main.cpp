@@ -21,12 +21,17 @@
 using namespace NotApache;
 
 int main() {
-	{
-		config::ConfigParser parser;
-		parser.parseFile("../resources/example-configs/basic.conf");
-	}
 	log::Logger logger = std::cout;
 	logger.setFlags(log::Flags::Debug | log::Flags::Color);
+
+	try {
+		config::ConfigParser parser;
+		parser.setLogger(logger);
+		parser.parseFile("../resources/example-configs/basic.conf");
+	} catch (const std::exception &e) {
+		logger.log(log::LogItem(log::ERROR, std::string("Config could not be parsed: ") + e.what()));
+		return 1;
+	}
 
 	Server server;
 	server.setLogger(logger);

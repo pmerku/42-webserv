@@ -8,6 +8,7 @@
 #include <vector>
 #include <ostream>
 #include "LogItem.hpp"
+#include "config/ConfigException.hpp"
 
 namespace log {
 
@@ -24,6 +25,7 @@ namespace log {
 		void 	setFlags(Flags::flagType flags);
 
 		void	log(const LogItem &item);
+		void	log(const LogItem &item, const config::ConfigException &e);
 
 		Logger &operator=(const Logger &rhs);
 	};

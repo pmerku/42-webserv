@@ -6,6 +6,7 @@
 #define ARGUMENTLENGTH_HPP
 
 #include "config/AConfigValidator.hpp"
+#include "config/ConfigException.hpp"
 
 namespace config {
 
@@ -20,11 +21,14 @@ namespace config {
 
 		void	test(const ConfigLine &line, const AConfigBlock &block) const;
 
-		class ArgumentLengthException: public std::exception {
-		public:
-			const char * what() const throw() {
-				return "Argument length: incorrect argument length";
+		class ArgumentLengthException: public ConfigException {
+		protected:
+			const char * getTemplate() const throw() {
+				return "Argument length for {BLOCK_NAME}/{KEY} is invalid";
 			}
+
+		public:
+			ArgumentLengthException(const ConfigLine &line, const AConfigBlock *block): ConfigException(line, block) {};
 		};
 	};
 

@@ -11,7 +11,7 @@ using namespace config;
 
 const AConfigBlock::validatorsMapType	RouteBlock::_validators =
 		ConfigValidatorBuilder()
-		.addKey("test", ConfigValidatorListBuilder()
+		.addKey("location", ConfigValidatorListBuilder()
 		  .add(new ArgumentLength(0))
 		  .build())
 	  	.build();
@@ -31,7 +31,7 @@ const std::string						*RouteBlock::getAllowedBlocks() const {
 	return RouteBlock::_allowedBlocks;
 }
 
-RouteBlock::RouteBlock(const ConfigLine &line, AConfigBlock *parent): AConfigBlock(line, parent) {}
+RouteBlock::RouteBlock(const ConfigLine &line, int lineNumber, AConfigBlock *parent): AConfigBlock(line, lineNumber, parent) {}
 
 const std::string RouteBlock::getType() const {
 	return "route";
@@ -41,7 +41,7 @@ const AConfigBlock::validatorListType &RouteBlock::getBlockValidators() const {
 	return _blockValidators;
 }
 
-RouteBlock::~RouteBlock() {
+void	RouteBlock::cleanup() {
 	for (validatorsMapType::const_iterator i = _validators.begin(); i != _validators.end(); ++i) {
 		for (validatorListType::const_iterator j = i->second.begin(); j != i->second.end(); ++j) {
 			delete *j;

@@ -20,8 +20,8 @@ namespace config {
 		const std::string		*getAllowedBlocks() const;
 
 	public:
-		ServerBlock(const ConfigLine &line, AConfigBlock *parent = 0);
-		virtual ~ServerBlock();
+		ServerBlock(const ConfigLine &line, int lineNumber, AConfigBlock *parent = 0);
+		static void	cleanup();
 
 		const std::string 		getType() const;
 	};

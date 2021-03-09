@@ -20,8 +20,8 @@ namespace config {
 		const std::string		*getAllowedBlocks() const;
 
 	public:
-		RouteBlock(const ConfigLine &line, AConfigBlock *parent = 0);
-		virtual ~RouteBlock();
+		RouteBlock(const ConfigLine &line, int lineNumber, AConfigBlock *parent = 0);
+		static void	cleanup();
 
 		const std::string 		getType() const;
 	};

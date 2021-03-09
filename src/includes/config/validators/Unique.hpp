@@ -6,6 +6,7 @@
 #define UNIQUE_HPP
 
 #include "config/AConfigValidator.hpp"
+#include "config/ConfigException.hpp"
 
 namespace config {
 
@@ -15,11 +16,14 @@ namespace config {
 
 		void	test(const ConfigLine &line, const AConfigBlock &block) const;
 
-		class UniqueException: public std::exception {
-		public:
-			const char * what() const throw() {
-				return "Unique: key cannot be used twice in a block";
+		class UniqueException: public ConfigException {
+		protected:
+			const char * getTemplate() const throw() {
+				return "You can only have one '{KEY}' in '{BLOCK_NAME}' block";
 			}
+
+		public:
+			UniqueException(const ConfigLine &line, const AConfigBlock *block): ConfigException(line, block) {};
 		};
 	};
 

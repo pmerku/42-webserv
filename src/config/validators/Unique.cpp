@@ -11,5 +11,5 @@ Unique::Unique(): AConfigValidator(false) {}
 
 void	Unique::test(const ConfigLine &line, const AConfigBlock &block) const {
 	if (block.hasKey(line.getKey()))
-		throw UniqueException();
+		throw UniqueException(line, &block);
 }

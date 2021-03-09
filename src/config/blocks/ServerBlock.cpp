@@ -45,7 +45,7 @@ const std::string						*ServerBlock::getAllowedBlocks() const {
 	return ServerBlock::_allowedBlocks;
 }
 
-ServerBlock::ServerBlock(const ConfigLine &line, AConfigBlock *parent): AConfigBlock(line, parent) {}
+ServerBlock::ServerBlock(const ConfigLine &line, int lineNumber, AConfigBlock *parent): AConfigBlock(line, lineNumber, parent) {}
 
 const std::string ServerBlock::getType() const {
 	return "server";
@@ -55,7 +55,7 @@ const AConfigBlock::validatorListType &ServerBlock::getBlockValidators() const {
 	return _blockValidators;
 }
 
-ServerBlock::~ServerBlock() {
+void	ServerBlock::cleanup() {
 	for (validatorsMapType::const_iterator i = _validators.begin(); i != _validators.end(); ++i) {
 		for (validatorListType::const_iterator j = i->second.begin(); j != i->second.end(); ++j) {
 			delete *j;

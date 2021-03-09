@@ -29,7 +29,7 @@ const std::string						*RootBlock::getAllowedBlocks() const {
 	return RootBlock::_allowedBlocks;
 }
 
-RootBlock::RootBlock(const ConfigLine &line, AConfigBlock *parent): AConfigBlock(line, parent) {}
+RootBlock::RootBlock(const ConfigLine &line, int lineNumber, AConfigBlock *parent): AConfigBlock(line, lineNumber, parent) {}
 
 const std::string RootBlock::getType() const {
 	return "root";
@@ -39,7 +39,7 @@ const AConfigBlock::validatorListType &RootBlock::getBlockValidators() const {
 	return _blockValidators;
 }
 
-RootBlock::~RootBlock() {
+void	RootBlock::cleanup() {
 	for (validatorsMapType::const_iterator i = _validators.begin(); i != _validators.end(); ++i) {
 		for (validatorListType::const_iterator j = i->second.begin(); j != i->second.end(); ++j) {
 			delete *j;

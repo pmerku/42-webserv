@@ -7,6 +7,7 @@
 
 #include "Logger.hpp"
 #include "LogItem.hpp"
+#include "config/ConfigException.hpp"
 
 namespace log {
 	class ILoggable {
@@ -18,9 +19,10 @@ namespace log {
 
 		void setLogger(Logger &log);
 
-		void logItem(const LogItem &item);
-		void logItem(LogTypes logType, const std::string &msg);
-		void logItem(const std::string &msg);
+		void logItem(const config::ConfigException &e) const;
+		void logItem(const LogItem &item) const;
+		void logItem(const std::string &msg) const;
+		void logItem(LogTypes logType, const std::string &msg) const;
 	};
 }
 

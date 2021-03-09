@@ -22,6 +22,7 @@ namespace config {
 		std::vector<ConfigLine>		_lines;
 		std::vector<AConfigBlock*>	_blocks;
 		AConfigBlock				*_parent;
+		int 						_lineNumber;
 
 		virtual const validatorsMapType	&getValidators() const = 0;
 		virtual const validatorListType	&getBlockValidators() const = 0;
@@ -30,7 +31,7 @@ namespace config {
 		void 							runValidatorForKey(const ConfigLine &line) const;
 
 	public:
-		AConfigBlock(const ConfigLine &line, AConfigBlock *parent = 0);
+		AConfigBlock(const ConfigLine &line, int lineNumber, AConfigBlock *parent = 0);
 		virtual ~AConfigBlock();
 
 		static void validateEndBlock(const ConfigLine &line);
@@ -40,38 +41,10 @@ namespace config {
 		void	addLine(const ConfigLine &line);
 		void	addBlock(AConfigBlock *block);
 		bool 	hasKey(const std::string &key) const;
+		int 	getLineNumber() const;
 		AConfigBlock	*getParent() const;
 
 		void	runPostValidators() const;
-
-		// exceptions
-		class ArgsWithBlockException: public std::exception {
-		public:
-			const char * what() const throw() {
-				return "AConfigBlock: There may not be any arguments for block declarations";
-			}
-		};
-
-		class BlockMissingOpeningException: public std::exception {
-		public:
-			const char * what() const throw() {
-				return "AConfigBlock: Missing opening bracket for block declaration";
-			}
-		};
-
-		class UnknownKeyException: public std::exception {
-		public:
-			const char * what() const throw() {
-				return "AConfigBlock: Unknown key encountered";
-			}
-		};
-
-		class InvalidNestedBlockException: public std::exception {
-		public:
-			const char * what() const throw() {
-				return "AConfigBlock: Cannot have that block inside of this block";
-			}
-		};
 	};
 
 }

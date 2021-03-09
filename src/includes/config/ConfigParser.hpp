@@ -8,34 +8,39 @@
 #include <string>
 #include <list>
 #include <exception>
+#include "log/Loggable.hpp"
+#include "config/ConfigException.hpp"
 
 namespace config {
 
-	class ConfigParser {
+class ConfigParser: public log::ILoggable {
 	public:
 		static const std::string	possibleBlocks[];
-		bool	isAllowedBlock(const std::string	&key) const;
+		bool	isAllowedBlock(const std::string &key) const;
 		void parseFile(const std::string &path) const;
-
-		class UnbalancedBracketsException: public std::exception {
-		public:
-			const char * what() const throw() {
-				return "ConfigParser: Unbalanced brackets in configuration";
-			}
-		};
 
 		class FailedToOpenException: public std::exception {
 		public:
 			const char * what() const throw() {
-				return "ConfigParser: Configuration file failed to open";
+				return "Configuration file failed to open";
 			}
 		};
 
 		class FailedToReadException: public std::exception {
 		public:
 			const char * what() const throw() {
-				return "ConfigParser: Failed to read from configuration file";
+				return "Failed to read from configuration file";
 			}
+		};
+
+		class UnbalancedBracketsException: public ConfigException {
+		protected:
+			const char * getTemplate() const throw() {
+				return "Unbalanced brackets detected in file";
+			}
+
+		public:
+			UnbalancedBracketsException(const ConfigLine &line, const AConfigBlock *block): ConfigException(line, block) {};
 		};
 	};
 

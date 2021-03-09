@@ -6,6 +6,7 @@
 #define REQUIREDKEY_HPP
 
 #include "config/AConfigValidator.hpp"
+#include "config/ConfigException.hpp"
 
 namespace config {
 
@@ -18,11 +19,14 @@ namespace config {
 
 		void	test(const ConfigLine &line, const AConfigBlock &block) const;
 
-		class RequiredKeyException: public std::exception {
-		public:
-			const char * what() const throw() {
-				return "RequiredKey: key is not defined in block";
+		class RequiredKeyException: public ConfigException {
+		protected:
+			const char * getTemplate() const throw() {
+				return "Block {BLOCK_NAME} is missing {KEY}";
 			}
+
+		public:
+			RequiredKeyException(const std::string	&key, const AConfigBlock *block): ConfigException(ConfigLine(key, block->getLineNumber()), block) {};
 		};
 	};
 
