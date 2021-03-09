@@ -89,40 +89,47 @@ namespace regex {
 		 */
 		bool match(const std::string &text);
 
-	class ExceededBufferLimit : public std::exception {
-	public:
-		const char *what() const throw() {
-			return "Exceeded buffer size limit";
-		}
-	};
+		class RegexCompilationError : public std::exception {
+		public:
+			virtual const char *what() const throw() {
+				return "Failed to compile regex";
+			}
+		};
 
-	class OutOfBoundAccess : public std::exception {
-	public:
-		const char *what() const throw() {
-			return "Pattern went out of bounds";
-		}
-	};
+		class ExceededBufferLimit : public RegexCompilationError {
+		public:
+			const char *what() const throw() {
+				return "Exceeded buffer size limit";
+			}
+		};
 
-	class ImpossiblePattern : public std::exception {
-	public:
-		const char *what() const throw() {
-			return "There is something wrong with the pattern";
-		}
-	};
+		class OutOfBoundAccess : public RegexCompilationError {
+		public:
+			const char *what() const throw() {
+				return "Pattern went out of bounds";
+			}
+		};
 
-	class ImpossibleValue : public std::exception {
-	public:
-		const char *what() const throw() {
-			return "The min/max quantifier value is not possible";
-		}
-	};
+		class ImpossiblePattern : public RegexCompilationError {
+		public:
+			const char *what() const throw() {
+				return "There is something wrong with the pattern";
+			}
+		};
 
-	class NoTextToMatch : public std::exception {
-	public:
-		const char *what() const throw() {
-			return "The provided text is empty";
-		}
-	};
+		class ImpossibleValue : public RegexCompilationError {
+		public:
+			const char *what() const throw() {
+				return "The min/max quantifier value is not possible";
+			}
+		};
+
+		class NoTextToMatch : public RegexCompilationError {
+		public:
+			const char *what() const throw() {
+				return "The provided text is empty";
+			}
+		};
 	};
 
 } // namespace regex

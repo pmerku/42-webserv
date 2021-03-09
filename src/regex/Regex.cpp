@@ -361,9 +361,5 @@ void Regex::compile(const std::string &pattern) {
 }
 
 Regex::Regex(const std::string &pattern) : _regex() {
-	try {
-		this->compile(pattern);
-	} catch (...) {
-		throw;
-	}
+	this->compile(pattern);
 }
