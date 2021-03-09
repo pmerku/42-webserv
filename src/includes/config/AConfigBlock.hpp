@@ -40,10 +40,12 @@ namespace config {
 		void	addLine(const ConfigLine &line);
 		void	addBlock(AConfigBlock *block);
 		bool 	hasKey(const std::string &key) const;
+		const ConfigLine *getKey(const std::string &key) const;
 		int 	getLineNumber() const;
 		AConfigBlock	*getParent() const;
 
 		void	runPostValidators() const;
+
 	};
 
 }

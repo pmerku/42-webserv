@@ -91,6 +91,13 @@ bool AConfigBlock::hasKey(const std::string &key) const {
 	return false;
 }
 
+const ConfigLine	*AConfigBlock::getKey(const std::string &key) const {
+	for (std::vector<ConfigLine>::const_iterator it = _lines.begin(); it != _lines.end(); ++it) {
+		if (key == it->getKey()) return &(*it);
+	}
+	return 0;
+}
+
 int AConfigBlock::getLineNumber() const {
 	return _lineNumber;
 }

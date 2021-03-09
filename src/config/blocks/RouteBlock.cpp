@@ -7,6 +7,7 @@
 #include "config/validators/ArgumentLength.hpp"
 #include "config/validators/RequiredKey.hpp"
 #include "config/validators/Unique.hpp"
+#include "config/validators/MutuallyExclusive.hpp"
 
 using namespace config;
 
@@ -20,7 +21,7 @@ const AConfigBlock::validatorsMapType	RouteBlock::_validators =
 		  .add(new ArgumentLength(0, 9))
 		  .add(new Unique())
 		  .build())
-		.addKey("root", ConfigValidatorListBuilder() // TODO directory validator + mutally exclusive validator
+		.addKey("root", ConfigValidatorListBuilder() // TODO directory validator
 		  .add(new ArgumentLength(1))
 		  .add(new Unique())
 		  .build())
@@ -43,7 +44,7 @@ const AConfigBlock::validatorsMapType	RouteBlock::_validators =
 		.addKey("use_plugin", ConfigValidatorListBuilder() // TODO plugin validator
 		  .add(new ArgumentLength(1))
 		  .build())
-		.addKey("proxy_url", ConfigValidatorListBuilder() // TODO mutally exclusive validator + url validator
+		.addKey("proxy_url", ConfigValidatorListBuilder() // TODO url validator
 		  .add(new ArgumentLength(1))
 		  .add(new Unique())
 		  .build())
@@ -52,6 +53,7 @@ const AConfigBlock::validatorsMapType	RouteBlock::_validators =
 const AConfigBlock::validatorListType 	RouteBlock::_blockValidators =
 		ConfigValidatorListBuilder()
 		.add(new RequiredKey("location"))
+		.add(new MutuallyExclusive("proxy_url", "root"))
 		.build();
 
 const std::string 						RouteBlock::_allowedBlocks[] = { "" };
