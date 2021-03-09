@@ -4,8 +4,6 @@
 
 #include "utils/isSpace.hpp"
 
-using namespace utils;
-
-bool	isSpace(const char c) {
-	return (c == '\r' || c == '\t' || c == '\f' || c == '\n' || c == '\v');
+bool	utils::isSpace(const char c) {
+	return (c == ' ' || c == '\r' || c == '\t' || c == '\f' || c == '\n' || c == '\v');
 }
