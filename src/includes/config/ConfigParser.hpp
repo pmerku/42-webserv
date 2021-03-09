@@ -10,11 +10,12 @@
 #include <exception>
 #include <config/blocks/RootBlock.hpp>
 #include "log/Loggable.hpp"
+#include "log/LogItem.hpp"
 #include "config/ConfigException.hpp"
 
 namespace config {
 
-	class ConfigParser: public log::ILoggable {
+	class ConfigParser: public logger::ILoggable {
 	private:
 		static std::string _parseLine(const std::string &file, unsigned long i, unsigned long *newlinePos);
 		static std::string _readFile(const std::string &path);

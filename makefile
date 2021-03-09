@@ -37,6 +37,19 @@ SRC	=\
 	log/Logger.cpp\
 	log/LogItem.cpp\
 	regex/Regex.cpp\
+	config/ConfigValidatorBuilder.cpp\
+	config/ConfigParser.cpp\
+	config/ConfigLine.cpp\
+	config/ConfigException.cpp\
+	config/AConfigValidator.cpp\
+	config/AConfigBlock.cpp\
+	config/blocks/RootBlock.cpp\
+	config/blocks/RouteBlock.cpp\
+	config/blocks/ServerBlock.cpp\
+	config/validators/ArgumentLength.cpp\
+	config/validators/RequiredKey.cpp\
+	config/validators/Unique.cpp\
+	utils/isSpace.cpp\
 	server/handlers/AHandler.cpp\
 	server/handlers/StandardHandler.cpp\
 	server/listeners/TCPListener.cpp\
@@ -56,6 +69,20 @@ HEADERS	=\
 	log/Logger.hpp\
 	log/LogItem.hpp\
 	regex/Regex.hpp\
+	config/ConfigValidatorBuilder.hpp\
+    config/ConfigParser.hpp\
+    config/ConfigLine.hpp\
+    config/ConfigException.hpp\
+    config/AConfigValidator.hpp\
+    config/AConfigBlock.hpp\
+    config/blocks/RootBlock.hpp\
+    config/blocks/RouteBlock.hpp\
+    config/blocks/ServerBlock.hpp\
+    config/validators/ArgumentLength.hpp\
+    config/validators/RequiredKey.hpp\
+    config/validators/Unique.hpp\
+    config/ParseExceptions.hpp\
+    utils/isSpace.hpp\
 	server/handlers/AHandler.hpp\
 	server/handlers/StandardHandler.hpp\
 	server/listeners/AListener.hpp\
