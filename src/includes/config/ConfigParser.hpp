@@ -14,7 +14,12 @@
 
 namespace config {
 
-class ConfigParser: public log::ILoggable {
+	class ConfigParser: public log::ILoggable {
+	private:
+		static std::string _parseLine(const std::string &file, unsigned long i, unsigned long *newlinePos);
+		static std::string _readFile(const std::string &path);
+		static AConfigBlock *_makeBlockFromLine(const ConfigLine &line, int lineCount, AConfigBlock *currentBlock);
+
 	public:
 		static const std::string	possibleBlocks[];
 		bool	isAllowedBlock(const std::string &key) const;
@@ -43,7 +48,8 @@ class ConfigParser: public log::ILoggable {
 		public:
 			UnbalancedBracketsException(const ConfigLine &line, const AConfigBlock *block): ConfigException(line, block) {};
 		};
-	};
+
+};
 
 }
 

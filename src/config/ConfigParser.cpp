@@ -13,12 +13,11 @@ using namespace config;
 
 const std::string	ConfigParser::possibleBlocks[] = { "server", "route", "" };
 
-RootBlock	*ConfigParser::parseFile(const std::string &path) const {
+std::string		ConfigParser::_readFile(const std::string &path) {
 	char		buf[1024];
 	::ssize_t	len = sizeof(buf)-1;
 	std::string	out;
 
-	// read file data into out
 	int fd = ::open(path.c_str(), O_RDONLY, 0);
 	if (fd == -1) throw FailedToOpenException();
 	while (true) {
@@ -37,6 +36,37 @@ RootBlock	*ConfigParser::parseFile(const std::string &path) const {
 		if (ret != len) break;
 	}
 	close(fd);
+	return out;
+}
+
+std::string		ConfigParser::_parseLine(const std::string &file, std::string::size_type i, std::string::size_type *newlinePos) {
+	// get line
+	std::string::size_type	newline = file.find('\n', i);
+	std::string::size_type	endOfCharacters = newline;
+	if (file[newline-1] == '\r') endOfCharacters--;
+
+	// remove comments
+	std::string	line = file.substr(i, endOfCharacters-i);
+	std::string::size_type	hashtag = line.find('#');
+	line = line.substr(0, hashtag);
+
+	*newlinePos = newline;
+	return line;
+}
+
+AConfigBlock	*ConfigParser::_makeBlockFromLine(const ConfigLine &line, int lineCount, AConfigBlock *currentBlock) {
+	if (line.getKey() == "server") {
+		return new ServerBlock(line, lineCount, currentBlock);
+	} else if (line.getKey() == "route") {
+		return new RouteBlock(line, lineCount, currentBlock);
+	} else {
+		return new RootBlock(line, lineCount, currentBlock);
+	}
+}
+
+// TODO make all validators
+RootBlock		*ConfigParser::parseFile(const std::string &path) const {
+	std::string file = _readFile(path);
 
 	// parse all lines
 	RootBlock		*rootBlock = new RootBlock(ConfigLine("root {"), 0);
@@ -44,29 +74,15 @@ RootBlock	*ConfigParser::parseFile(const std::string &path) const {
 	int blockDepth = 0;
 	int	lineCount = 1;
 	std::string::size_type	i = 0;
+	std::string::size_type	newlinePos = 0;
 	do {
-		// get line
-		std::string::size_type	newline = out.find('\n', i);
-		std::string::size_type	endOfCharacters = newline;
-		if (out[newline-1] == '\r') endOfCharacters--;
-
-		// remove comments
-		std::string	line = out.substr(i, endOfCharacters-i);
-		std::string::size_type	hashtag = line.find('#');
-		line = line.substr(0, hashtag);
+		std::string line = _parseLine(file, i, &newlinePos);
 
 		// parse line
 		try {
 			ConfigLine parsedLine(line, lineCount);
 			if (isAllowedBlock(parsedLine.getKey())) {
-				AConfigBlock	*newBlock;
-				if (parsedLine.getKey() == "server") {
-					newBlock = new ServerBlock(parsedLine, lineCount, currentBlock);
-				} else if (parsedLine.getKey() == "route") {
-					newBlock = new RouteBlock(parsedLine, lineCount, currentBlock);
-				} else {
-					newBlock = new RootBlock(parsedLine, lineCount, currentBlock);
-				}
+				AConfigBlock	*newBlock = _makeBlockFromLine(parsedLine, lineCount, currentBlock);
 				try {
 					currentBlock->addBlock(newBlock);
 				} catch (std::exception &e) {
@@ -93,7 +109,7 @@ RootBlock	*ConfigParser::parseFile(const std::string &path) const {
 		}
 
 		// prepare for next iteration
-		i = newline == std::string::npos ? newline : newline+1;
+		i = (newlinePos == std::string::npos) ? newlinePos : newlinePos+1;
 		++lineCount;
 	} while (i != std::string::npos);
 

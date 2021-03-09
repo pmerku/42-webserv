@@ -27,7 +27,8 @@ int main() {
 	try {
 		config::ConfigParser parser;
 		parser.setLogger(logger);
-		parser.parseFile("../resources/example-configs/basic.conf");
+		config::RootBlock *config = parser.parseFile("../resources/example-configs/basic.conf");
+		(void)config;
 	} catch (const std::exception &e) {
 		logger.log(log::LogItem(log::ERROR, std::string("Config could not be parsed: ") + e.what()));
 		return 1;
