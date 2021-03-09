@@ -19,7 +19,7 @@ void TCPListener::start() {
 
 	_fd = socket(AF_INET, SOCK_STREAM, 0);
 	if (_fd < 0) {
-		logItem(log::ERROR, "Socket opening failed!");
+		logItem(logger::ERROR, "Socket opening failed!");
 		throw FailedToListen();
 	}
 
@@ -32,17 +32,17 @@ void TCPListener::start() {
 	if (bind(_fd, reinterpret_cast<struct sockaddr *>(&svr_addr), sizeof(svr_addr)) == -1) {
 		close(_fd);
 		_fd = -1;
-		logItem(log::ERROR, "Failed to bind socket to local network!");
+		logItem(logger::ERROR, "Failed to bind socket to local network!");
 		throw FailedToListen();
 	}
 
 	if (::listen(_fd, _backlog) == -1) {
 		close(_fd);
 		_fd = -1;
-		logItem(log::ERROR, "Failed to listen on port!");
+		logItem(logger::ERROR, "Failed to listen on port!");
 		throw FailedToListen();
 	}
-	logItem(log::INFO, "Server is listening!");
+	logItem(logger::INFO, "Server is listening!");
 }
 
 TCPListener::~TCPListener() {
@@ -54,10 +54,10 @@ Client	*TCPListener::acceptClient() {
 	socklen_t sin_len = sizeof(cli_addr);
 
 	int client_fd = accept(_fd, (struct sockaddr *) &cli_addr, &sin_len);
-	logItem(log::DEBUG, "Client connected");
+	logItem(logger::DEBUG, "Client connected");
 
 	if (client_fd == -1) {
-		logItem(log::ERROR, "Client not accepted");
+		logItem(logger::ERROR, "Client not accepted");
 		throw FailedToAccept();
 	}
 

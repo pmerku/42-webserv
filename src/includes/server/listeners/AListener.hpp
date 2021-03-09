@@ -11,7 +11,7 @@
 
 namespace NotApache {
 	///	Generic listener that can handle incoming connections
-	class AListener: public log::ILoggable {
+	class AListener: public logger::ILoggable {
 	public:
 		virtual ~AListener() {};
 

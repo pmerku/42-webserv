@@ -12,7 +12,7 @@
 
 namespace NotApache {
 	///	Handles the read and write of a client connection
-	class AHandler: public log::ILoggable {
+	class AHandler: public logger::ILoggable {
 	protected:
 		std::vector<AParser*>		*_parsers;
 		std::vector<AResponder*>	*_responders;

@@ -4,7 +4,7 @@
 
 #include "log/Loggable.hpp"
 
-using namespace log;
+using namespace logger;
 
 ILoggable::ILoggable(): _logger(0) {}
 

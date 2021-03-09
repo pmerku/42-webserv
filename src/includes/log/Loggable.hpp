@@ -9,7 +9,7 @@
 #include "LogItem.hpp"
 #include "config/ConfigException.hpp"
 
-namespace log {
+namespace logger {
 	class ILoggable {
 	protected:
 		Logger *_logger;

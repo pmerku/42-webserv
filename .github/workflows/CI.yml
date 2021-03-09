@@ -1,0 +1,24 @@
+name: C/C++ CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, macOS-latest ]
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: build cmake
+        run: mkdir cmake && cd cmake && cmake .. && make
+      - name: build make
+        run: make
+#      - name: test
+#        run: make test

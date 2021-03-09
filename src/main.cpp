@@ -21,8 +21,8 @@
 using namespace NotApache;
 
 int main() {
-	log::Logger logger = std::cout;
-	logger.setFlags(log::Flags::Debug | log::Flags::Color);
+	logger::Logger logger = std::cout;
+	logger.setFlags(logger::Flags::Debug | logger::Flags::Color);
 
 	try {
 		config::ConfigParser parser;
@@ -58,7 +58,7 @@ int main() {
 	try {
 		server.serve();
 	} catch (std::exception &e) {
-		logger.log(log::LogItem(log::ERROR, e.what()));
+		logger.log(logger::LogItem(logger::ERROR, e.what()));
 	}
 	return 0;
 }

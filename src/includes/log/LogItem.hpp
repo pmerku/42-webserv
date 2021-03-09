@@ -7,20 +7,20 @@
 
 #include <string>
 
-namespace log {
+namespace logger {
 
 	enum LogTypes {
 		INFO,
 		ERROR,
 		WARNING,
-		DEBUG,
+		DEBUG
 	};
 
 	class Flags {
 	public:
 		typedef int flagType;
-		static const flagType 	Color = 0b001;
-		static const flagType 	Debug = 0b010;
+		static const flagType 	Color = 1; // 0b001
+		static const flagType 	Debug = 2; // 0b010
 	};
 
 	class LogItem {
@@ -37,6 +37,6 @@ namespace log {
 
 }
 
-std::ostream	&operator<<(std::ostream &os, const log::LogItem &item);
+std::ostream	&operator<<(std::ostream &os, const logger::LogItem &item);
 
 #endif

@@ -5,7 +5,7 @@
 #include <ostream>
 #include "log/LogItem.hpp"
 
-using namespace log;
+using namespace logger;
 
 LogItem::LogItem(const std::string &message): msg(message), logType(INFO) {}
 LogItem::LogItem(LogTypes logType, const std::string &message): msg(message), logType(logType) {}
@@ -41,7 +41,7 @@ std::string LogItem::toString(Flags::flagType flags) const {
 	}
 	str = "[" + str + "]";
 	if (flags & Flags::Color)
-		str = "\u001b[" + colorPrefix + str + "\u001b[0m";
+		str = "\x1b[" + colorPrefix + str + "\x1b[0m";
 	str += " " + msg;
 	return str;
 }
