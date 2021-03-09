@@ -6,15 +6,48 @@
 #include "config/ConfigValidatorBuilder.hpp"
 #include "config/validators/ArgumentLength.hpp"
 #include "config/validators/RequiredKey.hpp"
+#include "config/validators/Unique.hpp"
 
 using namespace config;
 
 const AConfigBlock::validatorsMapType	RouteBlock::_validators =
 		ConfigValidatorBuilder()
-		.addKey("location", ConfigValidatorListBuilder()
-		  .add(new ArgumentLength(0))
+		.addKey("location", ConfigValidatorListBuilder() // TODO location validator (start with slash) + regex validator
+		  .add(new ArgumentLength(1))
+		  .add(new Unique())
 		  .build())
-	  	.build();
+		.addKey("allowed_methods", ConfigValidatorListBuilder() // TODO method validator
+		  .add(new ArgumentLength(0, 9))
+		  .add(new Unique())
+		  .build())
+		.addKey("root", ConfigValidatorListBuilder() // TODO directory validator + mutally exclusive validator
+		  .add(new ArgumentLength(1))
+		  .add(new Unique())
+		  .build())
+		.addKey("directory_listing", ConfigValidatorListBuilder() // TODO boolean validator + default to false
+		  .add(new ArgumentLength(1))
+		  .add(new Unique())
+		  .build())
+		.addKey("index", ConfigValidatorListBuilder() // TODO filename validator + default to index.html
+		  .add(new ArgumentLength(1))
+		  .add(new Unique())
+		  .build())
+		.addKey("cgi", ConfigValidatorListBuilder() // TODO file validator
+		  .add(new ArgumentLength(1))
+		  .add(new Unique())
+		  .build())
+		.addKey("save_uploads", ConfigValidatorListBuilder() // TODO directory validator
+		  .add(new ArgumentLength(1))
+		  .add(new Unique())
+		  .build())
+		.addKey("use_plugin", ConfigValidatorListBuilder() // TODO plugin validator
+		  .add(new ArgumentLength(1))
+		  .build())
+		.addKey("proxy_url", ConfigValidatorListBuilder() // TODO mutally exclusive validator + url validator
+		  .add(new ArgumentLength(1))
+		  .add(new Unique())
+		  .build())
+		.build();
 
 const AConfigBlock::validatorListType 	RouteBlock::_blockValidators =
 		ConfigValidatorListBuilder()

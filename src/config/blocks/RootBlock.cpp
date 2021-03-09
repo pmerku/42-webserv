@@ -5,13 +5,15 @@
 #include "config/blocks/RootBlock.hpp"
 #include "config/ConfigValidatorBuilder.hpp"
 #include "config/validators/ArgumentLength.hpp"
+#include "config/validators/IntValidator.hpp"
 
 using namespace config;
 
 const AConfigBlock::validatorsMapType	RootBlock::_validators =
 		ConfigValidatorBuilder()
-		.addKey("testing", ConfigValidatorListBuilder()
-		  .add(new ArgumentLength(2))
+		.addKey("use_workers", ConfigValidatorListBuilder()
+		  .add(new ArgumentLength(1))
+		  .add(new IntValidator(0, 1, 10000))
 		  .build())
 	  	.build();
 

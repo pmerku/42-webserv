@@ -7,26 +7,33 @@
 #include "config/validators/ArgumentLength.hpp"
 #include "config/validators/Unique.hpp"
 #include "config/validators/RequiredKey.hpp"
+#include "config/validators/IntValidator.hpp"
 
 using namespace config;
 
 const AConfigBlock::validatorsMapType	ServerBlock::_validators =
 		ConfigValidatorBuilder()
-		.addKey("host", ConfigValidatorListBuilder()
+		.addKey("host", ConfigValidatorListBuilder() // TODO validate ip
 			  .add(new ArgumentLength(1))
 			  .add(new Unique())
 			  .build())
 	  	.addKey("port", ConfigValidatorListBuilder()
 			  .add(new ArgumentLength(1))
 			  .add(new Unique())
+			  .add(new IntValidator(0, 1, 65535))
 			  .build())
-		.addKey("server_name", ConfigValidatorListBuilder()
+		.addKey("server_name", ConfigValidatorListBuilder() // TODO default to something
 			.add(new ArgumentLength(1))
 			.add(new Unique())
 			.build())
-		.addKey("error_page", ConfigValidatorListBuilder()
+		.addKey("error_page", ConfigValidatorListBuilder() // TODO file validator
 			.add(new ArgumentLength(2))
+			.add(new IntValidator(0, 400, 600))
 			.build())
+		.addKey("body_limit", ConfigValidatorListBuilder() // TODO default to -1
+				.add(new ArgumentLength(1))
+				.add(new IntValidator(0, 0, 600))
+				.build())
 	  	.build();
 
 const AConfigBlock::validatorListType 	ServerBlock::_blockValidators =
