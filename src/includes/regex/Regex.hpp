@@ -74,13 +74,12 @@ namespace regex {
 
 	public:
 		explicit Regex(const std::string &pattern);
-		explicit Regex(const char *pattern);
 
 		/**
 		 * Compiles the regex pattern into nodes
 		 * @param pattern regex pattern
 		 */
-		void compile(const char *pattern);
+		void compile(const std::string &pattern);
 
 		/**
 		 * Finds the compiled pattern match in the text. It will return true
@@ -89,21 +88,6 @@ namespace regex {
 		 * @return bool
 		 */
 		bool match(const std::string &text);
-
-		/**
-		 * Finds the compiled pattern match in the text. It will return true
-		 * only if the text matches fully
-		 * @param text text to match with compiled pattern
-		 * @return bool
-		 */
-		bool match(const char *text);
-
-	class IncompletePattern : public std::exception {
-	public:
-		const char *what() const throw() {
-			return "Incomplete pattern";
-		}
-	};
 
 	class ExceededBufferLimit : public std::exception {
 	public:

@@ -143,41 +143,36 @@ const char *Regex::matchPattern(RegexNode *nodes, const char *text, const char *
 }
 
 bool Regex::match(const std::string &text) {
-	this->match(text.c_str());
-	return false;
-}
-
-bool Regex::match(const char *text) {
-	std::string str(text);
-	size_t len = str.length();
-	if (!text || !len)
+	if (text.empty())
 		throw NoTextToMatch();
 
-	const char *textStart = text;
-	const char *textEnd = text + len;
+	const char *textStart = text.c_str();
+	const char *textEnd = text.c_str() + text.length();
 	const char *mend;
 
 	RegexNode *nodes = this->_regex.regexNodes;
 	if (nodes[0].type == BEGIN) {
-		if ((mend = this->matchPattern(nodes + 1, text, textEnd))) {
+		if ((mend = this->matchPattern(nodes + 1, text.c_str(), textEnd))) {
 			if (mend == textEnd && text == textStart)
 				return true;
 		}
 		return false;
 	}
 
+	std::string::const_iterator it = text.begin();
+
 	do {
-		if ((mend = this->matchPattern(nodes, text, textEnd))) {
+		if ((mend = this->matchPattern(nodes, text.c_str(), textEnd))) {
 			if (mend == textEnd && text == textStart) {
 				return true;
 			}
 		}
-	} while (textEnd > text++);
+	} while (it++ != text.end());
 	return false;
 }
 
-void Regex::compile(const char *pattern) {
-	if (!pattern || pattern[0] == '\0')
+void Regex::compile(const std::string &pattern) {
+	if (pattern.empty())
 		throw ImpossiblePattern();
 
 	RegexNode *nodes = this->_regex.regexNodes;
@@ -366,14 +361,6 @@ void Regex::compile(const char *pattern) {
 }
 
 Regex::Regex(const std::string &pattern) : _regex() {
-	try {
-		this->compile(pattern.c_str());
-	} catch (...) {
-		throw;
-	}
-}
-
-Regex::Regex(const char *pattern) : _regex() {
 	try {
 		this->compile(pattern);
 	} catch (...) {
