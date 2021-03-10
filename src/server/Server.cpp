@@ -66,29 +66,22 @@ void Server::serve() {
 				if (_handlerBalance + 1 >= _handlers.size()) _handlerBalance = 0;
 				else _handlerBalance++;
 
-				(*c)->_isHandled.lock();
-				if (!(*c)->_isHandled.get()) {
-					(*c)->_isHandled.setNoLock(true);
-					(*c)->_isHandled.unlock();
+				if (!(*c)->_isHandled.setIf(false, true))
 					(_handlers[_handlerBalance])->read(**c);
-				}
-				else (*c)->_isHandled.unlock();
 			}
 			else if (FD_ISSET((*c)->getWriteFD(), &_writeFDSet) && (*c)->getState() == WRITING) {
 				// handle write
 				if (_handlerBalance + 1 >= _handlers.size()) _handlerBalance = 0;
 				else _handlerBalance++;
 
-				(*c)->_isHandled.lock();
-				if (!(*c)->_isHandled.get()) {
-					(*c)->_isHandled.setNoLock(true);
-					(*c)->_isHandled.unlock();
+				if (!(*c)->_isHandled.setIf(false, true))
 					(_handlers[_handlerBalance])->write(**c);
-				}
-				else (*c)->_isHandled.unlock();
 			}
 			else {
-				(*c)->timeout();
+				if ((*c)->_isHandled.setIf(false, true)) {
+					(*c)->timeout();
+					(*c)->_isHandled = false;
+				}
 			}
 		}
 	}

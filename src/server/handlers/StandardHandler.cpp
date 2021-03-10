@@ -87,11 +87,13 @@ void StandardHandler::write(Client &client) {
 				if (client.getResponseIndex() == response.length()) {
 					// wrote entire response, close
 					client.close(false);
-					break;
+					finish(client);
+					return;
 				}
 				break;
 		}
 	}
+	client.timeout();
 	finish(client);
 }
 

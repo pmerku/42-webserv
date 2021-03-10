@@ -114,10 +114,7 @@ void Client::timeout() {
 	if (curTime.tv_sec < _created.tv_sec + (time_t)_timeoutSeconds) return;
 
 	// do timeout
-	setResponseState(TIMED_OUT);
-	setState(WRITING);
-	// set datatype to HTTP so it responds with a correct format
-	setDataType("HTTP");
+	close(false);
 }
 
 const timeval	&Client::getCreatedAt() const {

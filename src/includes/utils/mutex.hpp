@@ -52,6 +52,17 @@ namespace utils {
 			unlock();
 		};
 
+		bool	setIf(const T &compare, const T &newValue) {
+			lock();
+			if (compare == get()) {
+				setNoLock(newValue);
+				unlock();
+				return true;
+			}
+			unlock();
+			return false;
+		}
+
 		void	setNoLock(const T &newValue) {
 			_value = newValue;
 		};
