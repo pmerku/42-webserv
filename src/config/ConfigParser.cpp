@@ -43,7 +43,7 @@ std::string		ConfigParser::_parseLine(const std::string &file, std::string::size
 	// get line
 	std::string::size_type	newline = file.find('\n', i);
 	std::string::size_type	endOfCharacters = newline;
-	if (file[newline-1] == '\r') endOfCharacters--;
+	if (newline != std::string::npos && newline > 0 && file[newline-1] == '\r') endOfCharacters--;
 
 	// remove comments
 	std::string	line = file.substr(i, endOfCharacters-i);

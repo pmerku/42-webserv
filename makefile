@@ -53,6 +53,7 @@ SRC	=\
 	config/validators/BooleanValidator.cpp\
 	config/validators/Unique.cpp\
 	utils/isSpace.cpp\
+	utils/mutex.cpp\
 	server/handlers/AHandler.cpp\
 	server/handlers/StandardHandler.cpp\
 	server/listeners/TCPListener.cpp\
@@ -89,6 +90,7 @@ HEADERS	=\
     config/validators/Unique.hpp\
     config/ParseExceptions.hpp\
     utils/isSpace.hpp\
+    utils/mutex.hpp\
 	server/handlers/AHandler.hpp\
 	server/handlers/StandardHandler.hpp\
 	server/listeners/AListener.hpp\

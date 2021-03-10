@@ -108,23 +108,28 @@ void Server::addResponder(AResponder *responder) {
 }
 
 void Server::_createFDSets() {
+	std::vector<Client*>	toKeep;
+	bool 					hasChanged = false;
+
 	FD_ZERO(&_readFDSet);
 	FD_ZERO(&_writeFDSet);
 	for (std::vector<AListener*>::iterator i = _listeners.begin(); i != _listeners.end(); ++i)
 		FD_SET((*i)->getFD(), &_readFDSet);
-	std::vector<std::vector<Client*>::iterator>	toDelete;
 	for (std::vector<Client*>::iterator i = _clients.begin(); i != _clients.end(); ++i) {
 		if ((*i)->getState() == READING) FD_SET((*i)->getReadFD(), &_readFDSet);
 		else if ((*i)->getState() == WRITING) FD_SET((*i)->getWriteFD(), &_writeFDSet);
 		else {
 			// remove client if closed
-			toDelete.push_back(i);
+			if (!(*i)->_isHandled.setIf(false, true)) {
+				delete *i;
+				hasChanged = true;
+				continue;
+			}
 		}
+		toKeep.push_back(*i);
 	}
-	for (std::vector<std::vector<Client*>::iterator>::iterator i = toDelete.begin(); i != toDelete.end(); ++i) {
-		delete **i;
-		_clients.erase(*i);
-	}
+	if (hasChanged)
+		_clients = toKeep;
 }
 
 Server::~Server() {
