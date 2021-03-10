@@ -10,26 +10,29 @@
 #include <sys/time.h>
 #include "server/ServerTypes.hpp"
 #include "server/parsers/AParser.hpp"
+#include "utils/mutex.hpp"
 
 namespace NotApache {
 	///	Client connection, holds FD and the current data of the connection
 	class Client {
 	private:
-		FD				_readFD;
-		FD				_writeFD;
-		ClientTypes		_type;
-		ClientStates	_state;
-		std::string		_dataType;
-		std::string		_request;
-		std::string		_response;
-		std::size_t		_responseIndex;
-		ResponseStates	_responseState;
-		timeval			_created;
-		unsigned long	_timeoutSeconds;
+		FD					_readFD;
+		FD					_writeFD;
+		ClientTypes			_type;
+		ClientStates		_state;
+		std::string			_dataType;
+		std::string			_request;
+		std::string			_response;
+		std::size_t			_responseIndex;
+		ResponseStates		_responseState;
+		timeval				_created;
+		unsigned long		_timeoutSeconds;
 
 	public:
 		Client(FD readFD, FD writeFD, ClientTypes type = CONNECTION);
 		virtual ~Client();
+
+		utils::Mutex<bool>	_isHandled;
 
 		FD				getReadFD() const;
 		FD				getWriteFD() const;
@@ -64,6 +67,5 @@ namespace NotApache {
 		virtual ssize_t	write(const char *buf, size_t len);
 	};
 }
-
 
 #endif //CLIENT_HPP

@@ -9,11 +9,15 @@
 
 namespace NotApache {
 	class StandardHandler: public AHandler {
+	private:
+		static void			finish(Client &client);
+
 	public:
 		StandardHandler();
 
 		virtual void	read(Client &client);
 		virtual void	write(Client &client);
+
 	};
 }
 
