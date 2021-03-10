@@ -5,6 +5,7 @@
 #include "server/Server.hpp"
 #include "server/listeners/TCPListener.hpp"
 #include <unistd.h>
+#include "utils/ErrorThrow.hpp"
 
 using namespace NotApache;
 
@@ -30,7 +31,7 @@ void Server::serve() {
 			(*first)->start();
 		}
 		catch (TCPListener::FailedToListen &e) {
-			throw PortBindingFailed();
+			ERROR_THROW(PortBindingFailed());
 		}
 	}
 	logItem(logger::INFO, "Server successfully listening");
@@ -45,7 +46,7 @@ void Server::serve() {
 
 		// wait for FD events
 		if (::select(_maxFD() + 1, &_readFDSet, &_writeFDSet, NULL, &timeout) == -1) {
-			throw ConnectionListeningFailed();
+			ERROR_THROW(ConnectionListeningFailed());
 		}
 
 		// accept new connections

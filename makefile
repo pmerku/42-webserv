@@ -17,11 +17,11 @@ ifeq ($(UNAME_S),Linux)
 endif
 
 ifdef BUILD_DEBUG
-DEBUG_FLAGS		= -g -fsanitize=address
+DEBUG_FLAGS		= -g -fsanitize=address -DDEBUG_THROW=1
 BUILD_FLAGS		= -pthread
 endif
 ifdef BUILD_LEAK
-DEBUG_FLAGS		= -g -fsanitize=leak
+DEBUG_FLAGS		= -g -fsanitize=leak -DDEBUG_THROW=1
 BUILD_FLAGS		= -pthread
 endif
 
@@ -70,7 +70,8 @@ HEADERS	=\
 	server/Client.hpp\
 	server/Server.hpp\
 	server/ServerTypes.hpp\
-	server/TerminalClient.hpp
+	server/TerminalClient.hpp\
+	utils/ErrorThrow.hpp
 
 # Fix sources and headers
 OBJ				= $(patsubst %.cpp,%.o,$(SRC))
