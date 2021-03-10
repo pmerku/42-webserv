@@ -50,6 +50,7 @@ SRC	=\
 	config/validators/RequiredKey.cpp\
 	config/validators/IntValidator.cpp\
 	config/validators/MutuallyExclusive.cpp\
+	config/validators/BooleanValidator.cpp\
 	config/validators/Unique.cpp\
 	utils/isSpace.cpp\
 	server/handlers/AHandler.cpp\
@@ -84,6 +85,7 @@ HEADERS	=\
     config/validators/RequiredKey.hpp\
     config/validators/IntValidator.hpp\
     config/validators/MutuallyExclusive.hpp\
+    config/validators/BooleanValidator.hpp\
     config/validators/Unique.hpp\
     config/ParseExceptions.hpp\
     utils/isSpace.hpp\

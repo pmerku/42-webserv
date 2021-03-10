@@ -6,6 +6,7 @@
 #define ROOTBLOCK_HPP
 
 #include "config/AConfigBlock.hpp"
+#include "config/blocks/ServerBlock.hpp"
 
 namespace config {
 
@@ -23,7 +24,17 @@ namespace config {
 		RootBlock(const ConfigLine &line, int lineNumber, AConfigBlock *parent = 0);
 		static void	cleanup();
 
-		const std::string 		getType() const;
+		std::string getType() const;
+		void 				parseData();
+
+
+	private:
+		int							_workerCount;
+		std::vector<ServerBlock*>	_serverBlocks;
+
+	public:
+		int								getWorkerCount() const;
+		const std::vector<ServerBlock*>	&getServerBlocks() const;
 	};
 
 }

@@ -43,4 +43,4 @@ namespace config {
 
 }
 
-#endif //ARGUMENTLENGTH_HPP
+#endif //MUTUALLYEXCLUSIVE_HPP

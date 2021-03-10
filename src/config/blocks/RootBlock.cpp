@@ -6,6 +6,7 @@
 #include "config/ConfigValidatorBuilder.hpp"
 #include "config/validators/ArgumentLength.hpp"
 #include "config/validators/IntValidator.hpp"
+#include <cstdlib>
 
 using namespace config;
 
@@ -18,7 +19,7 @@ const AConfigBlock::validatorsMapType	RootBlock::_validators =
 	  	.build();
 
 const AConfigBlock::validatorListType 	RootBlock::_blockValidators =
-		ConfigValidatorListBuilder()
+		ConfigValidatorListBuilder() // TODO validate server duplicates
 		.build();
 
 const std::string 						RootBlock::_allowedBlocks[] = { "server", "" };
@@ -33,7 +34,7 @@ const std::string						*RootBlock::getAllowedBlocks() const {
 
 RootBlock::RootBlock(const ConfigLine &line, int lineNumber, AConfigBlock *parent): AConfigBlock(line, lineNumber, parent) {}
 
-const std::string RootBlock::getType() const {
+std::string RootBlock::getType() const {
 	return "root";
 }
 
@@ -50,4 +51,27 @@ void	RootBlock::cleanup() {
 	for (validatorListType::const_iterator i = _blockValidators.begin(); i != _blockValidators.end(); ++i) {
 		delete *i;
 	}
+}
+
+// TODO parse int
+void	RootBlock::parseData() {
+	_workerCount = -1;
+	if (hasKey("use_workers"))
+		_workerCount = std::atoi(getKey("use_workers")->getArg(0).c_str());
+	for (std::vector<AConfigBlock*>::iterator i = _blocks.begin(); i != _blocks.end(); ++i) {
+		if (dynamic_cast<ServerBlock*>(*i))
+			_serverBlocks.push_back(reinterpret_cast<ServerBlock*>(*i));
+		(*i)->parseData();
+	}
+	_isParsed = true;
+}
+
+int	RootBlock::getWorkerCount() const {
+	throwNotParsed();
+	return _workerCount;
+}
+
+const std::vector<ServerBlock *>	&RootBlock::getServerBlocks() const {
+	throwNotParsed();
+	return _serverBlocks;
 }

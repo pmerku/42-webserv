@@ -23,6 +23,7 @@ namespace config {
 		std::vector<AConfigBlock*>	_blocks;
 		AConfigBlock				*_parent;
 		int 						_lineNumber;
+		bool						_isParsed;
 
 		virtual const validatorsMapType	&getValidators() const = 0;
 		virtual const validatorListType	&getBlockValidators() const = 0;
@@ -35,7 +36,8 @@ namespace config {
 		virtual ~AConfigBlock();
 
 		static void validateEndBlock(const ConfigLine &line);
-		virtual const std::string	getType() const = 0;
+		virtual std::string getType() const = 0;
+		virtual void 		parseData() = 0;
 
 		void	addLine(const ConfigLine &line);
 		void	addBlock(AConfigBlock *block);
@@ -44,7 +46,14 @@ namespace config {
 		int 	getLineNumber() const;
 		AConfigBlock	*getParent() const;
 
-		void	runPostValidators() const;
+		void	runPostValidators();
+		void 	throwNotParsed() const;
+
+		class NotParsedException: public std::exception {
+			const char * what() const throw() {
+				return "Configuration must be parsed before usage";
+			}
+		};
 
 	};
 

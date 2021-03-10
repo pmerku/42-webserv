@@ -8,6 +8,7 @@
 #include "config/validators/RequiredKey.hpp"
 #include "config/validators/Unique.hpp"
 #include "config/validators/MutuallyExclusive.hpp"
+#include "config/validators/BooleanValidator.hpp"
 
 using namespace config;
 
@@ -25,11 +26,12 @@ const AConfigBlock::validatorsMapType	RouteBlock::_validators =
 		  .add(new ArgumentLength(1))
 		  .add(new Unique())
 		  .build())
-		.addKey("directory_listing", ConfigValidatorListBuilder() // TODO boolean validator + default to false
+		.addKey("directory_listing", ConfigValidatorListBuilder() // TODO boolean validator
 		  .add(new ArgumentLength(1))
+		  .add(new BooleanValidator(0))
 		  .add(new Unique())
 		  .build())
-		.addKey("index", ConfigValidatorListBuilder() // TODO filename validator + default to index.html
+		.addKey("index", ConfigValidatorListBuilder() // TODO filename validator
 		  .add(new ArgumentLength(1))
 		  .add(new Unique())
 		  .build())
@@ -68,7 +70,7 @@ const std::string						*RouteBlock::getAllowedBlocks() const {
 
 RouteBlock::RouteBlock(const ConfigLine &line, int lineNumber, AConfigBlock *parent): AConfigBlock(line, lineNumber, parent) {}
 
-const std::string RouteBlock::getType() const {
+std::string RouteBlock::getType() const {
 	return "route";
 }
 
@@ -85,4 +87,71 @@ void	RouteBlock::cleanup() {
 	for (validatorListType::const_iterator i = _blockValidators.begin(); i != _blockValidators.end(); ++i) {
 		delete *i;
 	}
+}
+
+// TODO allowed methods parsing
+// TODO plugin parsing
+void RouteBlock::parseData() {
+	_location = getKey("location")->getArg(0);
+	_root = "";
+	_directoryListing = false;
+	_index = "index.html";
+	_saveUploads = "";
+	_proxyUrl = "";
+
+	if (hasKey("root"))
+		_root = getKey("root")->getArg(0);
+	if (hasKey("directory_listing"))
+		_directoryListing = getKey("directory_listing")->getArg(0) == "true";
+	if (hasKey("index"))
+		_index = getKey("index")->getArg(0);
+	if (hasKey("save_uploads"))
+		_saveUploads = getKey("save_uploads")->getArg(0);
+	if (hasKey("proxy_url"))
+		_proxyUrl = getKey("proxy_url")->getArg(0);
+}
+
+const std::string &RouteBlock::getLocation() const {
+	throwNotParsed();
+	return _location;
+}
+
+const std::vector<std::string> &RouteBlock::getAllowedMethods() const {
+	throwNotParsed();
+	return _allowedMethods;
+}
+
+const std::string &RouteBlock::getRoot() const {
+	throwNotParsed();
+	return _root;
+}
+
+bool RouteBlock::isDirectoryListing() const {
+	throwNotParsed();
+	return _directoryListing;
+}
+
+const std::string &RouteBlock::getIndex() const {
+	throwNotParsed();
+	return _index;
+}
+
+const std::string &RouteBlock::getCgi() const {
+	throwNotParsed();
+	return _cgi;
+}
+
+const std::string &RouteBlock::getSaveUploads() const {
+	throwNotParsed();
+	return _saveUploads;
+}
+
+const std::string &RouteBlock::getProxyUrl() const {
+	throwNotParsed();
+	return _proxyUrl;
+}
+
+bool RouteBlock::shouldDoFile() const {
+	throwNotParsed();
+	return _proxyUrl.empty();
 }

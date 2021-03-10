@@ -6,6 +6,7 @@
 #define SERVERBLOCK_HPP
 
 #include "config/AConfigBlock.hpp"
+#include "config/blocks/RouteBlock.hpp"
 
 namespace config {
 
@@ -23,7 +24,22 @@ namespace config {
 		ServerBlock(const ConfigLine &line, int lineNumber, AConfigBlock *parent = 0);
 		static void	cleanup();
 
-		const std::string 		getType() const;
+		std::string getType() const;
+		void 				parseData();
+
+	private:
+		int							_port;
+		int							_bodyLimit;
+		std::string					_host;
+		std::string					_serverName;
+		std::vector<RouteBlock*>	_routeBlocks;
+
+	public:
+		int								getPort() const;
+		int								getBodyLimit() const;
+		const std::string				&getHost() const;
+		const std::vector<RouteBlock*>	&getRouteBlocks() const;
+		const std::string				&getServerName() const;
 	};
 
 }

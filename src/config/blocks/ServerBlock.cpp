@@ -8,6 +8,7 @@
 #include "config/validators/Unique.hpp"
 #include "config/validators/RequiredKey.hpp"
 #include "config/validators/IntValidator.hpp"
+#include <cstdlib>
 
 using namespace config;
 
@@ -26,7 +27,7 @@ const AConfigBlock::validatorsMapType	ServerBlock::_validators =
 			.add(new ArgumentLength(1))
 			.add(new Unique())
 			.build())
-		.addKey("error_page", ConfigValidatorListBuilder() // TODO file validator
+		.addKey("error_page", ConfigValidatorListBuilder() // TODO file validator + status code validator
 			.add(new ArgumentLength(2))
 			.add(new IntValidator(0, 400, 600))
 			.build())
@@ -54,7 +55,7 @@ const std::string						*ServerBlock::getAllowedBlocks() const {
 
 ServerBlock::ServerBlock(const ConfigLine &line, int lineNumber, AConfigBlock *parent): AConfigBlock(line, lineNumber, parent) {}
 
-const std::string ServerBlock::getType() const {
+std::string ServerBlock::getType() const {
 	return "server";
 }
 
@@ -71,4 +72,51 @@ void	ServerBlock::cleanup() {
 	for (validatorListType::const_iterator i = _blockValidators.begin(); i != _blockValidators.end(); ++i) {
 		delete *i;
 	}
+}
+
+// TODO int conversion
+// TODO error_page parsing
+void ServerBlock::parseData() {
+	_serverName = "_";
+	_bodyLimit = -1;
+
+	_port = std::atoi(getKey("port")->getArg(0).c_str());
+	_host = getKey("host")->getArg(0);
+
+	if (hasKey("server_name"))
+		_serverName = getKey("server_name")->getArg(0);
+	if (hasKey("body_limit"))
+		_bodyLimit = std::atoi(getKey("body_limit")->getArg(0).c_str());
+
+	for (std::vector<AConfigBlock*>::iterator i = _blocks.begin(); i != _blocks.end(); ++i) {
+		if (dynamic_cast<RouteBlock*>(*i))
+			_routeBlocks.push_back(reinterpret_cast<RouteBlock*>(*i));
+		(*i)->parseData();
+	}
+	_isParsed = true;
+}
+
+int ServerBlock::getPort() const {
+	throwNotParsed();
+	return _port;
+}
+
+const std::string &ServerBlock::getHost() const {
+	throwNotParsed();
+	return _host;
+}
+
+const std::vector<RouteBlock *> &ServerBlock::getRouteBlocks() const {
+	throwNotParsed();
+	return _routeBlocks;
+}
+
+int ServerBlock::getBodyLimit() const {
+	throwNotParsed();
+	return _bodyLimit;
+}
+
+const std::string &ServerBlock::getServerName() const {
+	throwNotParsed();
+	return _serverName;
 }

@@ -119,6 +119,7 @@ RootBlock		*ConfigParser::parseFile(const std::string &path) const {
 			throw UnbalancedBracketsException(ConfigLine("<3", lineCount), 0);
 		}
 		rootBlock->runPostValidators();
+		rootBlock->parseData();
 	} catch (const ConfigException &e) {
 		logItem(e);
 		throw;

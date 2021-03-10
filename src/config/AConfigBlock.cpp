@@ -31,7 +31,7 @@ AConfigBlock *AConfigBlock::getParent() const {
 	return _parent;
 }
 
-void AConfigBlock::runPostValidators() const {
+void AConfigBlock::runPostValidators() {
 	// run post validators
 	for (std::vector<ConfigLine>::const_iterator i = _lines.begin(); i != _lines.end(); ++i) {
 		validatorListType	validators = getValidatorForKey(*i);
@@ -52,7 +52,7 @@ void AConfigBlock::runPostValidators() const {
 		(*i)->runPostValidators();
 }
 
-AConfigBlock::AConfigBlock(const ConfigLine &line, int lineNumber, AConfigBlock *parent): _parent(parent), _lineNumber(lineNumber) {
+AConfigBlock::AConfigBlock(const ConfigLine &line, int lineNumber, AConfigBlock *parent): _parent(parent), _lineNumber(lineNumber), _isParsed(false) {
 	if (line.getArgLength() != 1)
 		throw ArgsWithBlockException(line);
 	else if (line.getArg(0) != "{")
@@ -100,4 +100,8 @@ const ConfigLine	*AConfigBlock::getKey(const std::string &key) const {
 
 int AConfigBlock::getLineNumber() const {
 	return _lineNumber;
+}
+
+void AConfigBlock::throwNotParsed() const {
+	if (!_isParsed) throw NotParsedException();
 }

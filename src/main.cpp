@@ -24,11 +24,11 @@ int main() {
 	logger::Logger logger = std::cout;
 	logger.setFlags(logger::Flags::Debug | logger::Flags::Color);
 
+	config::ConfigParser parser;
+	parser.setLogger(logger);
+	config::RootBlock *config;
 	try {
-		config::ConfigParser parser;
-		parser.setLogger(logger);
-		config::RootBlock *config = parser.parseFile("../resources/example-configs/basic.conf");
-		(void)config;
+		config = parser.parseFile("../resources/example-configs/basic.conf");
 	} catch (const std::exception &e) {
 		logger.log(logger::LogItem(logger::ERROR, std::string("Config could not be parsed: ") + e.what()));
 		return 1;
@@ -37,23 +37,26 @@ int main() {
 	Server server;
 	server.setLogger(logger);
 
-	TCPListener *portListen = new TCPListener(8080);
-	TerminalListener *termListen = new TerminalListener();
-	server.addListener(portListen);
-	server.addListener(termListen);
+	// add server listeners
+	for (std::vector<config::ServerBlock*>::const_iterator i = config->getServerBlocks().begin(); i != config->getServerBlocks().end(); ++i) {
+		server.addListener(new TCPListener((*i)->getPort()));
+	}
+	server.addListener(new TerminalListener());
 
-	StandardHandler *handler = new StandardHandler();
-	server.addHandler(handler);
+	// workers
+	if (config->getWorkerCount() == -1)
+		server.addHandler(new StandardHandler());
+	else {
+		for (int i = 0; i < config->getWorkerCount(); ++i) {
+			server.addHandler(new StandardHandler());
+		}
+	}
 
-	HTTPResponder *httpResponder = new HTTPResponder();
-	TerminalResponder *terminalResponder = new TerminalResponder();
-	server.addResponder(httpResponder);
-	server.addResponder(terminalResponder);
+	server.addResponder(new HTTPResponder());
+	server.addResponder(new TerminalResponder());
 
-	HTTPParser *httpParser = new HTTPParser();
-	TerminalParser *terminalParser = new TerminalParser();
-	server.addParser(httpParser);
-	server.addParser(terminalParser);
+	server.addParser(new HTTPParser());
+	server.addParser(new TerminalParser());
 
 	try {
 		server.serve();
