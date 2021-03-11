@@ -24,7 +24,7 @@ std::string		ConfigParser::_readFile(const std::string &path) {
 		::ssize_t ret = ::read(fd, buf, len);
 		// handle errors
 		if (ret == -1) {
-			close(fd);
+			::close(fd);
 			throw FailedToReadException();
 		}
 		// add new data to string
@@ -35,7 +35,7 @@ std::string		ConfigParser::_readFile(const std::string &path) {
 		// get out of loop if enough is read
 		if (ret != len) break;
 	}
-	close(fd);
+	::close(fd);
 	return out;
 }
 
