@@ -5,6 +5,7 @@
 #include "server/listeners/TCPListener.hpp"
 #include <unistd.h>
 #include <fcntl.h>
+#include "utils/ErrorThrow.hpp"
 
 using namespace NotApache;
 
@@ -20,7 +21,7 @@ void TCPListener::start() {
 	_fd = socket(AF_INET, SOCK_STREAM, 0);
 	if (_fd < 0) {
 		logItem(logger::ERROR, "Socket opening failed!");
-		throw FailedToListen();
+		ERROR_THROW(FailedToListen());
 	}
 
 	// set socket options
@@ -33,14 +34,14 @@ void TCPListener::start() {
 		close(_fd);
 		_fd = -1;
 		logItem(logger::ERROR, "Failed to bind socket to local network!");
-		throw FailedToListen();
+		ERROR_THROW(FailedToListen());
 	}
 
 	if (::listen(_fd, _backlog) == -1) {
 		close(_fd);
 		_fd = -1;
 		logItem(logger::ERROR, "Failed to listen on port!");
-		throw FailedToListen();
+		ERROR_THROW(FailedToListen());
 	}
 	logItem(logger::INFO, "Server is listening!");
 }
@@ -58,7 +59,7 @@ Client	*TCPListener::acceptClient() {
 
 	if (client_fd == -1) {
 		logItem(logger::ERROR, "Client not accepted");
-		throw FailedToAccept();
+		ERROR_THROW(FailedToAccept());
 	}
 
 	fcntl(client_fd, F_SETFL, O_NONBLOCK);
