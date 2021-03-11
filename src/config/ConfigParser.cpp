@@ -6,6 +6,7 @@
 #include "config/blocks/RootBlock.hpp"
 #include "config/blocks/ServerBlock.hpp"
 #include "config/blocks/RouteBlock.hpp"
+#include "utils/ErrorThrow.hpp"
 #include <unistd.h>
 #include <fcntl.h>
 
@@ -19,13 +20,13 @@ std::string		ConfigParser::_readFile(const std::string &path) {
 	std::string	out;
 
 	int fd = ::open(path.c_str(), O_RDONLY, 0);
-	if (fd == -1) throw FailedToOpenException();
+	if (fd == -1) ERROR_THROW(FailedToOpenException());
 	while (true) {
 		::ssize_t ret = ::read(fd, buf, len);
 		// handle errors
 		if (ret == -1) {
 			::close(fd);
-			throw FailedToReadException();
+			ERROR_THROW(FailedToReadException());
 		}
 		// add new data to string
 		if (ret > 0) {
@@ -97,7 +98,7 @@ RootBlock		*ConfigParser::parseFile(const std::string &path) const {
 				currentBlock = currentBlock->getParent();
 				if (currentBlock == 0) {
 					delete rootBlock;
-					throw UnbalancedBracketsException(parsedLine, 0);
+					ERROR_THROW(UnbalancedBracketsException(parsedLine, 0));
 				}
 				blockDepth--;
 			}
@@ -116,7 +117,7 @@ RootBlock		*ConfigParser::parseFile(const std::string &path) const {
 	try {
 		if (blockDepth != 0) {
 			delete rootBlock;
-			throw UnbalancedBracketsException(ConfigLine("<3", lineCount), 0);
+			ERROR_THROW(UnbalancedBracketsException(ConfigLine("<3", lineCount), 0));
 		}
 		rootBlock->runPostValidators();
 		rootBlock->parseData();

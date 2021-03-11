@@ -10,5 +10,5 @@ BooleanValidator::BooleanValidator(int argnum) : AConfigValidator(true), _argnum
 
 void BooleanValidator::test(const ConfigLine &line, const AConfigBlock &block) const {
 	if (line.getArg(_argnum) != "true" && line.getArg(_argnum) != "false")
-		throw BooleanValidatorException(line, &block);
+		ERROR_THROW(BooleanValidatorException(line, &block));
 }

@@ -4,6 +4,7 @@
 
 #include "config/AConfigBlock.hpp"
 #include "config/ParseExceptions.hpp"
+#include "utils/ErrorThrow.hpp"
 
 using namespace config;
 
@@ -22,7 +23,7 @@ void AConfigBlock::addBlock(AConfigBlock *block) {
 		}
 	}
 	if (!found) {
-		throw InvalidNestedBlockException(block->getType(), block->getLineNumber(), this);
+		ERROR_THROW(InvalidNestedBlockException(block->getType(), block->getLineNumber(), this));
 	}
 	_blocks.push_back(block);
 }
@@ -54,9 +55,9 @@ void AConfigBlock::runPostValidators() {
 
 AConfigBlock::AConfigBlock(const ConfigLine &line, int lineNumber, AConfigBlock *parent): _parent(parent), _lineNumber(lineNumber), _isParsed(false) {
 	if (line.getArgLength() != 1)
-		throw ArgsWithBlockException(line);
+		ERROR_THROW(ArgsWithBlockException(line));
 	else if (line.getArg(0) != "{")
-		throw BlockMissingOpeningException(line);
+		ERROR_THROW(BlockMissingOpeningException(line));
 }
 
 AConfigBlock::~AConfigBlock() {
@@ -67,12 +68,12 @@ AConfigBlock::~AConfigBlock() {
 
 void AConfigBlock::validateEndBlock(const ConfigLine &line) {
 	if (line.getArgLength() != 0 || line.getKey() != "}" || line.getKey().length() > 1)
-		throw ArgsWithBlockException(line);
+		ERROR_THROW(ArgsWithBlockException(line));
 }
 
 const AConfigBlock::validatorListType &AConfigBlock::getValidatorForKey(const ConfigLine &line) const {
 	validatorsMapType::const_iterator	it = getValidators().find(line.getKey());
-	if (it == getValidators().end()) throw UnknownKeyException(line, 0);
+	if (it == getValidators().end()) ERROR_THROW(UnknownKeyException(line, 0));
 	return it->second;
 }
 
@@ -103,5 +104,5 @@ int AConfigBlock::getLineNumber() const {
 }
 
 void AConfigBlock::throwNotParsed() const {
-	if (!_isParsed) throw NotParsedException();
+	if (!_isParsed) ERROR_THROW(NotParsedException());
 }
