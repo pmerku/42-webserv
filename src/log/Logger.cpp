@@ -3,6 +3,7 @@
 //
 
 #include <string>
+#include "config/ConfigException.hpp"
 #include "log/Logger.hpp"
 
 using namespace logger;
@@ -26,6 +27,12 @@ void    Logger::log(const LogItem &item) {
 	}
 }
 
+void    Logger::log(const LogItem &item, const config::ConfigException &e) {
+	if (item.logType == DEBUG && !(_loggerFlags & Flags::Debug)) return;
+	for (std::vector<std::ostream*>::const_iterator first = _streams.begin(); first != _streams.end(); ++first) {
+		**first << item.toString(_loggerFlags) << "L:" << e.getLine().getLineNumber() <<  " " << e.prettyPrint() << std::endl;
+	}
+}
 Logger &Logger::operator=(const Logger &rhs) {
 	_streams = rhs._streams;
 	return *this;
