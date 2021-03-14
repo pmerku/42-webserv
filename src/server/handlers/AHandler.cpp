@@ -6,32 +6,17 @@
 
 using namespace NotApache;
 
-void	AHandler::setParsers(std::vector<AParser *> *parsers) {
-	_parsers = parsers;
-}
-
-void AHandler::setResponders(std::vector<AResponder *> *responders) {
-	_responders = responders;
-}
-
-AHandler::AHandler(): _parsers(0), _responders(0) {}
-
-void AHandler::respond(Client &client) {
-	if (!_responders) return;
-	for (std::vector<AResponder*>::iterator i = _responders->begin(); i != _responders->end(); ++i) {
-		if ((*i)->getType() == client.getDataType()) {
-			if (client.getResponseState() == PARSE_ERROR)
-				client.setResponse((*i)->generateParseError(client));
-			else if (client.getResponseState() == TIMED_OUT)
-				client.setResponse((*i)->generateTimeout(client));
-			else
-				client.setResponse((*i)->generateResponse(client));
-			client.setResponseIndex(0);
-			client.setResponseState(IS_WRITING);
-			return;
-		}
-	}
-	client.setResponseState(ERRORED);
-}
-
+AHandler::AHandler(): _parser(0), _responder(0), _eventBus(0) {}
 AHandler::~AHandler() {}
+
+void AHandler::setParser(HTTPParser *parser) {
+	_parser = parser;
+}
+
+void AHandler::setResponder(HTTPResponder *responder) {
+	_responder = responder;
+}
+
+void AHandler::setEventBus(ServerEventBus *eventBus) {
+	_eventBus = eventBus;
+}

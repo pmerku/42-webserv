@@ -10,13 +10,13 @@
 namespace NotApache {
 	class StandardHandler: public AHandler {
 	private:
-		static void			finish(Client &client);
+		static const int	_bufferSize;
 
 	public:
 		StandardHandler();
 
-		virtual void	read(Client &client);
-		virtual void	write(Client &client);
+		virtual void	read(HTTPClient &client);
+		virtual void	write(HTTPClient &client);
 
 	};
 }

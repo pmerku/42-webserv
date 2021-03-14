@@ -3,116 +3,68 @@
 //
 
 #include "server/handlers/StandardHandler.hpp"
+#include "server/global/GlobalLogger.hpp"
 #include <unistd.h>
 
 using namespace NotApache;
 
-void StandardHandler::read(Client &client) {
-	char	buf[1025];
+const int	StandardHandler::_bufferSize = 1024;
 
-	ssize_t	ret = client.read(buf, sizeof(buf)-1);
+void StandardHandler::read(HTTPClient &client) {
+	char	buf[_bufferSize+1];
+
+	ssize_t	ret = ::read(client.getFd(), buf, _bufferSize);
 	switch (ret) {
 		case 0:
 			// connection closed
-			logItem(logger::DEBUG, "Reached EOF of client");
-			logItem(logger::DEBUG, "Client data:\n" + client.getRequest());
-			client.modifiedLock.lock();
-			client.close(true);
-			finish(client);
-			client.modifiedLock.unlock();
+			client.connectionState = CLOSED;
+			_eventBus->postEvent(ServerEventBus::CLIENT_STATE_UPDATED);
 			return;
 		case -1:
-			// TODO error WOULD_BLOCK on terminal EOF with still data to read (example "command here\n unfinished(EOF)")
-			// error reading
-			logItem(logger::WARNING, "Failed to read from client");
-			logItem(logger::DEBUG, client.getRequest());
-			client.modifiedLock.lock();
-			finish(client);
-			client.modifiedLock.unlock();
+			globalLogger.logItem(logger::DEBUG, "Failed to read from client");
 			return;
 		default:
 			// packet found, reading
-			buf[ret] = 0; // make cstr out of it by settings 0 as last char
-			client.appendRequest(buf);
+			buf[ret] = 0; // make cstr out of it by setting 0 as last char
+			client.data.request.appendRequestData(buf);
 			break;
 	}
 
 	// parsing
-	AParser::formatState state = AParser::runFormatChecks(*_parsers, client);
-	if (state == AParser::FINISHED) {
-		// has read full data, start responding. client now contains data type
-		logItem(logger::DEBUG, "Client data has been parsed");
-		client.modifiedLock.lock();
-		client.setState(WRITING);
-		client.setResponseState(IS_RESPONDING);
-		finish(client);
-		client.modifiedLock.unlock();
-		return;
+	if (_parser->parse(client) == HTTPParser::READY_FOR_WRITE) {
+		client.connectionState = WRITING;
+		_eventBus->postEvent(ServerEventBus::CLIENT_STATE_UPDATED);
 	}
-	else if (state == AParser::PARSE_ERROR) {
-		logItem(logger::DEBUG, "Client data cannot be parsed");
-		client.modifiedLock.lock();
-		client.setState(WRITING);
-		client.setResponseState(PARSE_ERROR);
-		finish(client);
-		client.modifiedLock.unlock();
-		return;
-	}
-
-	// handle timeout
-	client.modifiedLock.lock();
-	client.timeout();
-	finish(client);
-	client.modifiedLock.unlock();
 }
 
-void StandardHandler::write(Client &client) {
-	switch (client.getResponseState()) {
-		case IS_RESPONDING:
-		case PARSE_ERROR:
-		case TIMED_OUT:
-			respond(client);
-		default:
-			break;
-	}
-	if (client.getResponseState() == ERRORED) {
-		client.setResponse("Whoops, something went wrong :(\n");
-		client.setResponseState(IS_WRITING);
-		client.setResponseIndex(0);
+void StandardHandler::write(HTTPClient &client) {
+	if (client.writeState == NO_RESPONSE) {
+		_responder->generateResponse(client);
+		client.writeState = IS_WRITING;
 	}
 
-	if (client.getResponseState() == IS_WRITING) {
-		std::string response = client.getResponse();
-		ssize_t	writeLength = response.length() - client.getResponseIndex();
-		ssize_t ret = client.write(response.c_str() + client.getResponseIndex(), writeLength);
+	if (client.writeState == IS_WRITING) {
+		const std::string		&response = client.data.response.getResponse();
+		std::string::size_type	pos = client.data.response.getProgress();
+		std::string::size_type	len = response.length() - pos;
+		ssize_t ret = ::write(client.getFd(), response.c_str() + pos, len);
 		switch (ret) {
 			case -1:
-				logItem(logger::ERROR, "Failed to write to client");
-				break;
+				globalLogger.logItem(logger::DEBUG, "Failed to write to client");
+				return;
 			case 0:
-				logItem(logger::DEBUG, "Encountered 0 for write");
+				// zero bytes is unlikely to happen, dont do anything if it does happen
 				break;
 			default:
-				client.setResponseIndex(client.getResponseIndex() + ret);
-				if (client.getResponseIndex() == response.length()) {
-					// wrote entire response, close
-					client.modifiedLock.lock();
-					client.close(false);
-					finish(client);
-					client.modifiedLock.unlock();
+				client.data.response.setProgress(client.data.response.getProgress()+ret);
+				if (len == (std::string::size_type)ret) {
+					// wrote entire response, closing
+					client.connectionState = CLOSED;
 					return;
 				}
 				break;
 		}
 	}
-	client.modifiedLock.lock();
-	client.timeout();
-	finish(client);
-	client.modifiedLock.unlock();
 }
 
 StandardHandler::StandardHandler(): AHandler() {}
-
-void StandardHandler::finish(Client &client) {
-	client.isHandled = false;
-}
