@@ -9,6 +9,7 @@
 
 // handlers
 #include "server/handlers/StandardHandler.hpp"
+#include "server/handlers/ThreadHandler.hpp"
 
 // responders
 #include "server/responders/HTTPResponder.hpp"
@@ -48,7 +49,7 @@ int main() {
 		server.addHandler(new StandardHandler());
 	else {
 		for (int i = 0; i < config->getWorkerCount(); ++i) {
-			server.addHandler(new StandardHandler());
+			server.addHandler(new ThreadHandler());
 		}
 	}
 

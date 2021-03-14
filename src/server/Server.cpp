@@ -40,12 +40,15 @@ void Server::serve() {
 		_createFDSets();
 
 		// timeout
-		timeval	timeout = {};
-		timeout.tv_sec = 1, timeout.tv_usec = 0;
+//		timeval	timeout = {};
+//		timeout.tv_sec = 10, timeout.tv_usec = 0;
 
 		// wait for FD events
-		if (::select(_maxFD() + 1, &_readFDSet, &_writeFDSet, NULL, &timeout) == -1) {
-			throw ConnectionListeningFailed();
+		// TODO connections close between set creation & select call
+		// TODO thread workers currently need timeout to function
+		if (::select(_maxFD() + 1, &_readFDSet, &_writeFDSet, NULL, 0) == -1) {
+//			throw ConnectionListeningFailed();
+			continue;
 		}
 
 		// accept new connections
@@ -66,22 +69,31 @@ void Server::serve() {
 				if (_handlerBalance + 1 >= _handlers.size()) _handlerBalance = 0;
 				else _handlerBalance++;
 
-				if (!(*c)->_isHandled.setIf(false, true))
+				(*c)->modifiedLock.lock();
+				if (!(*c)->isHandled) {
+					(*c)->isHandled = true;
 					(_handlers[_handlerBalance])->read(**c);
+				}
+				(*c)->modifiedLock.unlock();
 			}
 			else if (FD_ISSET((*c)->getWriteFD(), &_writeFDSet) && (*c)->getState() == WRITING) {
 				// handle write
 				if (_handlerBalance + 1 >= _handlers.size()) _handlerBalance = 0;
 				else _handlerBalance++;
 
-				if (!(*c)->_isHandled.setIf(false, true))
+				(*c)->modifiedLock.lock();
+				if (!(*c)->isHandled) {
+					(*c)->isHandled = true;
 					(_handlers[_handlerBalance])->write(**c);
+				}
+				(*c)->modifiedLock.unlock();
 			}
 			else {
-				if ((*c)->_isHandled.setIf(false, true)) {
+				(*c)->modifiedLock.lock();
+				if (!(*c)->isHandled) {
 					(*c)->timeout();
-					(*c)->_isHandled = false;
 				}
+				(*c)->modifiedLock.unlock();
 			}
 		}
 	}
@@ -113,18 +125,23 @@ void Server::_createFDSets() {
 
 	FD_ZERO(&_readFDSet);
 	FD_ZERO(&_writeFDSet);
-	for (std::vector<AListener*>::iterator i = _listeners.begin(); i != _listeners.end(); ++i)
+	for (std::vector<AListener*>::iterator i = _listeners.begin(); i != _listeners.end(); ++i) {
 		FD_SET((*i)->getFD(), &_readFDSet);
+	}
 	for (std::vector<Client*>::iterator i = _clients.begin(); i != _clients.end(); ++i) {
 		if ((*i)->getState() == READING) FD_SET((*i)->getReadFD(), &_readFDSet);
 		else if ((*i)->getState() == WRITING) FD_SET((*i)->getWriteFD(), &_writeFDSet);
 		else {
 			// remove client if closed
-			if (!(*i)->_isHandled.setIf(false, true)) {
+			(*i)->modifiedLock.lock();
+			if (!(*i)->isHandled) {
+				(*i)->isHandled = true;
+				(*i)->modifiedLock.unlock();
 				delete *i;
 				hasChanged = true;
 				continue;
 			}
+			(*i)->modifiedLock.unlock();
 		}
 		toKeep.push_back(*i);
 	}

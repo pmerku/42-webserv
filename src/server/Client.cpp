@@ -8,7 +8,7 @@
 using namespace NotApache;
 
 Client::Client(FD readFD, FD writeFD, ClientTypes type): _readFD(readFD), _writeFD(writeFD), _type(type), _state(READING),
-_dataType(), _request(), _response(), _responseIndex(), _responseState(), _created(), _timeoutSeconds(0), _isHandled(false) {
+_dataType(), _request(), _response(), _responseIndex(), _responseState(), _created(), _timeoutSeconds(0), isHandled(false) {
 	::gettimeofday(&_created, NULL);
 }
 
@@ -90,8 +90,8 @@ void Client::setResponseState(ResponseStates state) {
 
 void Client::close(bool reachedEOF) {
 	(void)reachedEOF;
-	::close(_readFD);
 	_state = CLOSED;
+	::close(_readFD);
 }
 
 Client::~Client() {}
@@ -111,10 +111,12 @@ void Client::setTimeout(unsigned long seconds) {
 void Client::timeout() {
 	timeval	curTime;
 	::gettimeofday(&curTime, NULL);
-	if (curTime.tv_sec < _created.tv_sec + (time_t)_timeoutSeconds) return;
-
-	// do timeout
-	close(false);
+	if (curTime.tv_sec < _created.tv_sec + (time_t)_timeoutSeconds) {
+		modifiedLock.unlock();
+		return;
+	}
+	_state = CLOSED;
+	::close(_readFD);
 }
 
 const timeval	&Client::getCreatedAt() const {

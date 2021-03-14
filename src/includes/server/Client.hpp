@@ -32,7 +32,8 @@ namespace NotApache {
 		Client(FD readFD, FD writeFD, ClientTypes type = CONNECTION);
 		virtual ~Client();
 
-		utils::Mutex<bool>	_isHandled;
+		utils::MutexLock	modifiedLock;
+		bool 				isHandled;
 
 		FD				getReadFD() const;
 		FD				getWriteFD() const;

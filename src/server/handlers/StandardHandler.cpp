@@ -16,15 +16,19 @@ void StandardHandler::read(Client &client) {
 			// connection closed
 			logItem(logger::DEBUG, "Reached EOF of client");
 			logItem(logger::DEBUG, "Client data:\n" + client.getRequest());
+			client.modifiedLock.lock();
 			client.close(true);
 			finish(client);
+			client.modifiedLock.unlock();
 			return;
 		case -1:
 			// TODO error WOULD_BLOCK on terminal EOF with still data to read (example "command here\n unfinished(EOF)")
 			// error reading
 			logItem(logger::WARNING, "Failed to read from client");
 			logItem(logger::DEBUG, client.getRequest());
+			client.modifiedLock.lock();
 			finish(client);
+			client.modifiedLock.unlock();
 			return;
 		default:
 			// packet found, reading
@@ -38,22 +42,28 @@ void StandardHandler::read(Client &client) {
 	if (state == AParser::FINISHED) {
 		// has read full data, start responding. client now contains data type
 		logItem(logger::DEBUG, "Client data has been parsed");
+		client.modifiedLock.lock();
 		client.setState(WRITING);
 		client.setResponseState(IS_RESPONDING);
 		finish(client);
+		client.modifiedLock.unlock();
 		return;
 	}
 	else if (state == AParser::PARSE_ERROR) {
 		logItem(logger::DEBUG, "Client data cannot be parsed");
+		client.modifiedLock.lock();
 		client.setState(WRITING);
 		client.setResponseState(PARSE_ERROR);
 		finish(client);
+		client.modifiedLock.unlock();
 		return;
 	}
 
 	// handle timeout
+	client.modifiedLock.lock();
 	client.timeout();
 	finish(client);
+	client.modifiedLock.unlock();
 }
 
 void StandardHandler::write(Client &client) {
@@ -86,19 +96,23 @@ void StandardHandler::write(Client &client) {
 				client.setResponseIndex(client.getResponseIndex() + ret);
 				if (client.getResponseIndex() == response.length()) {
 					// wrote entire response, close
+					client.modifiedLock.lock();
 					client.close(false);
 					finish(client);
+					client.modifiedLock.unlock();
 					return;
 				}
 				break;
 		}
 	}
+	client.modifiedLock.lock();
 	client.timeout();
 	finish(client);
+	client.modifiedLock.unlock();
 }
 
 StandardHandler::StandardHandler(): AHandler() {}
 
 void StandardHandler::finish(Client &client) {
-	client._isHandled = false;
+	client.isHandled = false;
 }
