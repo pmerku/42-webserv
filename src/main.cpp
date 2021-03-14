@@ -9,9 +9,11 @@
 using namespace NotApache;
 
 int main() {
+	// setup loggers
 	logger::Logger logger = std::cout;
 	logger.setFlags(logger::Flags::Debug | logger::Flags::Color);
 
+	// parse configuration
 	config::ConfigParser parser;
 	parser.setLogger(logger);
 	config::RootBlock *config;
@@ -22,6 +24,7 @@ int main() {
 		return 1;
 	}
 
+	// create server
 	Server server;
 	server.setLogger(logger);
 
@@ -40,10 +43,12 @@ int main() {
 		}
 	}
 
+	// start server
 	try {
 		server.startServer(config);
 	} catch (std::exception &e) {
 		logger.log(logger::LogItem(logger::ERROR, e.what()));
+		return 1;
 	}
 	return 0;
 }
