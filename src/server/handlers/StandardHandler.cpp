@@ -17,11 +17,15 @@ void StandardHandler::read(HTTPClient &client) {
 	switch (ret) {
 		case 0:
 			// connection closed
+			client.isHandled.lock();
 			client.connectionState = CLOSED;
 			_eventBus->postEvent(ServerEventBus::CLIENT_STATE_UPDATED);
+			client.isHandled.setNoLock(false);
+			client.isHandled.unlock();
 			return;
 		case -1:
 			globalLogger.logItem(logger::DEBUG, "Failed to read from client");
+			client.isHandled = false;
 			return;
 		default:
 			// packet found, reading
@@ -31,10 +35,13 @@ void StandardHandler::read(HTTPClient &client) {
 	}
 
 	// parsing
+	client.isHandled.lock();
 	if (_parser->parse(client) == HTTPParser::READY_FOR_WRITE) {
 		client.connectionState = WRITING;
 		_eventBus->postEvent(ServerEventBus::CLIENT_STATE_UPDATED);
 	}
+	client.isHandled.setNoLock(false);
+	client.isHandled.unlock();
 }
 
 void StandardHandler::write(HTTPClient &client) {
@@ -51,6 +58,7 @@ void StandardHandler::write(HTTPClient &client) {
 		switch (ret) {
 			case -1:
 				globalLogger.logItem(logger::DEBUG, "Failed to write to client");
+				client.isHandled = false;
 				return;
 			case 0:
 				// zero bytes is unlikely to happen, dont do anything if it does happen
@@ -59,12 +67,17 @@ void StandardHandler::write(HTTPClient &client) {
 				client.data.response.setProgress(client.data.response.getProgress()+ret);
 				if (len == (std::string::size_type)ret) {
 					// wrote entire response, closing
+					client.isHandled.lock();
 					client.connectionState = CLOSED;
+					client.isHandled.setNoLock(false);
+					_eventBus->postEvent(ServerEventBus::CLIENT_STATE_UPDATED);
+					client.isHandled.unlock();
 					return;
 				}
 				break;
 		}
 	}
+	client.isHandled = false;
 }
 
 StandardHandler::StandardHandler(): AHandler() {}

@@ -95,7 +95,18 @@ void Server::_handleSelect() {
 
 void Server::_clientCleanup() {
 	for (std::list<HTTPClient*>::iterator i = _clients.begin(); i != _clients.end(); ++i) {
-		if ((*i)->connectionState != CLOSED)
+		// if closed & is not being handled. then set isHandled to true and close client
+		(*i)->isHandled.lock();
+		bool isClosed = (*i)->connectionState == CLOSED;
+		if (isClosed) {
+			if ((*i)->isHandled.get())
+				isClosed = false;
+			else
+				(*i)->isHandled.setNoLock(true);
+		}
+		(*i)->isHandled.unlock();
+
+		if (!isClosed)
 			continue;
 		globalLogger.logItem(logger::DEBUG, "Closed client connection");
 		close((*i)->getFd());

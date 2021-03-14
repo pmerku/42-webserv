@@ -28,7 +28,7 @@ namespace NotApache {
 	public:
 		ClientWriteState		writeState;
 		ClientConnectionState	connectionState;
-		utils::MutexLock		modifyLock;
+		utils::Mutex<bool>		isHandled;
 		HTTPClientData			data;
 
 		HTTPClient(FD clientFd);

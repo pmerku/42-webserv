@@ -3,8 +3,7 @@
 #include "server/Server.hpp"
 #include "config/ConfigParser.hpp"
 
-#include "server/communication/TCPListener.hpp"
-#include "server/handlers/StandardHandler.hpp"
+#include "server/handlers/ThreadHandler.hpp"
 
 using namespace NotApache;
 
@@ -38,8 +37,7 @@ int main() {
 		server.addHandler(new StandardHandler());
 	else {
 		for (int i = 0; i < config->getWorkerCount(); ++i) {
-			// TODO thread worker
-			server.addHandler(new StandardHandler());
+			server.addHandler(new ThreadHandler());
 		}
 	}
 

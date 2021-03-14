@@ -19,6 +19,15 @@ void HandlerHolder::addHandler(AHandler *handler) {
 }
 
 void HandlerHolder::handleClient(HTTPClient &client, handlerActions action) {
+	// if isHandled is true or client is closed, dont handle client; if its false, set it true and continue
+	// isHandled will be set back to false after its handled
+	client.isHandled.lock();
+	if (client.connectionState == CLOSED || client.isHandled.get()) {
+		client.isHandled.unlock();
+		return;
+	}
+	client.isHandled.setNoLock(true);
+	client.isHandled.unlock();
 	_roundRobin = (_roundRobin+1 < _size) ? _roundRobin+1 : 0;
 	AHandler	*handler = _handlers[_roundRobin];
 	if (action == READ)

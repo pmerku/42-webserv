@@ -6,7 +6,7 @@
 
 using namespace NotApache;
 
-HTTPClient::HTTPClient(FD clientFd): _fd(clientFd), writeState(NO_RESPONSE), connectionState(READING) {}
+HTTPClient::HTTPClient(FD clientFd): _fd(clientFd), writeState(NO_RESPONSE), connectionState(READING), isHandled(false) {}
 
 FD HTTPClient::getFd() const {
 	return _fd;
