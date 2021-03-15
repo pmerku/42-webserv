@@ -3,6 +3,7 @@
 //
 
 #include "regex/Regex.hpp"
+#include "utils/ErrorThrow.hpp"
 
 using namespace regex;
 
@@ -144,7 +145,7 @@ const char *Regex::matchPattern(RegexNode *nodes, const char *text, const char *
 
 bool Regex::match(const std::string &text) {
 	if (text.empty())
-		throw NoTextToMatch();
+		ERROR_THROW(NoTextToMatch());
 
 	const char *textStart = text.c_str();
 	const char *textEnd = text.c_str() + text.length();
@@ -173,7 +174,7 @@ bool Regex::match(const std::string &text) {
 
 void Regex::compile(const std::string &pattern) {
 	if (pattern.empty())
-		throw ImpossiblePattern();
+		ERROR_THROW(ImpossiblePattern());
 
 	RegexNode *nodes = this->_regex.regexNodes;
 	unsigned char *buffer = this->_regex.regexBuffer;
@@ -198,7 +199,7 @@ void Regex::compile(const std::string &pattern) {
 				break;
 			case '*':
 				if (!quantifiable)
-					throw ImpossiblePattern();
+					ERROR_THROW(ImpossiblePattern());
 				quantifiable = 0;
 				if (pattern[i + 1] == '?') {
 					i++;
@@ -208,7 +209,7 @@ void Regex::compile(const std::string &pattern) {
 				break;
 			case '+':
 				if (!quantifiable)
-					throw ImpossiblePattern();
+					ERROR_THROW(ImpossiblePattern());
 				quantifiable = 0;
 				if (pattern[i + 1] == '?') {
 					i++;
@@ -218,7 +219,7 @@ void Regex::compile(const std::string &pattern) {
 				break;
 			case '?':
 				if (!quantifiable)
-					throw ImpossiblePattern();
+					ERROR_THROW(ImpossiblePattern());
 				quantifiable = 0;
 				if (pattern[i + 1] == '?') {
 					i++;
@@ -230,7 +231,7 @@ void Regex::compile(const std::string &pattern) {
 			case '\\': {
 				quantifiable = 1;
 				if (pattern[++i] == '\0')
-					throw ImpossiblePattern();
+					ERROR_THROW(ImpossiblePattern());
 
 				switch (pattern[i]) {
 					case 'd':
@@ -273,16 +274,16 @@ void Regex::compile(const std::string &pattern) {
 
 					if (pattern[i] == '\\') {
 						if (pattern[++i] == '\0')
-							throw ImpossiblePattern();
+							ERROR_THROW(ImpossiblePattern());
 						temp = IS_METACHAR(pattern[i]);
 						if (temp || pattern[i] == '\\') {
 							if (static_cast<size_t>(index) > bufferLength - 2)
-								throw ExceededBufferLimit();
+								ERROR_THROW(ExceededBufferLimit());
 							buffer[index] = '\\';
 						}
 					}
 					if (static_cast<size_t>(index) > bufferLength - 2)
-						throw ExceededBufferLimit();
+						ERROR_THROW(ExceededBufferLimit());
 
 					buffer[index++] = pattern[i];
 
@@ -295,46 +296,46 @@ void Regex::compile(const std::string &pattern) {
 
 					temp = static_cast<unsigned char>(pattern[i + 2 + static_cast<bool>(temp)]);
 					if (temp < pattern[i])
-						throw ImpossibleValue();
+						ERROR_THROW(ImpossibleValue());
 				}
 				if (pattern[i] != ']')
-					throw ImpossiblePattern();
+					ERROR_THROW(ImpossiblePattern());
 				buffer[index++] = 0;
 				break;
 			}
 
 			case '{': {
 				if (!quantifiable)
-					throw ImpossiblePattern();
+					ERROR_THROW(ImpossiblePattern());
 				i++;
 				quantifiable = 0;
 				value = 0;
 
 				do {
 					if (pattern[i] == 0 || pattern[i] < '0' || pattern[i] > '9')
-						throw ImpossibleValue();
+						ERROR_THROW(ImpossibleValue());
 					value = 10 * value + static_cast<unsigned>(pattern[i++] - '0');
 				} while (pattern[i] != ',' && pattern[i] != '}');
 
 				if (value > MAX_QUANTITY)
-					throw ImpossibleValue();
+					ERROR_THROW(ImpossibleValue());
 
 				nodes[j].u.mn[0] = value;
 
 				if (pattern[i] == ',') {
 					if (pattern[++i] == 0)
-						throw ImpossiblePattern();
+						ERROR_THROW(ImpossiblePattern());
 					if (pattern[i] == '}')
 						value = MAX_QUANTITY;
 					else {
 						value = 0;
 						while (pattern[i] != '}') {
 							if (pattern[i] == 0 || pattern[i] < '0' || pattern[i] > '9')
-								throw ImpossibleValue();
+								ERROR_THROW(ImpossibleValue());
 							value = 10 * value + static_cast<unsigned>(pattern[i++] - '0');
 						}
 						if (value > MAX_QUANTITY || value < nodes[j].u.mn[0])
-							throw ImpossibleValue();
+							ERROR_THROW(ImpossibleValue());
 					}
 					if (pattern[i + 1] != '\0' && pattern[i + 1] == '?') {
 						i++;
@@ -353,7 +354,7 @@ void Regex::compile(const std::string &pattern) {
 				break;
 		}
 		if (pattern[i] == 0)
-			throw OutOfBoundAccess();
+			ERROR_THROW(OutOfBoundAccess());
 		i++;
 		j++;
 	}

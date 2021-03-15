@@ -11,5 +11,5 @@ ArgumentLength::ArgumentLength(int min, int max): AConfigValidator(false), _min(
 
 void	ArgumentLength::test(const ConfigLine &line, const AConfigBlock &block) const {
 	if (!(line.getArgLength() >= (ConfigLine::arg_size)_min && line.getArgLength() <= (ConfigLine::arg_size)_max))
-		throw ArgumentLengthException(line, &block);
+		ERROR_THROW(ArgumentLengthException(line, &block));
 }

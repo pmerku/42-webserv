@@ -11,7 +11,7 @@ MutuallyExclusive::MutuallyExclusive(const std::string& one, const std::string& 
 void MutuallyExclusive::test(const ConfigLine &line, const AConfigBlock &block) const {
 	(void)line;
 	if (block.hasKey(_one) && block.hasKey(_two))
-		throw MutuallyExclusiveException(*(block.getKey(_one)), &block);
+		ERROR_THROW(MutuallyExclusiveException(*(block.getKey(_one)), &block));
 	if (!block.hasKey(_one) && !block.hasKey(_two))
-		throw MutuallyExclusiveMissingException(ConfigLine(_one, block.getLineNumber()), &block);
+		ERROR_THROW(MutuallyExclusiveMissingException(ConfigLine(_one, block.getLineNumber()), &block));
 }
