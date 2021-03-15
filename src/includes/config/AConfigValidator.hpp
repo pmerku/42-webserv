@@ -6,6 +6,7 @@
 #define ACONFIGVALIDATOR_HPP
 
 #include "config/ConfigLine.hpp"
+#include "utils/ErrorThrow.hpp"
 
 namespace config {
 

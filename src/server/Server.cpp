@@ -4,6 +4,8 @@
 
 #include "server/Server.hpp"
 #include "server/global/GlobalConfig.hpp"
+#include "utils/ErrorThrow.hpp"
+#include <unistd.h>
 
 using namespace NotApache;
 
