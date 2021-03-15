@@ -9,7 +9,7 @@
 #include <map>
 
 namespace NotApache {
-		enum e_method {
+	enum e_method {
 		GET,
 		HEAD,
 		POST,
@@ -52,14 +52,18 @@ namespace NotApache {
 		size_t								_bodySize;
 		std::map<std::string, e_method>		_methodMap;
 		std::map<std::string, e_headers>	_headerMap;
+		int									_error_code;
+		bool								_chunked;
 
 	public:
 		HTTPClientRequest();
-
+		friend class HTTPParser;
 		const std::string		&getRawRequest() const;
 
 		void					appendRequestData(const std::string	&newData);
 		void					setRawRequest(const std::string &newData);
+
+		friend std::ostream& operator<<(std::ostream& o, HTTPClientRequest& x);
 	};
 
 	class HTTPClientResponse {
@@ -75,10 +79,6 @@ namespace NotApache {
 
 		void					setResponse(const std::string &response);
 		void					setProgress(std::string::size_type index);
-		int						parseRequest(std::string request);
-		int						parseHeaders(std::string line);
-		int						parseRequestLine(std::string reqLine);
-		int						parseBody(std::string line);
 	};
 
 	std::ostream& operator<<(std::ostream& o, HTTPClientRequest& x);

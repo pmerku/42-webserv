@@ -64,6 +64,7 @@ SRC	=\
 	server/http/HTTPClient.cpp\
 	server/http/HTTPClientData.cpp\
 	server/http/HTTPParser.cpp\
+	server/http/ft_utils.cpp\
 	server/http/HTTPResponder.cpp\
 	server/terminal/TerminalClient.cpp\
 	server/terminal/TerminalResponder.cpp\
@@ -103,6 +104,7 @@ HEADERS	=\
     server/http/HTTPClient.hpp\
     server/http/HTTPClientData.hpp\
     server/http/HTTPParser.hpp\
+	server/http/ft_utils.hpp\
     server/http/HTTPResponder.hpp\
     server/terminal/TerminalClient.hpp\
     server/terminal/TerminalResponder.hpp\
