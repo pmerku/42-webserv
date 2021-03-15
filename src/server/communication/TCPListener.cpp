@@ -3,6 +3,8 @@
 //
 
 #include "server/communication/TCPListener.hpp"
+#include "server/global/GlobalLogger.hpp"
+#include "utils/ErrorThrow.hpp"
 #include <unistd.h>
 #include <fcntl.h>
 
@@ -23,7 +25,8 @@ void TCPListener::start() {
 
 	_fd = ::socket(AF_INET, SOCK_STREAM, 0);
 	if (_fd < 0) {
-		throw FailedToListen();
+		globalLogger.logItem(logger::ERROR, "Socket opening failed!");
+		ERROR_THROW(FailedToListen());
 	}
 
 	// set socket options
@@ -35,13 +38,15 @@ void TCPListener::start() {
 	if (::bind(_fd, reinterpret_cast<struct sockaddr *>(&svr_addr), sizeof(svr_addr)) == -1) {
 		::close(_fd);
 		_fd = -1;
-		throw FailedToListen();
+		globalLogger.logItem(logger::ERROR, "Failed to bind socket to local network!");
+		ERROR_THROW(FailedToListen());
 	}
 
 	if (::listen(_fd, _backlog) == -1) {
 		::close(_fd);
 		_fd = -1;
-		throw FailedToListen();
+		globalLogger.logItem(logger::ERROR, "Failed to listen on port!");
+		ERROR_THROW(FailedToListen());
 	}
 }
 
@@ -51,7 +56,8 @@ HTTPClient *TCPListener::acceptClient() {
 
 	int client_fd = accept(_fd, (struct sockaddr *) &cli_addr, &sin_len);
 	if (client_fd == -1) {
-		throw FailedToAccept();
+		globalLogger.logItem(logger::ERROR, "Client not accepted");
+		ERROR_THROW(FailedToAccept());
 	}
 
 	fcntl(client_fd, F_SETFL, O_NONBLOCK);
