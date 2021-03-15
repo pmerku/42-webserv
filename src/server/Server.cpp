@@ -1,132 +1,180 @@
 //
-// Created by jelle on 3/2/2021.
+// Created by jelle on 3/12/2021.
 //
 
 #include "server/Server.hpp"
-#include "server/listeners/TCPListener.hpp"
-#include <unistd.h>
+#include "server/global/GlobalConfig.hpp"
 #include "utils/ErrorThrow.hpp"
+#include <unistd.h>
 
 using namespace NotApache;
 
-Server::Server(): _handlerBalance(0), _readFDSet(), _writeFDSet() {}
-
-FD	Server::_maxFD() {
-	FD	max = -1;
-	for (std::vector<AListener*>::iterator i = _listeners.begin(); i != _listeners.end(); ++i) {
-		FD	currentFD = (*i)->getFD();
-		if (currentFD > max) max = currentFD;
-	}
-	for (std::vector<Client*>::iterator i = _clients.begin(); i != _clients.end(); ++i) {
-		FD	currentFD = (*i)->getReadFD();
-		if (currentFD > max) max = currentFD;
-	}
-	return max;
+Server::SelectReturn Server::_runSelect() {
+	// TODO oob tcp data?
+	// TODO do timeouts
+	int ret = ::select(_maxFd + 1, &_readFdSet, &_writeFdSet, 0, 0);
+	if (ret == 0)
+		return TIMEOUT;
+	else if (ret == -1)
+		return ERROR;
+	return SUCCESS;
 }
 
-void Server::serve() {
+void Server::_createFdSets() {
+	// clear sets
+	_maxFd = 0;
+	FD_ZERO(&_writeFdSet);
+	FD_ZERO(&_readFdSet);
+
+	// add listeners (sockets)
+	for (std::vector<TCPListener*>::iterator i = _listeners.begin(); i != _listeners.end(); ++i) {
+		FD	fd = (*i)->getFD();
+		if (fd > _maxFd) _maxFd = fd;
+		FD_SET(fd, &_readFdSet);
+	}
+
+	// add event bus & term client
+	if (_eventBus.getReadFD() > _maxFd) _maxFd = _eventBus.getReadFD();
+	FD_SET(_eventBus.getReadFD(), &_readFdSet);
+	if (!_termClient.isClosed()) {
+		if (_termClient.getFd() > _maxFd) _maxFd = _termClient.getFd();
+		FD_SET(_termClient.getFd(), &_readFdSet);
+	}
+
+	// add clients
+	for (std::list<HTTPClient*>::iterator i = _clients.begin(); i != _clients.end(); ++i) {
+		if ((*i)->connectionState == READING || (*i)->connectionState == WRITING) {
+			FD	fd = (*i)->getFd();
+			if (fd > _maxFd) _maxFd = fd;
+			if ((*i)->connectionState == READING)
+				FD_SET(fd, &_readFdSet);
+			else if ((*i)->connectionState == WRITING)
+				FD_SET(fd, &_writeFdSet);
+		}
+	}
+}
+
+void Server::_handleSelect() {
+	// check event bus for events
+	if (FD_ISSET(_eventBus.getReadFD(), &_readFdSet)) {
+		ServerEventBus::Events	event = _eventBus.getPostedEvent();
+		globalLogger.logItem(logger::DEBUG, "Event bus triggered");
+		if (event == ServerEventBus::CLIENT_STATE_UPDATED)
+			return; // will loop around and recreate the sets
+	}
+
+	// check if new clients
+	for (std::vector<TCPListener*>::iterator i = _listeners.begin(); i != _listeners.end(); ++i) {
+		FD	fd = (*i)->getFD();
+		if (FD_ISSET(fd, &_readFdSet)) {
+			// accept new client
+			HTTPClient	*newClient = (*i)->acceptClient();
+			globalLogger.logItem(logger::DEBUG, "Client connected");
+			_clients.push_back(newClient);
+		}
+	}
+
+	// check client read/write
+	for (std::list<HTTPClient*>::iterator i = _clients.begin(); i != _clients.end(); ++i) {
+		FD	fd = (*i)->getFd();
+		if (FD_ISSET(fd, &_readFdSet)) {
+			_handlers.handleClient(**i, HandlerHolder::READ);
+		}
+		else if (FD_ISSET(fd, &_writeFdSet)) {
+			_handlers.handleClient(**i, HandlerHolder::WRITE);
+		}
+	}
+
+	// check stdin for terminal data
+	if (FD_ISSET(_termClient.getFd(), &_readFdSet)) {
+		TerminalClient::TerminalCommandState	parseState = _termClient.readNewData();
+		while (parseState == TerminalClient::FOUND_LINE) {
+			_termResponder.respond(_termClient.takeLine());
+			parseState = _termClient.parseState();
+		}
+	}
+}
+
+void Server::_clientCleanup() {
+	for (std::list<HTTPClient*>::iterator i = _clients.begin(); i != _clients.end(); ++i) {
+		// if closed & is not being handled. then set isHandled to true and close client
+		(*i)->isHandled.lock();
+		bool isClosed = (*i)->connectionState == CLOSED;
+		if (isClosed) {
+			if ((*i)->isHandled.get())
+				isClosed = false;
+			else
+				(*i)->isHandled.setNoLock(true);
+		}
+		(*i)->isHandled.unlock();
+
+		if (!isClosed)
+			continue;
+		globalLogger.logItem(logger::DEBUG, "Closed client connection");
+		close((*i)->getFd());
+		delete *i;
+		*i = 0;
+	}
+	_clients.remove(0);
+}
+
+void Server::startServer(config::RootBlock *c) {
+	configuration = c;
+
 	// start listeners
-	for (std::vector<AListener*>::iterator first = _listeners.begin(); first != _listeners.end(); ++first) {
-		try {
-			(*first)->start();
-		}
-		catch (TCPListener::FailedToListen &e) {
-			ERROR_THROW(PortBindingFailed());
-		}
+	for (std::vector<TCPListener*>::iterator i = _listeners.begin(); i != _listeners.end(); ++i) {
+		globalLogger.logItem(logger::INFO, "Starting listener");
+		(*i)->start();
 	}
-	logItem(logger::INFO, "Server successfully listening");
 
+	globalLogger.logItem(logger::INFO, "Initialisation finished, now open for connections");
 	while (true) {
-		// make sets
-		_createFDSets();
+		// cleanup old clients (if any)
+		_clientCleanup();
 
-		// timeout
-		timeval	timeout = {};
-		timeout.tv_sec = 1, timeout.tv_usec = 0;
+		// create fd sets for select
+		_createFdSets();
 
-		// wait for FD events
-		if (::select(_maxFD() + 1, &_readFDSet, &_writeFDSet, NULL, &timeout) == -1) {
-			ERROR_THROW(ConnectionListeningFailed());
+		// run select
+		SelectReturn	ret = _runSelect();
+		if (ret == ERROR)
+			throw IoSelectingFailed();
+		else if (ret == TIMEOUT) {
+			// TODO handle timeouts
+			continue;
 		}
 
-		// accept new connections
-		for (std::vector<AListener*>::iterator listener = _listeners.begin(); listener != _listeners.end(); ++listener) {
-			if (FD_ISSET((*listener)->getFD(), &_readFDSet)) {
-				try {
-					Client *newClient = (*listener)->acceptClient();
-					_clients.push_back(newClient);
-				} catch (TCPListener::FailedToAccept &e) {
-					logItem(logger::WARNING, "Failed to accept new client");
-				}
-			}
-		}
-
-		for (std::vector<Client*>::iterator c = _clients.begin(); c != _clients.end(); ++c) {
-			if (FD_ISSET((*c)->getReadFD(), &_readFDSet) && (*c)->getState() == READING) {
-				// handle read
-				if (_handlerBalance + 1 >= _handlers.size()) _handlerBalance = 0;
-				else _handlerBalance++;
-				(_handlers[_handlerBalance])->read(**c);
-			}
-			else if (FD_ISSET((*c)->getWriteFD(), &_writeFDSet) && (*c)->getState() == WRITING) {
-				// handle write
-				if (_handlerBalance + 1 >= _handlers.size()) _handlerBalance = 0;
-				else _handlerBalance++;
-				(_handlers[_handlerBalance])->write(**c);
-			}
-			else {
-				(*c)->timeout();
-			}
-		}
+		// handle select output
+		_handleSelect();
 	}
 }
 
-void Server::addListener(AListener *listener) {
-	listener->setLogger(*_logger);
+void Server::addListener(TCPListener *listener) {
 	_listeners.push_back(listener);
 }
 
 void Server::addHandler(AHandler *handler) {
-	handler->setLogger(*_logger);
-	handler->setParsers(&_parsers);
-	handler->setResponders(&_responders);
-	_handlers.push_back(handler);
+	handler->setParser(&_httpParser);
+	handler->setResponder(&_httpResponder);
+	handler->setEventBus(&_eventBus);
+	_handlers.addHandler(handler);
 }
 
-void Server::addParser(AParser *parser) {
-	_parsers.push_back(parser);
-}
-
-void Server::addResponder(AResponder *responder) {
-	_responders.push_back(responder);
-}
-
-void Server::_createFDSets() {
-	FD_ZERO(&_readFDSet);
-	FD_ZERO(&_writeFDSet);
-	for (std::vector<AListener*>::iterator i = _listeners.begin(); i != _listeners.end(); ++i)
-		FD_SET((*i)->getFD(), &_readFDSet);
-	std::vector<std::vector<Client*>::iterator>	toDelete;
-	for (std::vector<Client*>::iterator i = _clients.begin(); i != _clients.end(); ++i) {
-		if ((*i)->getState() == READING) FD_SET((*i)->getReadFD(), &_readFDSet);
-		else if ((*i)->getState() == WRITING) FD_SET((*i)->getWriteFD(), &_writeFDSet);
-		else {
-			// remove client if closed
-			toDelete.push_back(i);
-		}
-	}
-	for (std::vector<std::vector<Client*>::iterator>::iterator i = toDelete.begin(); i != toDelete.end(); ++i) {
-		delete **i;
-		_clients.erase(*i);
-	}
+void Server::setLogger(logger::Logger &logger) {
+	globalLogger.setLogger(logger);
 }
 
 Server::~Server() {
-	for (std::vector<Client*>::iterator i = _clients.begin(); i != _clients.end(); ++i) {
-		if ((*i)->getType() != TERMINAL) delete *i;
-	}
-	for (std::vector<AListener*>::iterator i = _listeners.begin(); i != _listeners.end(); ++i) delete *i;
-	for (std::vector<AHandler*>::iterator i = _handlers.begin(); i != _handlers.end(); ++i) delete *i;
-	for (std::vector<AResponder*>::iterator i = _responders.begin(); i != _responders.end(); ++i) delete *i;
-	for (std::vector<AParser*>::iterator i = _parsers.begin(); i != _parsers.end(); ++i) delete *i;
+	// listeners
+	for (std::vector<TCPListener*>::iterator i = _listeners.begin(); i != _listeners.end(); ++i)
+		delete *i;
+	// left over clients
+	for (std::list<HTTPClient*>::iterator i = _clients.begin(); i != _clients.end(); ++i)
+		delete *i;
+	// other
+	delete configuration;
+}
+
+Server::Server(): _readFdSet(), _writeFdSet(), _maxFd(), _termClient(STDIN_FILENO) {
+
 }

@@ -5,29 +5,29 @@
 #ifndef AHANDLER_HPP
 #define AHANDLER_HPP
 
-#include "log/Loggable.hpp"
-#include "server/Client.hpp"
-#include "server/parsers/AParser.hpp"
-#include "server/responders/AResponder.hpp"
+#include "server/http/HTTPClient.hpp"
+#include "server/http/HTTPParser.hpp"
+#include "server/http/HTTPResponder.hpp"
+#include "server/communication/ServerEventBus.hpp"
 
 namespace NotApache {
 	///	Handles the read and write of a client connection
-	class AHandler: public logger::ILoggable {
+	class AHandler {
 	protected:
-		std::vector<AParser*>		*_parsers;
-		std::vector<AResponder*>	*_responders;
+		HTTPParser		*_parser;
+		HTTPResponder	*_responder;
+		ServerEventBus	*_eventBus;
 
 	public:
 		AHandler();
 		virtual ~AHandler();
 
-		void	respond(Client &client);
+		virtual void	read(HTTPClient &client) = 0;
+		virtual void	write(HTTPClient &client) = 0;
 
-		virtual void	read(Client &client) = 0;
-		virtual void	write(Client &client) = 0;
-
-		void setParsers(std::vector<AParser*> *parsers);
-		void setResponders(std::vector<AResponder*> *responders);
+		void setParser(HTTPParser *parser);
+		void setResponder(HTTPResponder *responder);
+		void setEventBus(ServerEventBus *eventBus);
 	};
 }
 

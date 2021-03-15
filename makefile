@@ -53,19 +53,22 @@ SRC	=\
 	config/validators/BooleanValidator.cpp\
 	config/validators/Unique.cpp\
 	utils/isSpace.cpp\
+	utils/mutex.cpp\
+	utils/AThread.cpp\
 	server/handlers/AHandler.cpp\
 	server/handlers/StandardHandler.cpp\
-	server/listeners/TCPListener.cpp\
-	server/listeners/TerminalListener.cpp\
-	server/parsers/AParser.cpp\
-	server/parsers/HTTPParser.cpp\
-	server/parsers/TerminalParser.cpp\
-	server/responders/AResponder.cpp\
-	server/responders/HTTPResponder.cpp\
-	server/responders/TerminalResponder.cpp\
-	server/Client.cpp\
-	server/Server.cpp\
-	server/TerminalClient.cpp
+	server/handlers/HandlerHolder.cpp\
+	server/handlers/ThreadHandler.cpp\
+	server/communication/TCPListener.cpp\
+	server/communication/ServerEventBus.cpp\
+	server/http/HTTPClient.cpp\
+	server/http/HTTPClientData.cpp\
+	server/http/HTTPParser.cpp\
+	server/http/HTTPResponder.cpp\
+	server/terminal/TerminalClient.cpp\
+	server/terminal/TerminalResponder.cpp\
+	server/globals.cpp\
+	server/Server.cpp
 
 HEADERS	=\
 	log/Loggable.hpp\
@@ -89,21 +92,24 @@ HEADERS	=\
     config/validators/Unique.hpp\
     config/ParseExceptions.hpp\
     utils/isSpace.hpp\
+    utils/mutex.hpp\
+    utils/AThread.hpp\
 	server/handlers/AHandler.hpp\
-	server/handlers/StandardHandler.hpp\
-	server/listeners/AListener.hpp\
-	server/listeners/TCPListener.hpp\
-	server/listeners/TerminalListener.hpp\
-	server/parsers/AParser.hpp\
-	server/parsers/HTTPParser.hpp\
-	server/parsers/TerminalParser.hpp\
-	server/responders/AResponder.hpp\
-	server/responders/HTTPResponder.hpp\
-	server/responders/TerminalResponder.hpp\
-	server/Client.hpp\
-	server/Server.hpp\
-	server/ServerTypes.hpp\
-	server/TerminalClient.hpp\
+    server/handlers/StandardHandler.hpp\
+    server/handlers/HandlerHolder.hpp\
+    server/handlers/ThreadHandler.hpp\
+    server/communication/TCPListener.hpp\
+    server/communication/ServerEventBus.hpp\
+    server/http/HTTPClient.hpp\
+    server/http/HTTPClientData.hpp\
+    server/http/HTTPParser.hpp\
+    server/http/HTTPResponder.hpp\
+    server/terminal/TerminalClient.hpp\
+    server/terminal/TerminalResponder.hpp\
+    server/global/GlobalConfig.hpp\
+    server/global/GlobalLogger.hpp\
+    server/ServerTypes.hpp\
+    server/Server.hpp\
 	utils/ErrorThrow.hpp
 
 # Fix sources and headers
