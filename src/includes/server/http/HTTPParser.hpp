@@ -14,22 +14,20 @@ namespace NotApache {
 		HTTPClientRequest*		_R;
 	
 	public:
-		enum e_ret {
-			OK,
-			ERROR
-		};
 		enum ParseState {
+			READY_FOR_WRITE,
+			ERROR,
 			UNFINISHED,
-			READY_FOR_WRITE
+			OK
 		};
 
-		ParseState				parse(HTTPClient &client);
-		int						parseRequest(std::string request);
-		int						parseHeaders(std::string line);
-		int						parseRequestLine(std::string reqLine);
-		int						parseBody(std::string line);
+		ParseState		parse(HTTPClient &client);
+		ParseState		parseRequest(std::string request);
+		ParseState		parseHeaders(std::string line);
+		ParseState		parseRequestLine(std::string reqLine);
+		ParseState		parseBody(std::string line);
+		ParseState		parseChunkedBody(std::string request);
 	};
-
 }
 
 #endif //HTTPPARSER_HPP

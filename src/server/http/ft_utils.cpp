@@ -2,6 +2,33 @@
 
 namespace ft
 {
+	size_t		stoh(const std::string& str)
+	{
+		char c;
+		size_t i = 0;
+		size_t ret = 0;
+		size_t abc = 10;
+		
+		while (str[i] == ' ')
+			i++;
+		while (i < str.length())
+		{
+			if (std::isdigit(str[i]))
+				ret = ret * 16 + (str[i] - '0');
+			else {
+				c = std::toupper(str[i]);
+				while (c != 'A')
+				{
+					--c;
+					++abc;
+				}
+				ret = ret * 16 + abc;
+			}
+			i++;
+		}
+		return ret;
+	}
+
 	size_t		stoi(const std::string& str)
 	{
 		size_t ret = 0;

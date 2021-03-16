@@ -5,6 +5,8 @@
 
 namespace ft
 {
+	size_t							stoh(const std::string& str);
+
 	size_t							stoi(const std::string& str);
 	
 	size_t							atoi(const char str);

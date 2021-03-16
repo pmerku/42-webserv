@@ -5,22 +5,60 @@
 #include "server/http/HTTPParser.hpp"
 #include "server/global/GlobalLogger.hpp"
 
+#include <sstream>
+
 using namespace NotApache;
 
-HTTPParser::ParseState HTTPParser::parse(HTTPClient &client) {
+HTTPParser::ParseState		 HTTPParser::parse(HTTPClient& client) {
 	_R = &client.data.request;
-	parseRequest(_R->_rawRequest);
+	
+	if (_R->_chunked)
+		return (parseChunkedBody(_R->_rawRequest));
+	else
+		return (parseRequest(_R->_rawRequest));
+}
+
+HTTPParser::ParseState		HTTPParser::parseChunkedBody(std::string request) {
+	size_t SOB = 0; // Start Of Body
+
+	SOB = request.find_first_of("\r\n");
+	size_t chunkSize = ft::stoh(request.substr(0, SOB));
+	SOB+=2;
+	if (chunkSize > request.length()-SOB)
+		return ERROR;
+
+	_R->_body += request.substr(SOB, chunkSize);
+	_R->_bodySize += chunkSize;
+
+	if (request.rfind("\r\n0\r\n\r\n") != std::string::npos) {
+		globalLogger.logItem(logger::INFO, "Succesfully parsed chunked body");
+		return READY_FOR_WRITE;
+	}
+	else {
+		globalLogger.logItem(logger::INFO, "UNFINISHED");
+		_R->_rawRequest.clear();
+		return UNFINISHED;
+	}
+}
+
+HTTPParser::ParseState		HTTPParser::parseBody(std::string request) {
+	size_t EOB = 0; // End Of Body
+
+	_R->_bodySize = ft::stoi(_R->_headers[CONTENT_LENGTH]);
+	EOB = request.rfind("\r\n");
+	if (EOB == std::string::npos)
+		return ERROR;
+	request = request.substr(0, EOB);
+
+	if (request.length() != _R->_bodySize) {
+		globalLogger.logItem(logger::ERROR, "Body size doesn't match");
+		return ERROR;
+	}
+	_R->_body += request;
 	return READY_FOR_WRITE;
 }
 
-
-int		HTTPParser::parseBody(std::string line) {
-	_R->_body = line;
-	return OK;
-}
-
-
-int		HTTPParser::parseHeaders(std::string line) {
+HTTPParser::ParseState		HTTPParser::parseHeaders(std::string line) {
 	std::vector<std::string> headers = ft::split(line, "\r\n");
 
 	for (size_t i = 0; i < headers.size(); ++i) {
@@ -44,8 +82,6 @@ int		HTTPParser::parseHeaders(std::string line) {
 			// ^ Set header ^
 	}
 
-
-
 	std::map<e_headers, std::string>::iterator it = _R->_headers.find(TRANSFER_ENCODING);
 	if (it != _R->_headers.end() && it->second == "chunked")
 		_R->_chunked = true;
@@ -61,8 +97,7 @@ int		HTTPParser::parseHeaders(std::string line) {
 	return OK;
 }
 
-
-int		HTTPParser::parseRequestLine(std::string reqLine) {
+HTTPParser::ParseState		HTTPParser::parseRequestLine(std::string reqLine) {
 	// CHECKING GLOBAL FORMAT
 	size_t spaces = ft::countWS(reqLine);
     std::vector<std::string> parts = ft::split(reqLine, " ");
@@ -108,11 +143,9 @@ int		HTTPParser::parseRequestLine(std::string reqLine) {
 	return OK;
 }
 
-
-int		HTTPParser::parseRequest(std::string request) {
+HTTPParser::ParseState		HTTPParser::parseRequest(std::string request) {
 	size_t EOR = 0; // End Of Requestline
 	size_t EOH = 0; // End Of Headerfield
-	size_t EOB = 0; // End Of Body
 
 	EOR = request.find("\r\n");
 	if (EOR == std::string::npos) {
@@ -120,34 +153,24 @@ int		HTTPParser::parseRequest(std::string request) {
 		globalLogger.logItem(logger::DEBUG, "No \"\\r\\n\" in request");
 		return UNFINISHED; //or error?
 	}
-	if (parseRequestLine(request.substr(0, EOR)))
+	if (parseRequestLine(request.substr(0, EOR)) == ERROR)
 		return ERROR;
 	EOR += 2;
 
 	EOH = request.find("\r\n\r\n", EOR);
+
 	if (EOH == std::string::npos) {
 		globalLogger.logItem(logger::INFO, "Request only has request line");
-		return OK;
+		return READY_FOR_WRITE;
 	}
-	else if (parseHeaders(request.substr(EOR, EOH-EOR))) 
+	else if (parseHeaders(request.substr(EOR, EOH-EOR)) == ERROR) 
 		return ERROR;
 	EOH += 4;
 
-	if (_R->_chunked) {
-		size_t end = request.rfind("\r\n");
-		EOB = request.rfind("\r\n", end-1)+2;
-		std::cout << "len: " << request.length() << std::endl;
-		std::cout << "EOB: " << EOB << std::endl;
-		std::cout << "end: " << end << std::endl;
-		std::cout << "substr: " << request.substr(EOB, end-EOB) << std::endl;
-		_R->_bodySize = ft::stoi(request.substr(EOB, end-EOB));
-		if (_R->_bodySize != 0) {
-			globalLogger.logItem(logger::INFO, "UNFINISHED");
-			//ret = UNFINISHED;
-		}
-	}
-
-	if (_R->_headers.find(CONTENT_LENGTH) != _R->_headers.end())
-		parseBody(request.substr(EOH, ft::stoi(_R->_headers[CONTENT_LENGTH])));
-	return OK;
+	if (_R->_chunked)
+		return (parseChunkedBody(request.substr(EOH)));
+	else if (_R->_headers.find(CONTENT_LENGTH) != _R->_headers.end())
+		return (parseBody(request.substr(EOH)));
+	else
+		return READY_FOR_WRITE;
 }
