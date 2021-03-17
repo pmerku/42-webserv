@@ -52,7 +52,7 @@ namespace NotApache {
 		size_t								_bodySize;
 		std::map<std::string, e_method>		_methodMap;
 		std::map<std::string, e_headers>	_headerMap;
-		int									_error_code;
+		int									_statusCode;
 		bool								_chunked;
 
 	public:

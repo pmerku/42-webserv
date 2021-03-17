@@ -108,7 +108,7 @@ namespace NotApache
 
 using namespace NotApache;
 
-HTTPClientRequest::HTTPClientRequest(): _rawRequest(), _method(), _uri(), _version(), _headers(), _body(), _bodySize(), _methodMap(), _headerMap(), _error_code(), _chunked(false) {
+HTTPClientRequest::HTTPClientRequest(): _rawRequest(), _method(), _uri(), _version(), _headers(), _body(), _bodySize(), _methodMap(), _headerMap(), _statusCode(), _chunked(false) {
 	_methodMap["GET"] = GET;
 	_methodMap["HEAD"] = HEAD;
 	_methodMap["POST"] = POST;
