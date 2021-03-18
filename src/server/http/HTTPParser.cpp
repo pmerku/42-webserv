@@ -21,21 +21,46 @@ HTTPParser::ParseState		 HTTPParser::parse(HTTPClient& client) {
 HTTPParser::ParseState		HTTPParser::parseChunkedBody(std::string request) {
 	size_t SOB = 0; // Start Of Body
 
+	// Check for terminating character
 	SOB = request.find_first_of("\r\n");
-	size_t chunkSize = ft::stoh(request.substr(0, SOB));
-	SOB+=2;
-	
-	if (chunkSize > request.length()-SOB)
-		return UNFINISHED; // ERROR?
+	if (SOB == std::string::npos)
+	{
+		globalLogger.logItem(logger::INFO, "No terminating character in body");
+		_R->_statusCode = 400; // 400 (Bad Request)
+		return ERROR;
+	}
 
+	// Get chunksize
+	std::string size = request.substr(0, SOB);
+	if (size[0] != '0' && size[1] != 'x')
+	{
+		globalLogger.logItem(logger::INFO, "Failed to parse chunksize");
+		_R->_statusCode = 400; // 400 (Bad Request)
+		return ERROR;
+	}
+	size_t chunkSize = ft::stoh(size.substr(2));
+	SOB+=2;
+
+	// Check if chunksize matches body
+	if (request.rfind("\r\n")-SOB != chunkSize && request.rfind("\r\n0\r\n\r\n")-SOB != chunkSize)
+	{
+		globalLogger.logItem(logger::INFO, "Body invalid");
+		_R->_statusCode = 400; // 400 (Bad Request)
+		return ERROR;
+	}
+
+	// Append body
 	_R->_body += request.substr(SOB, chunkSize);
 	_R->_bodySize += chunkSize;
 
-	if (request.rfind("\r\n0\r\n\r\n") != std::string::npos) {
+	// Check if body is complete
+	if (request.rfind("\r\n0\r\n\r\n") != std::string::npos) // 0x0?
+	{
 		globalLogger.logItem(logger::INFO, "Succesfully parsed chunked body");
 		return READY_FOR_WRITE;
 	}
-	else {
+	else
+	{
 		globalLogger.logItem(logger::INFO, "UNFINISHED");
 		_R->_rawRequest.clear();
 		return UNFINISHED;

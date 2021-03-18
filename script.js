@@ -15,13 +15,11 @@ s.on('close', () => {
 })
 
 s.on('connect', async () => {
-    send('POST / HTTP/1.1\r\n');
+    send('GET / HTTP/1.1\r\n');
     await sleep(1);
-	send('TRANSFER-ENCODING: chunked\r\n\r\n9\r\nabcdef');
+	send('TRANSFER-ENCODING: chunked\r\n\r\n0x9\r\nabcdefghi\r\n');
 	await sleep(1);
-	send('ghi\r\n');
-	await sleep(1);
-	send('7\r\n1234567\r\n0\r\n\r\n');
+	send('0x7\r\n1234567\r\n0\r\n\r\n');
 
 	//send('POST / HTTP/1.1\r\nTRANSFER-ENCODING: chunked\r\n\r\n9\r\nabcdefghi\r\n');
     //await sleep(2);
