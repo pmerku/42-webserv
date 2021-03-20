@@ -7,5 +7,6 @@
 using namespace NotApache;
 
 void HTTPResponder::generateResponse(HTTPClient &client) {
-	client.data.response.setResponse("Hello world\n");
+	this->_response.setResponse(client);
+	client.data.response.setResponse(this->_response.getResponse());
 }
