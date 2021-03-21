@@ -9,8 +9,6 @@
 
 namespace utils {
 
-//	std::string intToString(int x);
-
 	std::string intToString(int x);
 
 } // namespace utils
