@@ -7,12 +7,13 @@
 #include "utils/intToString.hpp"
 #include "utils/localTime.hpp"
 #include "utils/ErrorThrow.hpp"
+#include "utils/CreateMap.hpp"
 
 using namespace NotApache;
 
 // TODO maybe wrap the map into a singleton so clang-tidy doesn't complain with static storage
 const std::map<int, std::string> ResponseBuilder::_statusMap =
-		CreateMap<int, std::string>
+		utils::CreateMap<int, std::string>
 		(100, "Continue")
 		(101, "Switching Protocols")
 		(102, "Processing")
@@ -129,22 +130,25 @@ std::string ResponseBuilder::endLine() {
 }
 
 const std::string &ResponseBuilder::build() {
-	// HTTP/1.1 {code} {string value} /r/n
+	// HTTP/1.1 {code} {string value} \r\n
 	_response = _protocol;
 	_response += " " + _statusLine.first;
 	_response += " " + _statusLine.second;
 	_response += endLine();
 
-	// {Header}: {Header value} /r/n
+	// {Header}: {Header value} \r\n
 	for (std::map<std::string, std::string>::iterator it = _headerMap.begin(); it != _headerMap.end(); it++) {
-		_response += it->first + ": " + it->second;
+		if (!it->first.empty() && !it->second.empty())
+			_response += it->first + ": " + it->second;
 		_response += endLine();
 	}
 
-	// /r/n {body} /r/n
-	_response += endLine();
-	_response += _body;
-	_response += endLine();
+	// \r\n {body} \r\n
+	if (!_body.empty()) {
+		_response += endLine();
+		_response += _body;
+		_response += endLine();
+	}
 
 	return _response;
 }
