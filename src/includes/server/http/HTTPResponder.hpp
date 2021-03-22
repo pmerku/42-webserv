@@ -6,16 +6,12 @@
 #define HTTPRESPONDER_HPP
 
 #include "server/http/HTTPClient.hpp"
-#include "server/http/response/AResponse.hpp"
 
 namespace NotApache {
 
 	class HTTPResponder {
-	private:
-		response::AResponse _response;
-
 	public:
-		void	generateResponse(HTTPClient &client);
+		static void	generateResponse(HTTPClient &client);
 	};
 
 }
