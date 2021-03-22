@@ -13,87 +13,87 @@ using namespace CGIenv;
 ENVBuilder::ENVBuilder() { }
 
 ENVBuilder &ENVBuilder::AUTH_TYPE(const std::string &value) {
-	_metaVariables.insert(std::make_pair("AUTH_TYPE", value));
+	_metaVariables["AUTH_TYPE"] = value;
 	return *this;
 }
 
 ENVBuilder &ENVBuilder::CONTENT_LENGTH(const std::string &value) {
-	_metaVariables.insert(std::make_pair("CONTENT_LENGTH", value));
+	_metaVariables["CONTENT_LENGTH"] = value;
 	return *this;
 }
 
 ENVBuilder &ENVBuilder::CONTENT_TYPE(const std::string &value) {
-	_metaVariables.insert(std::make_pair("CONTENT_TYPE", value));
+	_metaVariables["CONTENT_TYPE"] = value;
 	return *this;
 }
 
 ENVBuilder &ENVBuilder::GATEWAY_INTERFACE(const std::string &value) {
-	_metaVariables.insert(std::make_pair("GATEWAY_INTERFACE", value));
+	_metaVariables["GATEWAY_INTERFACE"] = value;
 	return *this;
 }
 
 ENVBuilder &ENVBuilder::PATH_INFO(const std::string &value) {
-	_metaVariables.insert(std::make_pair("PATH_INFO", value));
+	_metaVariables["PATH_INFO"] = value;
 	return *this;
 }
 
 ENVBuilder &ENVBuilder::PATH_TRANSLATED(const std::string &value) {
-	_metaVariables.insert(std::make_pair("PATH_TRANSLATED", value));
+	_metaVariables["PATH_TRANSLATED"] = value;
 	return *this;
 }
 
 ENVBuilder &ENVBuilder::QUERY_STRING(const std::string &value) {
-	_metaVariables.insert(std::make_pair("QUERY_STRING", value));
+	_metaVariables["QUERY_STRING"] = value;
 	return *this;
 }
 
 ENVBuilder &ENVBuilder::REMOTE_ADDR(const std::string &value) {
-	_metaVariables.insert(std::make_pair("REMOTE_ADDR", value));
+	_metaVariables["REMOTE_ADDR"] = value;
 	return *this;
 }
 
 ENVBuilder &ENVBuilder::REMOTE_INDENT(const std::string &value) {
-	_metaVariables.insert(std::make_pair("REMOTE_INDENT", value));
+	_metaVariables["REMOTE_INDENT"] = value;
 	return *this;
 }
 
 ENVBuilder &ENVBuilder::REMOTE_USER(const std::string &value) {
-	_metaVariables.insert(std::make_pair("REMOTE_USER", value));
+	_metaVariables["REMOTE_USER"] = value;
 	return *this;
 }
 
 ENVBuilder &ENVBuilder::REQUEST_METHOD(const std::string &value) {
-	_metaVariables.insert(std::make_pair("REQUEST_METHOD", value));
+	_metaVariables["REQUEST_METHOD"] = value;
 	return *this;
 }
 
 ENVBuilder &ENVBuilder::REQUEST_URI(const std::string &value) {
-	_metaVariables.insert(std::make_pair("REQUEST_URI", value));
+	_metaVariables["REQUEST_URI"] = value;
 	return *this;
 }
 
 ENVBuilder &ENVBuilder::SCRIPT_NAME(const std::string &value) {
-	_metaVariables.insert(std::make_pair("SCRIPT_NAME", value));
+	_metaVariables["SCRIPT_NAME"] = value;
 	return *this;
 }
 
 ENVBuilder &ENVBuilder::SERVER_NAME(const std::string &value) {
-	_metaVariables.insert(std::make_pair("SERVER_NAME", value));
+	_metaVariables["SERVER_NAME"] = value;
 	return *this;
 }
 
 ENVBuilder &ENVBuilder::SERVER_PORT(const std::string &value) {
-	_metaVariables.insert(std::make_pair("SERVER_PORT", value));
+	_metaVariables["SERVER_PORT"] = value;
 	return *this;
 }
 
 ENVBuilder &ENVBuilder::SERVER_PROTOCOL(const std::string &value) {
-	_metaVariables.insert(std::make_pair("SERVER_PROTOCOL", value));
+	_metaVariables["SERVER_PROTOCOL"] = value;
 	return *this;
 }
 
 ENVBuilder &ENVBuilder::SERVER_SOFTWARE(const std::string &value) {
-	_metaVariables.insert(std::make_pair("SERVER_SOFTWARE", value));
+	_metaVariables["SERVER_SOFTWARE"] = value;
 	return *this;
 }
 
