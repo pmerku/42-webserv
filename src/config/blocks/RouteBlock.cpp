@@ -157,3 +157,8 @@ bool RouteBlock::shouldDoFile() const {
 	throwNotParsed();
 	return _proxyUrl.empty();
 }
+
+bool RouteBlock::shouldDoCgi() const {
+	throwNotParsed();
+	return !_cgi.empty();
+}
