@@ -62,7 +62,6 @@ SRC	=\
 	server/handlers/ThreadHandler.cpp\
 	server/communication/TCPListener.cpp\
 	server/communication/ServerEventBus.cpp\
-	server/http/ENVBuilder.cpp\
 	server/http/HTTPClient.cpp\
 	server/http/HTTPClientData.cpp\
 	server/http/HTTPParser.cpp\
@@ -107,7 +106,6 @@ HEADERS	=\
     server/handlers/ThreadHandler.hpp\
     server/communication/TCPListener.hpp\
     server/communication/ServerEventBus.hpp\
-    server/http/ENVBuilder.hpp\
     server/http/HTTPClient.hpp\
     server/http/HTTPClientData.hpp\
     server/http/HTTPParser.hpp\
