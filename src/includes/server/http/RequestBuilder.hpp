@@ -7,29 +7,30 @@
 
 #include <string>
 #include <map>
+#include <vector>
 
 namespace NotApache {
 
 	class RequestBuilder {
 	private:
-		std::string 							_request;
-
 		std::string								_method;
 		std::string								_uri;
 		std::string								_protocol;
 		std::map<std::string, std::string>		_headerMap;
 		std::string 							_body;
 
-		static std::string endLine();
+		static const std::string				_endLine;
 
 	public:
+		static const std::vector<std::string>	methodArray;
+
 		RequestBuilder();
 		explicit RequestBuilder(const std::string &method);
 
 		RequestBuilder		&setURI(const std::string &path);
 		RequestBuilder		&setHeader(const std::string &key, const std::string &value);
 		RequestBuilder		&setBody(const std::string &data, size_t length);
-		const std::string	&build();
+		std::string			build();
 
 		class RequestBuilderException : public std::exception {
 		public:
