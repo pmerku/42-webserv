@@ -62,10 +62,12 @@ SRC	=\
 	server/handlers/ThreadHandler.cpp\
 	server/communication/TCPListener.cpp\
 	server/communication/ServerEventBus.cpp\
+	server/http/ENVBuilder.cpp\
 	server/http/HTTPClient.cpp\
 	server/http/HTTPClientData.cpp\
 	server/http/HTTPParser.cpp\
 	server/http/HTTPResponder.cpp\
+	server/http/RequestBuilder.cpp\
 	server/http/ResponseBuilder.cpp\
 	server/terminal/TerminalClient.cpp\
 	server/terminal/TerminalResponder.cpp\
@@ -98,16 +100,19 @@ HEADERS	=\
     utils/localTime.hpp\
     utils/mutex.hpp\
     utils/AThread.hpp\
+    utils/CreateMap.hpp\
 	server/handlers/AHandler.hpp\
     server/handlers/StandardHandler.hpp\
     server/handlers/HandlerHolder.hpp\
     server/handlers/ThreadHandler.hpp\
     server/communication/TCPListener.hpp\
     server/communication/ServerEventBus.hpp\
+    server/http/ENVBuilder.hpp\
     server/http/HTTPClient.hpp\
     server/http/HTTPClientData.hpp\
     server/http/HTTPParser.hpp\
     server/http/HTTPResponder.hpp\
+    server/http/RequestBuilder.hpp\
     server/http/ResponseBuilder.hpp\
     server/terminal/TerminalClient.hpp\
     server/terminal/TerminalResponder.hpp\
