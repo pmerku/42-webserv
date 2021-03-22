@@ -13,6 +13,7 @@ RequestBuilder::RequestBuilder() {
 }
 
 RequestBuilder::RequestBuilder(const std::string &method) {
+	// this could be made a std::vector or std::list to allow more methods
 	if (_method != "GET" || _method != "HEAD" || _method != "POST" || _method != "PUT")
 		ERROR_THROW(MethodError());
 	_method = method;
