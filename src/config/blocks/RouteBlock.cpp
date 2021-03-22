@@ -9,6 +9,7 @@
 #include "config/validators/Unique.hpp"
 #include "config/validators/MutuallyExclusive.hpp"
 #include "config/validators/BooleanValidator.hpp"
+#include "config/validators/HTTPMethodValidator.hpp"
 
 using namespace config;
 
@@ -18,8 +19,9 @@ const AConfigBlock::validatorsMapType	RouteBlock::_validators =
 		  .add(new ArgumentLength(1))
 		  .add(new Unique())
 		  .build())
-		.addKey("allowed_methods", ConfigValidatorListBuilder() // TODO method validator
+		.addKey("allowed_methods", ConfigValidatorListBuilder()
 		  .add(new ArgumentLength(0, 9))
+		  .add(new HTTPMethodValidator())
 		  .add(new Unique())
 		  .build())
 		.addKey("root", ConfigValidatorListBuilder() // TODO directory validator

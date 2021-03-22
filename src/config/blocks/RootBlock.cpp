@@ -19,7 +19,7 @@ const AConfigBlock::validatorsMapType	RootBlock::_validators =
 	  	.build();
 
 const AConfigBlock::validatorListType 	RootBlock::_blockValidators =
-		ConfigValidatorListBuilder() // TODO validate server duplicates
+		ConfigValidatorListBuilder()
 		.build();
 
 const std::string 						RootBlock::_allowedBlocks[] = { "server", "" };
