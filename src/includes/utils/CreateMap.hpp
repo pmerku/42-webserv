@@ -5,6 +5,8 @@
 #ifndef CREATEMAP_HPP
 #define CREATEMAP_HPP
 
+#include <map>
+
 namespace utils {
 
 	template<typename T, typename U>

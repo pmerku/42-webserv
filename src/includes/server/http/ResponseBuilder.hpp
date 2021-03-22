@@ -15,19 +15,17 @@ namespace NotApache {
 
 	class ResponseBuilder {
 	private:
-		std::string								_response;
-
 		std::string								_protocol;
 		std::pair<std::string, std::string>		_statusLine;
 		std::map<std::string, std::string>		_headerMap;
 		std::string								_body;
 
-		static const std::map<int, std::string>	_statusMap;
-
-		static std::string	endLine();
+		static const std::string				_endLine;
 		static std::string	convertTime(time_t currentTime);
 
 	public:
+		static const std::map<int, std::string>	statusMap;
+
 		ResponseBuilder();
 		explicit ResponseBuilder(const std::string &protocol);
 
@@ -35,7 +33,7 @@ namespace NotApache {
 		ResponseBuilder		&setHeader(const std::string &key, const std::string &value);
 		ResponseBuilder		&setBody(const std::string &data, size_t length);
 		ResponseBuilder		&setDate();
-		const std::string	&build();
+		std::string			build();
 
 		class ResponseBuilderException : public std::exception {
 		public:

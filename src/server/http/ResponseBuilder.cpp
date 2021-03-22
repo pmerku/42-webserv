@@ -11,8 +11,9 @@
 
 using namespace NotApache;
 
-// TODO maybe wrap the map into a singleton so clang-tidy doesn't complain with static storage
-const std::map<int, std::string> ResponseBuilder::_statusMap =
+const std::string ResponseBuilder::_endLine = "\r\n";
+
+const std::map<int, std::string> ResponseBuilder::statusMap =
 		utils::CreateMap<int, std::string>
 		(100, "Continue")
 		(101, "Switching Protocols")
@@ -87,8 +88,8 @@ ResponseBuilder::ResponseBuilder(const std::string &protocol) {
 }
 
 ResponseBuilder &ResponseBuilder::setStatus(int code) {
-	std::map<int, std::string>::const_iterator it = _statusMap.find(code);
-	if (it == _statusMap.end())
+	std::map<int, std::string>::const_iterator it = statusMap.find(code);
+	if (it == statusMap.end())
 		ERROR_THROW(StatusCodeError());
 	_statusLine.first = utils::intToString(it->first);
 	_statusLine.second = it->second;
@@ -96,12 +97,12 @@ ResponseBuilder &ResponseBuilder::setStatus(int code) {
 }
 
 ResponseBuilder &ResponseBuilder::setHeader(const std::string &key, const std::string &value) {
-	_headerMap.insert(std::make_pair(key, value));
+	_headerMap[key] = value;
 	return *this;
 }
 
 ResponseBuilder &ResponseBuilder::setBody(const std::string &data, size_t length) {
-	_headerMap.insert(std::make_pair("Content-Length", utils::intToString(length)));
+	setHeader("Content-Length", utils::intToString(length));
 	_body = data;
 	return *this;
 }
@@ -109,7 +110,7 @@ ResponseBuilder &ResponseBuilder::setBody(const std::string &data, size_t length
 ResponseBuilder &ResponseBuilder::setDate() {
 	struct timeval tv = {};
 	gettimeofday(&tv, NULL);
-	_headerMap.insert(std::make_pair("Date", convertTime(tv.tv_sec)));
+	setHeader("Date", convertTime(tv.tv_sec));
 	return *this;
 }
 
@@ -125,30 +126,26 @@ std::string ResponseBuilder::convertTime(time_t time) {
 	return std::string(date, ret) + "GMT";
 }
 
-std::string ResponseBuilder::endLine() {
-	return "\r\n";
-}
-
-const std::string &ResponseBuilder::build() {
+std::string	ResponseBuilder::build() {
 	// HTTP/1.1 {code} {string value} \r\n
-	_response = _protocol;
-	_response += " " + _statusLine.first;
-	_response += " " + _statusLine.second;
-	_response += endLine();
+	std::string response = _protocol;
+	response += " " + _statusLine.first;
+	response += " " + _statusLine.second;
+	response += _endLine;
 
 	// {Header}: {Header value} \r\n
 	for (std::map<std::string, std::string>::iterator it = _headerMap.begin(); it != _headerMap.end(); it++) {
 		if (!it->first.empty() && !it->second.empty())
-			_response += it->first + ": " + it->second;
-		_response += endLine();
+			response += it->first + ": " + it->second;
+		response += _endLine;
 	}
 
 	// \r\n {body} \r\n
 	if (!_body.empty()) {
-		_response += endLine();
-		_response += _body;
-		_response += endLine();
+		response += _endLine;
+		response += _body;
+		response += _endLine;
 	}
 
-	return _response;
+	return response;
 }
