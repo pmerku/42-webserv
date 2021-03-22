@@ -52,10 +52,11 @@ SRC	=\
 	config/validators/MutuallyExclusive.cpp\
 	config/validators/BooleanValidator.cpp\
 	config/validators/Unique.cpp\
+	utils/AThread.cpp\
 	utils/intToString.cpp\
 	utils/isSpace.cpp\
 	utils/mutex.cpp\
-	utils/AThread.cpp\
+	utils/strdup.cpp\
 	server/handlers/AHandler.cpp\
 	server/handlers/StandardHandler.cpp\
 	server/handlers/HandlerHolder.cpp\
@@ -94,12 +95,15 @@ HEADERS	=\
     config/validators/BooleanValidator.hpp\
     config/validators/Unique.hpp\
     config/ParseExceptions.hpp\
-    utils/intToString.hpp\
-    utils/isSpace.hpp\
-    utils/localTime.hpp\
-    utils/mutex.hpp\
     utils/AThread.hpp\
     utils/CreateMap.hpp\
+    utils/CreateVector.hpp\
+    utils/ErrorThrow.hpp\
+    utils/intToString.hpp\
+	utils/isSpace.hpp\
+	utils/localTime.hpp\
+	utils/mutex.hpp\
+	utils/strdup.hpp\
 	server/handlers/AHandler.hpp\
     server/handlers/StandardHandler.hpp\
     server/handlers/HandlerHolder.hpp\
@@ -117,8 +121,7 @@ HEADERS	=\
     server/global/GlobalConfig.hpp\
     server/global/GlobalLogger.hpp\
     server/ServerTypes.hpp\
-    server/Server.hpp\
-	utils/ErrorThrow.hpp
+    server/Server.hpp
 
 # Fix sources and headers
 OBJ				= $(patsubst %.cpp,%.o,$(SRC))
