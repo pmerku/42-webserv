@@ -5,9 +5,6 @@
 #ifndef RESPONSEBUILDER_HPP
 #define RESPONSEBUILDER_HPP
 
-#include <cstring>
-#include <cerrno>
-
 #include <ctime>
 #include <sys/time.h> // have to use C header for gettimeofday()
 
@@ -15,26 +12,6 @@
 #include <string>
 
 namespace NotApache {
-
-	template<typename T, typename U>
-	class CreateMap {
-	private:
-		std::map<T, U> _map;
-
-	public:
-		CreateMap(const T &key, const U &value) {
-			_map[key] = value;
-		}
-
-		CreateMap<T, U> &operator()(const T &key, const U &value) {
-			_map[key] = value;
-			return *this;
-		}
-
-		operator std::map<T, U>() {
-			return _map;
-		}
-	};
 
 	class ResponseBuilder {
 	private:
