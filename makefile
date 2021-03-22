@@ -62,12 +62,11 @@ SRC	=\
 	server/handlers/ThreadHandler.cpp\
 	server/communication/TCPListener.cpp\
 	server/communication/ServerEventBus.cpp\
-	server/http/response/AResponse.cpp\
-	server/http/response/ResponseBuilder.cpp\
 	server/http/HTTPClient.cpp\
 	server/http/HTTPClientData.cpp\
 	server/http/HTTPParser.cpp\
 	server/http/HTTPResponder.cpp\
+	server/http/ResponseBuilder.cpp\
 	server/terminal/TerminalClient.cpp\
 	server/terminal/TerminalResponder.cpp\
 	server/globals.cpp\
@@ -105,12 +104,11 @@ HEADERS	=\
     server/handlers/ThreadHandler.hpp\
     server/communication/TCPListener.hpp\
     server/communication/ServerEventBus.hpp\
-    server/http/response/AResponse.hpp\
-	server/http/response/ResponseBuilder.hpp\
     server/http/HTTPClient.hpp\
     server/http/HTTPClientData.hpp\
     server/http/HTTPParser.hpp\
     server/http/HTTPResponder.hpp\
+    server/http/ResponseBuilder.hpp\
     server/terminal/TerminalClient.hpp\
     server/terminal/TerminalResponder.hpp\
     server/global/GlobalConfig.hpp\
