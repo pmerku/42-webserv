@@ -52,6 +52,7 @@ SRC	=\
 	config/validators/MutuallyExclusive.cpp\
 	config/validators/BooleanValidator.cpp\
 	config/validators/Unique.cpp\
+	utils/intToString.cpp\
 	utils/isSpace.cpp\
 	utils/mutex.cpp\
 	utils/AThread.cpp\
@@ -65,6 +66,7 @@ SRC	=\
 	server/http/HTTPClientData.cpp\
 	server/http/HTTPParser.cpp\
 	server/http/HTTPResponder.cpp\
+	server/http/ResponseBuilder.cpp\
 	server/terminal/TerminalClient.cpp\
 	server/terminal/TerminalResponder.cpp\
 	server/globals.cpp\
@@ -91,7 +93,9 @@ HEADERS	=\
     config/validators/BooleanValidator.hpp\
     config/validators/Unique.hpp\
     config/ParseExceptions.hpp\
+    utils/intToString.hpp\
     utils/isSpace.hpp\
+    utils/localTime.hpp\
     utils/mutex.hpp\
     utils/AThread.hpp\
 	server/handlers/AHandler.hpp\
@@ -104,6 +108,7 @@ HEADERS	=\
     server/http/HTTPClientData.hpp\
     server/http/HTTPParser.hpp\
     server/http/HTTPResponder.hpp\
+    server/http/ResponseBuilder.hpp\
     server/terminal/TerminalClient.hpp\
     server/terminal/TerminalResponder.hpp\
     server/global/GlobalConfig.hpp\
