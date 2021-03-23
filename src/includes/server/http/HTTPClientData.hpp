@@ -9,7 +9,8 @@
 #include <map>
 
 namespace NotApache {
-	enum e_method {
+		enum e_method {
+		INVALID,
 		GET,
 		HEAD,
 		POST,
@@ -27,8 +28,6 @@ namespace NotApache {
 		std::string							_uri;
 		std::map<std::string, std::string>	_headers;
 		std::string							_body;
-		size_t								_bodySize;
-		std::map<std::string, e_method>		_methodMap;
 		int									_statusCode;
 		bool								_isChunked;
 

@@ -55,6 +55,13 @@ SRC	=\
 	utils/isSpace.cpp\
 	utils/mutex.cpp\
 	utils/AThread.cpp\
+	utils/split.cpp\
+	utils/atoi.cpp\
+	utils/stoi.cpp\
+	utils/toUpper.cpp\
+	utils/stoh.cpp\
+	utils/isDigit.cpp\
+	utils/countSpaces.cpp\
 	server/handlers/AHandler.cpp\
 	server/handlers/StandardHandler.cpp\
 	server/handlers/HandlerHolder.cpp\
@@ -64,7 +71,6 @@ SRC	=\
 	server/http/HTTPClient.cpp\
 	server/http/HTTPClientData.cpp\
 	server/http/HTTPParser.cpp\
-	server/http/ft_utils.cpp\
 	server/http/HTTPResponder.cpp\
 	server/terminal/TerminalClient.cpp\
 	server/terminal/TerminalResponder.cpp\
@@ -95,6 +101,13 @@ HEADERS	=\
     utils/isSpace.hpp\
     utils/mutex.hpp\
     utils/AThread.hpp\
+	utils/split.hpp\
+	utils/atoi.hpp\
+	utils/toUpper.hpp\
+	utils/stoi.hpp\
+	utils/stoh.hpp\
+	utils/isDigit.hpp\
+	utils/countSpaces.hpp\
 	server/handlers/AHandler.hpp\
     server/handlers/StandardHandler.hpp\
     server/handlers/HandlerHolder.hpp\
@@ -104,7 +117,6 @@ HEADERS	=\
     server/http/HTTPClient.hpp\
     server/http/HTTPClientData.hpp\
     server/http/HTTPParser.hpp\
-	server/http/ft_utils.hpp\
     server/http/HTTPResponder.hpp\
     server/terminal/TerminalClient.hpp\
     server/terminal/TerminalResponder.hpp\
