@@ -7,73 +7,28 @@
 
 namespace NotApache
 {
-	    std::string methodAsString(const e_method& in) {
-        switch (in) {
-            case GET:
-                return "GET";
-            case HEAD:
-                return "HEAD";
-            case POST:
-                return "POST";
-            case PUT:
-                return "PUT";
+	std::string methodAsString(const e_method& in) {
+		switch (in) {
+			case GET:
+				return "GET";
+			case HEAD:
+				return "HEAD";
+			case POST:
+				return "POST";
+			case PUT:
+				return "PUT";
 			case DELETE:
-                return "DELETE";
+				return "DELETE";
 			case CONNECT:
-                return "CONNECT";
+				return "CONNECT";
 			case OPTIONS:
-                return "OPTIONS";
+				return "OPTIONS";
 			case TRACE:
-                return "TRACE";
-            default:
-                return "INVALID METHOD";
-        }
-	}
-
-	std::string headerAsString(const e_headers& in) {
-        switch (in) {
-			case ACCEPT_CHARSET:
-				return "ACCEPT-CHARSET";
-			case ACCEPT_LANGUAGE:
-				return "ACCEPT-LANGUAGE";
-			case ALLOW:
-				return "ALLOW";
-			case AUTHORIZATION:
-				return "AUTHORIZATION";
-			//case //CONNECTION:
-			//	return "CONNECTION";
-			case CONTENT_LANGUAGE:
-				return "CONTENT-LANGUAGE";
-			case CONTENT_LENGTH:
-				return "CONTENT-LENGTH";
-			case CONTENT_LOCATION:
-				return "CONTENT-LOCATION";
-			case CONTENT_TYPE:
-				return "CONTENT-TYPE";
-			case DATE:
-				return "DATE";
-			case HOST:
-				return "HOST";
-			case LAST_MODIFIED:
-				return "LAST-MODIFIED";
-			case LOCATION:
-				return "LOCATION";
-			case REFERER:
-				return "REFERER";
-			case RETRY_AFTER:
-				return "RETRY-AFTER";	
-			case SERVER:
-				return "SERVER";
-			case TRANSFER_ENCODING:
-				return "TRANSFER-ENCODING";
-			case USER_AGENT:
-				return "USER-AGENT";
-			case WWW_AUTHENTICATE:
-				return "WWW-AUTHENTICATE";
+				return "TRACE";
 			default:
-				return "INVALID HEADER";
-        }
-    }
+				return "INVALID METHOD";
+		}
+	}
 
 	template <typename T>
 	std::ostream& operator<<(std::ostream& o, const std::vector<T>& x) {
@@ -85,12 +40,11 @@ namespace NotApache
 	std::ostream& operator<<(std::ostream& o, HTTPClientRequest& x) {
 		o	<< "==REQUEST=="								<< std::endl
 			<< "Method: "	<< methodAsString(x._method)	<< std::endl
-			<< "URI: "		<< x._uri						<< std::endl
-			<< "VERSION: HTTP/"	<< x._version.first << "." << x._version.second	<< std::endl;
+			<< "URI: "		<< x._uri						<< std::endl;
 			if (x._headers.size()) {
 				o << std::endl << "-HEADERS-" << std::endl;
-				for (std::map<e_headers, std::string>::iterator it = x._headers.begin(); it != x._headers.end(); ++it)
-					std::cout << "Header: [" << headerAsString(it->first) << ": " << it->second << "]" << std::endl;
+				for (std::map<std::string, std::string>::iterator it = x._headers.begin(); it != x._headers.end(); ++it)
+					std::cout << "Header: [" << it->first << ": " << it->second << "]" << std::endl;
 			}
 			else
 				std::cout << "-NO HEADERS-" << std::endl;
@@ -108,8 +62,8 @@ namespace NotApache
 
 using namespace NotApache;
 
-HTTPClientRequest::HTTPClientRequest(): _rawRequest(), _method(), _uri(), _version(), _headers(), _body(), _bodySize(), _methodMap(), _headerMap(), _statusCode(), _chunked(false) {
-	_methodMap["GET"] = GET;
+HTTPClientRequest::HTTPClientRequest(): _rawRequest(), _method(), _uri(), _headers(), _body(), _bodySize(), _methodMap(), _statusCode(), _isChunked(false) {
+	_methodMap["GET"] = GET; // in static iets
 	_methodMap["HEAD"] = HEAD;
 	_methodMap["POST"] = POST;
 	_methodMap["PUT"] = PUT;
@@ -117,25 +71,6 @@ HTTPClientRequest::HTTPClientRequest(): _rawRequest(), _method(), _uri(), _versi
 	_methodMap["CONNECT"] = CONNECT;
 	_methodMap["OPTIONS"] = OPTIONS;
 	_methodMap["TRACE"] = TRACE;
-	_headerMap["ACCEPT-CHARSET"] = ACCEPT_CHARSET;
-	_headerMap["ACCEPT-LANGUAGE"] = ACCEPT_LANGUAGE;
-	_headerMap["ALLOW"] = ALLOW;
-	_headerMap["AUTHORIZATION"] = AUTHORIZATION;
-	//_headerMap["CONNECTION"] = CONNECTION;
-	_headerMap["CONTENT-LANGUAGE"] = CONTENT_LANGUAGE;
-	_headerMap["CONTENT-LENGTH"] = CONTENT_LENGTH;
-	_headerMap["CONTENT-LOCATION"] = CONTENT_LOCATION;
-	_headerMap["CONTENT-TYPE"] = CONTENT_TYPE;
-	_headerMap["DATE"] = DATE;
-	_headerMap["HOST"] = HOST;
-	_headerMap["LAST-MODIFIED"] = LAST_MODIFIED;
-	_headerMap["LOCATION"] = LOCATION;
-	_headerMap["REFERER"] = REFERER;
-	_headerMap["RETRY-AFTER"] = RETRY_AFTER;
-	_headerMap["SERVER"] = SERVER;
-	_headerMap["TRANSFER-ENCODING"] = TRANSFER_ENCODING;
-	_headerMap["USER-AGENT"] = USER_AGENT;
-	_headerMap["WWW-AUTHENTICATE"] = WWW_AUTHENTICATE;
 }
 
 const std::string &HTTPClientRequest::getRawRequest() const {

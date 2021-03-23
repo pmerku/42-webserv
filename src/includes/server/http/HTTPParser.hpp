@@ -10,9 +10,7 @@
 #include <iostream>
 
 namespace NotApache {
-	class HTTPParser {
-		HTTPClientRequest*		_R;
-	
+	class HTTPParser {	
 	public:
 		enum ParseState {
 			READY_FOR_WRITE,
@@ -21,12 +19,12 @@ namespace NotApache {
 			OK
 		};
 
-		ParseState		parse(HTTPClient &client);
-		ParseState		parseRequest(std::string request);
-		ParseState		parseHeaders(std::string line);
-		ParseState		parseRequestLine(std::string reqLine);
-		ParseState		parseBody(std::string line);
-		ParseState		parseChunkedBody(std::string request);
+		static ParseState		parse(HTTPClient &client);
+		static ParseState		parseRequest(HTTPClientRequest& _R);
+		static ParseState		parseHeaders(HTTPClientRequest& _R, std::string rawRequest);
+		static ParseState		parseRequestLine(HTTPClientRequest& _R, std::string rawRequest);
+		static ParseState		parseBody(HTTPClientRequest& _R, std::string rawRequest);
+		static ParseState		parseChunkedBody(HTTPClientRequest& _R, std::string rawRequest);
 	};
 }
 

@@ -19,41 +19,18 @@ namespace NotApache {
 		OPTIONS,
 		TRACE
 	};
-	enum e_headers {
-		ACCEPT_CHARSET,
-		ACCEPT_LANGUAGE,
-		ALLOW,
-		AUTHORIZATION,
-		//CONNECTION,
-		CONTENT_LANGUAGE,
-		CONTENT_LENGTH,
-		CONTENT_LOCATION,
-		CONTENT_TYPE,
-		DATE,
-		HOST,
-		LAST_MODIFIED,
-		LOCATION,
-		REFERER,
-		RETRY_AFTER,		
-		SERVER,
-		TRANSFER_ENCODING,
-		USER_AGENT,
-		WWW_AUTHENTICATE
-	};
 
 	class HTTPClientRequest {
 	private:
 		std::string							_rawRequest;
 		e_method							_method;
 		std::string							_uri;
-		std::pair<int, int>					_version;
-		std::map<e_headers, std::string>	_headers;
+		std::map<std::string, std::string>	_headers;
 		std::string							_body;
 		size_t								_bodySize;
 		std::map<std::string, e_method>		_methodMap;
-		std::map<std::string, e_headers>	_headerMap;
 		int									_statusCode;
-		bool								_chunked;
+		bool								_isChunked;
 
 	public:
 		HTTPClientRequest();
