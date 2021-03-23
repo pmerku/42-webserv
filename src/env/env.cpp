@@ -10,9 +10,11 @@ using namespace CGIenv;
 env::env() : _envp(NULL) { }
 
 env::~env() {
-	for (int i = 0; _envp[i]; i++)
-		free(_envp[i]);
-	free(_envp);
+	if (_envp) {
+		for (int i = 0; _envp[i]; i++)
+			free(_envp[i]);
+		free(_envp);
+	}
 }
 
 char **env::getEnv() const {

@@ -26,16 +26,18 @@ void HTTPResponder::generateResponse(HTTPClient &client) {
 		globalLogger.logItem(logger::ERROR, std::string("Response could not be built: ") + e.what());
 	}
 
-	CGIenv::env envp;
-
-	envp.setEnv(CGIenv::ENVBuilder()
-			.AUTH_TYPE("authentication")
-			.CONTENT_LENGTH("3000")
-			.CONTENT_TYPE("text/json")
-			.REQUEST_URI("/path")
-			.build()
-			);
-
-	for (int i = 0; envp.getEnv()[i]; i++)
-		std::cout << envp.getEnv()[i] << std::endl;
+	try {
+		CGIenv::env envp;
+		envp.setEnv(CGIenv::ENVBuilder()
+				.AUTH_TYPE("authentication")
+				.CONTENT_LENGTH("3000")
+				.CONTENT_TYPE("text/json")
+				.REQUEST_URI("/path")
+				.build()
+				);
+		for (int i = 0; envp.getEnv()[i]; i++)
+			std::cout << envp.getEnv()[i] << std::endl;
+	} catch (std::exception &e) {
+		globalLogger.logItem(logger::ERROR, std::string("ENV could not be built: ") + e.what());
+	}
 }
