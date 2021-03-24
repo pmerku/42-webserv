@@ -23,6 +23,7 @@ namespace NotApache {
 
 	class HTTPClientRequest {
 	private:
+	public:
 		std::string							_rawRequest;
 		e_method							_method;
 		std::string							_uri;
@@ -31,15 +32,16 @@ namespace NotApache {
 		int									_statusCode;
 		bool								_isChunked;
 
-	public:
 		HTTPClientRequest();
+
 		friend class HTTPParser;
+
 		const std::string		&getRawRequest() const;
 
 		void					appendRequestData(const std::string	&newData);
 		void					setRawRequest(const std::string &newData);
 
-		friend std::ostream& operator<<(std::ostream& o, HTTPClientRequest& x);
+		friend std::ostream& 	operator<<(std::ostream& o, HTTPClientRequest& x);
 	};
 
 	class HTTPClientResponse {

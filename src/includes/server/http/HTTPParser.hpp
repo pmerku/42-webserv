@@ -12,6 +12,7 @@
 #include "utils/split.hpp"
 #include "utils/toUpper.hpp"
 #include "utils/countSpaces.hpp"
+#include "utils/CreateMap.hpp"
 
 #include <iostream>
 
@@ -40,8 +41,9 @@ namespace NotApache {
 		static ParseState		parseBody(HTTPClientRequest& _R, std::string rawRequest);
 		static ParseState		parseChunkedBody(HTTPClientRequest& _R, std::string rawRequest);
 	
+		static const std::map<std::string, e_method>			methodStoE;
+		static const std::map<e_method, std::string>			methodEtoS;
 	private:
-		static std::map<std::string, e_method>			_methodMap;
 	};
 }
 

@@ -1,11 +1,9 @@
 //
-// Created by jelle on 3/13/2021.
+// Created by martyparty on 3/13/2021.
 //
 
 #include "server/http/HTTPParser.hpp"
 #include "server/global/GlobalLogger.hpp"
-
-#include <sstream>
 
 namespace NotApache
 {
@@ -55,19 +53,29 @@ namespace NotApache
 
 using namespace NotApache;
 
-std::map<std::string, e_method> HTTPParser::_methodMap;
+const std::map<std::string, e_method> HTTPParser::methodStoE =
+		utils::CreateMap<std::string, e_method>
+		("INVALID", INVALID)
+		("GET", GET)
+		("HEAD", HEAD)
+		("POST", POST)
+		("PUT", PUT)
+		("DELETE", DELETE)
+		("CONNECT", CONNECT)
+		("OPTIONS", OPTIONS)
+		("TRACE", TRACE);
 
-HTTPParser::HTTPParser() {
-	_methodMap["INVALID"] = INVALID;
-	_methodMap["GET"] = GET;
-	_methodMap["HEAD"] = HEAD;
-	_methodMap["POST"] = POST;
-	_methodMap["PUT"] = PUT;
-	_methodMap["DELETE"] = DELETE;
-	_methodMap["CONNECT"] = CONNECT;
-	_methodMap["OPTIONS"] = OPTIONS;
-	_methodMap["TRACE"] = TRACE;
-}
+const std::map<e_method, std::string> HTTPParser::methodEtoS =
+		utils::CreateMap<e_method, std::string>
+		(INVALID, "INVALID")
+		(GET, "GET")
+		(HEAD, "HEAD")
+		(POST, "POST")
+		(PUT, "PUT")
+		(DELETE, "DELETE")
+		(CONNECT, "CONNECT")
+		(OPTIONS, "OPTIONS")
+		(TRACE, "TRACE");
 
 HTTPParser::ParseState		 HTTPParser::parse(HTTPClient& client) {
 	if (client.data.request._rawRequest.length() > MAX_REQUEST)	{
@@ -205,13 +213,13 @@ HTTPParser::ParseState		HTTPParser::parseRequestLine(HTTPClientRequest& _R, std:
 	}
 
 	// Check Method
-	if (_methodMap.find(parts[0]) == _methodMap.end()) {
+	if (methodStoE.find(parts[0]) == methodStoE.end()) {
 		_R._statusCode = 501; // 501 (Not Implemented)
 		globalLogger.logItem(logger::ERROR, "Invalid method");
 		return ERROR;
 	}
 	// Set Method
-	_R._method = _methodMap.find(parts[0])->second;
+	_R._method = methodStoE.find(parts[0])->second;
 
 	// CHECK URI
 	if (parts[1][0] != '/') {
