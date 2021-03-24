@@ -36,20 +36,6 @@ namespace CGIenv {
 		ENVBuilder	&SERVER_SOFTWARE(const std::string &value);
 
 		char		**build();
-
-		class ENVBuilderException : public std::exception {
-		public:
-			virtual const char *what() const throw() {
-				return "ENVBuilder exception";
-			}
-		};
-
-		class MallocError : public ENVBuilderException {
-		public:
-			const char *what() const throw() {
-				return "Allocation failed";
-			}
-		};
 	};
 
 } // namespace NotApache

@@ -4,9 +4,6 @@
 
 #include "env/ENVBuilder.hpp"
 #include "utils/strdup.hpp"
-#include "utils/ErrorThrow.hpp"
-
-#include <cstdlib>
 
 using namespace CGIenv;
 
@@ -98,21 +95,12 @@ ENVBuilder &ENVBuilder::SERVER_SOFTWARE(const std::string &value) {
 }
 
 char **ENVBuilder::build() {
-	char **envp;
-	if (!(envp = static_cast<char **>(calloc(_metaVariables.size(), sizeof(char *)))))
-		ERROR_THROW(MallocError());
+	char **envp = new char *[_metaVariables.size() + 1]();
 
 	int i = 0;
 	for (std::map<std::string, std::string>::iterator it = _metaVariables.begin(); it != _metaVariables.end(); it++) {
 		if (it->first.empty() || it->second.empty())
-			ERROR_THROW(MallocError());
-
-		if (!(envp[i] = static_cast<char *>(calloc(it->first.length() + 1 + it->second.length() + 1, sizeof(char))))) {
-			for (; i >= 0; --i)
-				free(envp[i]);
-			free(envp);
-			ERROR_THROW(MallocError());
-		}
+			continue;
 
 		std::string str = it->first + "=" + it->second;
 		envp[i] = utils::strdup(str);

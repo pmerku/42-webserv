@@ -3,17 +3,16 @@
 //
 
 #include "env/env.hpp"
-#include <cstdlib>
 
 using namespace CGIenv;
 
-env::env() : _envp(NULL) { }
+env::env() : _envp(0) { }
 
 env::~env() {
 	if (_envp) {
 		for (int i = 0; _envp[i]; i++)
-			free(_envp[i]);
-		free(_envp);
+			delete [] _envp[i];
+		delete [] _envp;
 	}
 }
 
