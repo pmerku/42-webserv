@@ -52,6 +52,8 @@ SRC	=\
 	config/validators/MutuallyExclusive.cpp\
 	config/validators/BooleanValidator.cpp\
 	config/validators/Unique.cpp\
+	env/env.cpp\
+	env/ENVBuilder.cpp\
 	utils/AThread.cpp\
 	utils/intToString.cpp\
 	utils/isSpace.cpp\
@@ -95,6 +97,8 @@ HEADERS	=\
     config/validators/BooleanValidator.hpp\
     config/validators/Unique.hpp\
     config/ParseExceptions.hpp\
+    env/env.hpp\
+	env/ENVBuilder.hpp\
     utils/AThread.hpp\
     utils/CreateMap.hpp\
     utils/CreateVector.hpp\

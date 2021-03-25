@@ -4,6 +4,8 @@
 
 #include "server/http/HTTPResponder.hpp"
 #include "server/http/ResponseBuilder.hpp"
+#include "env/ENVBuilder.hpp"
+#include "env/env.hpp"
 #include "server/global/GlobalLogger.hpp"
 
 using namespace NotApache;
@@ -22,5 +24,20 @@ void HTTPResponder::generateResponse(HTTPClient &client) {
 			 	);
 	} catch (std::exception &e) {
 		globalLogger.logItem(logger::ERROR, std::string("Response could not be built: ") + e.what());
+	}
+
+	try {
+		CGIenv::env envp;
+		envp.setEnv(CGIenv::ENVBuilder()
+				.AUTH_TYPE("authentication")
+				.CONTENT_LENGTH("3000")
+				.CONTENT_TYPE("text/json")
+				.REQUEST_URI("/path")
+				.build()
+				);
+		for (int i = 0; envp.getEnv()[i]; i++)
+			std::cout << envp.getEnv()[i] << std::endl;
+	} catch (std::exception &e) {
+		globalLogger.logItem(logger::ERROR, std::string("ENV could not be built: ") + e.what());
 	}
 }
