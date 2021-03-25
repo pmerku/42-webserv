@@ -32,8 +32,6 @@ namespace NotApache {
 			MAX_REQUEST = 24000
 		};
 
-		HTTPParser();
-
 		static ParseState		parse(HTTPClient &client);
 		static ParseState		parseRequest(HTTPClientRequest& _R);
 		static ParseState		parseHeaders(HTTPClientRequest& _R, std::string rawRequest);
@@ -41,9 +39,11 @@ namespace NotApache {
 		static ParseState		parseBody(HTTPClientRequest& _R, std::string rawRequest);
 		static ParseState		parseChunkedBody(HTTPClientRequest& _R, std::string rawRequest);
 	
-		static const std::map<std::string, e_method>			methodStoE;
-		static const std::map<e_method, std::string>			methodEtoS;
+		static const std::map<std::string, e_method>			s_methodMap;
+		static const std::map<e_method, std::string>			e_methodMap;
+
 	private:
+		static const std::string 								allowedURIChars;
 	};
 }
 

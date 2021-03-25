@@ -2,6 +2,8 @@
 #include "server/http/HTTPParser.hpp"
 #include "server/http/HTTPClientData.hpp"
 #include "utils/CreateMap.hpp"
+#include <unistd.h>
+#include "utils/strdup.hpp"
 
 using namespace NotApache;
 
@@ -10,8 +12,8 @@ class cgi {
 		void		runCGI(HTTPClientRequest& request);
 
 	private:
-		void	setEnv(HTTPClientRequest& request);
 		void	setMetaVars(HTTPClientRequest& request);
+		void	setEnv();
 
 		std::map<std::string, std::string>	_metaVars;
 		char**								_env;

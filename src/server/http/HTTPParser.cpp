@@ -7,53 +7,34 @@
 
 namespace NotApache
 {
-	std::string methodAsString(const e_method& in) {
-		switch (in) {
-			case INVALID:
-				return "INVALID";
-			case GET:
-				return "GET";
-			case HEAD:
-				return "HEAD";
-			case POST:
-				return "POST";
-			case PUT:
-				return "PUT";
-			case DELETE:
-				return "DELETE";
-			case CONNECT:
-				return "CONNECT";
-			case OPTIONS:
-				return "OPTIONS";
-			case TRACE:
-				return "TRACE";
-		}
-	}
-
 	std::ostream& operator<<(std::ostream& o, HTTPClientRequest& x) {
-		o	<< "==REQUEST=="								<< std::endl
-			<< "Method: "	<< methodAsString(x._method)	<< std::endl
-			<< "URI: "		<< x._uri						<< std::endl;
+		o	<< "==REQUEST=="													<< std::endl
+			<< "Method: "	<< HTTPParser::e_methodMap.find(x._method)->second 	<< std::endl
+			<< "URI: "		<< x._uri											<< std::endl;
+
 			if (x._headers.size()) {
 				o << std::endl << "-HEADERS-" << std::endl;
 				for (std::map<std::string, std::string>::iterator it = x._headers.begin(); it != x._headers.end(); ++it)
-					std::cout << "Header: [" << it->first << ": " << it->second << "]" << std::endl;
+					o << "Header: [" << it->first << ": " << it->second << "]" 	<< std::endl;
 			}
 			else
-				std::cout << "-NO HEADERS-" << std::endl;
+				o	<< "-NO HEADERS-" 											<< std::endl;
 			if (x._body.length()) {
-				std::cout << "Body length: " << x._body.length() << std::endl;
-				std::cout << std::endl << "-BODY-" << std::endl << x._body << std::endl;
+				o	<< "Body length: " << x._body.length() 						<< std::endl << std::endl
+					<< "-BODY-" 												<< std::endl 
+					<< x._body 													<< std::endl;
 			}
 			else
-				std::cout << std::endl << "-NO BODY-" << std::endl;
+				o << std::endl << "-NO BODY-" 									<< std::endl;
 		return o;
 	}
 }
 
 using namespace NotApache;
 
-const std::map<std::string, e_method> HTTPParser::methodStoE =
+const std::string HTTPParser::allowedURIChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_.~!#$&'()*+,/:;=?@[]";
+
+const std::map<std::string, e_method> HTTPParser::s_methodMap =
 		utils::CreateMap<std::string, e_method>
 		("INVALID", INVALID)
 		("GET", GET)
@@ -65,7 +46,7 @@ const std::map<std::string, e_method> HTTPParser::methodStoE =
 		("OPTIONS", OPTIONS)
 		("TRACE", TRACE);
 
-const std::map<e_method, std::string> HTTPParser::methodEtoS =
+const std::map<e_method, std::string> HTTPParser::e_methodMap =
 		utils::CreateMap<e_method, std::string>
 		(INVALID, "INVALID")
 		(GET, "GET")
@@ -213,13 +194,13 @@ HTTPParser::ParseState		HTTPParser::parseRequestLine(HTTPClientRequest& _R, std:
 	}
 
 	// Check Method
-	if (methodStoE.find(parts[0]) == methodStoE.end()) {
+	if (s_methodMap.find(parts[0]) == s_methodMap.end()) {
 		_R._statusCode = 501; // 501 (Not Implemented)
 		globalLogger.logItem(logger::ERROR, "Invalid method");
 		return ERROR;
 	}
 	// Set Method
-	_R._method = methodStoE.find(parts[0])->second;
+	_R._method = s_methodMap.find(parts[0])->second;
 
 	// CHECK URI
 	if (parts[1][0] != '/') {
@@ -228,7 +209,6 @@ HTTPParser::ParseState		HTTPParser::parseRequestLine(HTTPClientRequest& _R, std:
 		return ERROR;
 	}
 
-	std::string allowedURIChars("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_.~!#$&'()*+,/:;=?@[]");
 	for (size_t i = 0; i < parts[1].size(); ++i) {
 		if (allowedURIChars.find(parts[1][i]) == std::string::npos) {
 			_R._statusCode = 401;
