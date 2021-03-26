@@ -5,3 +5,5 @@ build
 cmake-*
 .idea
 
+# tests
+/script.js

@@ -58,6 +58,13 @@ SRC	=\
 	utils/intToString.cpp\
 	utils/isSpace.cpp\
 	utils/mutex.cpp\
+	utils/split.cpp\
+	utils/atoi.cpp\
+	utils/stoi.cpp\
+	utils/toUpper.cpp\
+	utils/stoh.cpp\
+	utils/isDigit.cpp\
+	utils/countSpaces.cpp\
 	utils/strdup.cpp\
 	server/handlers/AHandler.cpp\
 	server/handlers/StandardHandler.cpp\
@@ -82,50 +89,57 @@ HEADERS	=\
 	log/LogItem.hpp\
 	regex/Regex.hpp\
 	config/ConfigValidatorBuilder.hpp\
-    config/ConfigParser.hpp\
-    config/ConfigLine.hpp\
-    config/ConfigException.hpp\
-    config/AConfigValidator.hpp\
-    config/AConfigBlock.hpp\
-    config/blocks/RootBlock.hpp\
-    config/blocks/RouteBlock.hpp\
-    config/blocks/ServerBlock.hpp\
-    config/validators/ArgumentLength.hpp\
-    config/validators/RequiredKey.hpp\
-    config/validators/IntValidator.hpp\
-    config/validators/MutuallyExclusive.hpp\
-    config/validators/BooleanValidator.hpp\
-    config/validators/Unique.hpp\
-    config/ParseExceptions.hpp\
-    env/env.hpp\
+  config/ConfigParser.hpp\
+  config/ConfigLine.hpp\
+  config/ConfigException.hpp\
+  config/AConfigValidator.hpp\
+  config/AConfigBlock.hpp\
+  config/blocks/RootBlock.hpp\
+  config/blocks/RouteBlock.hpp\
+  config/blocks/ServerBlock.hpp\
+  config/validators/ArgumentLength.hpp\
+  config/validators/RequiredKey.hpp\
+  config/validators/IntValidator.hpp\
+  config/validators/MutuallyExclusive.hpp\
+  config/validators/BooleanValidator.hpp\
+  config/validators/Unique.hpp\
+  config/ParseExceptions.hpp\
+  env/env.hpp\
 	env/ENVBuilder.hpp\
-    utils/AThread.hpp\
-    utils/CreateMap.hpp\
-    utils/CreateVector.hpp\
-    utils/ErrorThrow.hpp\
-    utils/intToString.hpp\
+  utils/AThread.hpp\
+	utils/split.hpp\
+	utils/atoi.hpp\
+	utils/toUpper.hpp\
+	utils/stoi.hpp\
+	utils/stoh.hpp\
+	utils/isDigit.hpp\
+	utils/countSpaces.hpp\
+  utils/CreateMap.hpp\
+  utils/CreateVector.hpp\
+  utils/ErrorThrow.hpp\
+  utils/intToString.hpp\
 	utils/isSpace.hpp\
 	utils/localTime.hpp\
 	utils/mutex.hpp\
 	utils/strdup.hpp\
 	server/handlers/AHandler.hpp\
-    server/handlers/StandardHandler.hpp\
-    server/handlers/HandlerHolder.hpp\
-    server/handlers/ThreadHandler.hpp\
-    server/communication/TCPListener.hpp\
-    server/communication/ServerEventBus.hpp\
-    server/http/HTTPClient.hpp\
-    server/http/HTTPClientData.hpp\
-    server/http/HTTPParser.hpp\
-    server/http/HTTPResponder.hpp\
-    server/http/RequestBuilder.hpp\
-    server/http/ResponseBuilder.hpp\
-    server/terminal/TerminalClient.hpp\
-    server/terminal/TerminalResponder.hpp\
-    server/global/GlobalConfig.hpp\
-    server/global/GlobalLogger.hpp\
-    server/ServerTypes.hpp\
-    server/Server.hpp
+  server/handlers/StandardHandler.hpp\
+  server/handlers/HandlerHolder.hpp\
+  server/handlers/ThreadHandler.hpp\
+  server/communication/TCPListener.hpp\
+  server/communication/ServerEventBus.hpp\
+  server/http/HTTPClient.hpp\
+  server/http/HTTPClientData.hpp\
+  server/http/HTTPParser.hpp\
+  server/http/HTTPResponder.hpp\
+  server/http/RequestBuilder.hpp\
+  server/http/ResponseBuilder.hpp\
+  server/terminal/TerminalClient.hpp\
+  server/terminal/TerminalResponder.hpp\
+  server/global/GlobalConfig.hpp\
+  server/global/GlobalLogger.hpp\
+  server/ServerTypes.hpp\
+  server/Server.hpp
 
 # Fix sources and headers
 OBJ				= $(patsubst %.cpp,%.o,$(SRC))
