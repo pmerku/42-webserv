@@ -8,7 +8,7 @@
 #include "config/validators/Unique.hpp"
 #include "config/validators/RequiredKey.hpp"
 #include "config/validators/IntValidator.hpp"
-#include <cstdlib>
+#include "utils/atoi.hpp"
 
 using namespace config;
 
@@ -31,7 +31,7 @@ const AConfigBlock::validatorsMapType	ServerBlock::_validators =
 			.add(new ArgumentLength(2))
 			.add(new IntValidator(0, 400, 600))
 			.build())
-		.addKey("body_limit", ConfigValidatorListBuilder() // TODO default to -1
+		.addKey("body_limit", ConfigValidatorListBuilder()
 				.add(new ArgumentLength(1))
 				.add(new IntValidator(0, 0, 600))
 				.build())
@@ -74,19 +74,18 @@ void	ServerBlock::cleanup() {
 	}
 }
 
-// TODO int conversion
 // TODO error_page parsing
 void ServerBlock::parseData() {
 	_serverName = "_";
 	_bodyLimit = -1;
 
-	_port = std::atoi(getKey("port")->getArg(0).c_str());
+	_port = utils::atoi(getKey("port")->getArg(0).c_str());
 	_host = getKey("host")->getArg(0);
 
 	if (hasKey("server_name"))
 		_serverName = getKey("server_name")->getArg(0);
 	if (hasKey("body_limit"))
-		_bodyLimit = std::atoi(getKey("body_limit")->getArg(0).c_str());
+		_bodyLimit = utils::atoi(getKey("body_limit")->getArg(0).c_str());
 
 	for (std::vector<AConfigBlock*>::iterator i = _blocks.begin(); i != _blocks.end(); ++i) {
 		if (dynamic_cast<RouteBlock*>(*i))
