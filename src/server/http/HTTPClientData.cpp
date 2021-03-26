@@ -3,21 +3,22 @@
 //
 
 #include "server/http/HTTPClientData.hpp"
+#include <iostream>
 
 using namespace NotApache;
 
-HTTPClientRequest::HTTPClientRequest(): _request() {}
+HTTPClientRequest::HTTPClientRequest(): _rawRequest(), _method(), _uri(), _headers(), _body(), _statusCode(), _isChunked(false) {}
 
-const std::string &HTTPClientRequest::getRequest() const {
-	return _request;
+const std::string &HTTPClientRequest::getRawRequest() const {
+	return _rawRequest;
 }
 
 void HTTPClientRequest::appendRequestData(const std::string &newData) {
-	_request += newData;
+	_rawRequest += newData;
 }
 
-void HTTPClientRequest::setRequest(const std::string &newData) {
-	_request = newData;
+void HTTPClientRequest::setRawRequest(const std::string &newData) {
+	_rawRequest = newData;
 }
 
 HTTPClientResponse::HTTPClientResponse(): _response(),  _progress(0) {}
