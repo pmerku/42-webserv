@@ -24,6 +24,7 @@ namespace NotApache {
 	class HTTPClient {
 	private:
 		FD	_fd;
+		int	_port;
 
 	public:
 		ClientWriteState		writeState;
@@ -31,9 +32,10 @@ namespace NotApache {
 		utils::Mutex<bool>		isHandled;
 		HTTPClientData			data;
 
-		HTTPClient(FD clientFd);
+		HTTPClient(FD clientFd, int port);
 
 		FD	getFd() const;
+		int getPort() const;
 	};
 
 }

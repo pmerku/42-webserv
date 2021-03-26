@@ -116,6 +116,7 @@ void RouteBlock::parseData() {
 		_saveUploads = getKey("save_uploads")->getArg(0);
 	if (hasKey("proxy_url"))
 		_proxyUrl = getKey("proxy_url")->getArg(0);
+	_isParsed = true;
 }
 
 const std::string &RouteBlock::getLocation() const {

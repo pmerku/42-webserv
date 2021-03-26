@@ -8,51 +8,163 @@
 #include "env/ENVBuilder.hpp"
 #include "env/env.hpp"
 #include "server/global/GlobalLogger.hpp"
+#include "server/global/GlobalConfig.hpp"
 #include "utils/intToString.hpp"
+#include <sys/stat.h>
+#include <cerrno>
 
 using namespace NotApache;
 
 void HTTPResponder::generateResponse(HTTPClient &client) {
-	std::string str = "lorem ipsum dolor sit amet";
-	try {
-		client.data.response.setResponse(
-				ResponseBuilder("HTTP/1.1")
-				.setStatus(400)
-				.setHeader("Server", "Not-Apache")
-				.setDate()
-			 	.setHeader("Connection", "Close")
-			 	.setBody(str, str.length())
-			 	.build()
-			 	);
-	} catch (std::exception &e) {
-		globalLogger.logItem(logger::ERROR, std::string("Response could not be built: ") + e.what());
-	}
 
-	try {
-		CGIenv::env envp;
-		envp.setEnv(CGIenv::ENVBuilder()
-			.AUTH_TYPE(client.data.request._headers["AUTHORIZATION"])
-			.CONTENT_LENGTH(utils::intToString(client.data.request._body.length()))
-			.CONTENT_TYPE(client.data.request._headers["CONTENT_TYPE"])
-			.GATEWAY_INTERFACE("CGI/1.1")
-			//.PATH_INFO()
-			//.PATH_TRANSLATED()
-			//.QUERY_STRING()
-			//.REMOTE_ADDR()
-			//.REMOTE_IDENT()
-			.REMOTE_USER(client.data.request._headers["REMOTE-USER"])
-			.REQUEST_METHOD(HTTPParser::methodMap_EtoS.find(client.data.request._method)->second)
-			.REQUEST_URI(client.data.request._uri)
-			//.SCRIPT_NAME()
-			//.SERVER_NAME()
-			//.SERVER_PORT()
-			.SERVER_PROTOCOL("HTTP/1.1")
-			.SERVER_SOFTWARE("HTTP 1.1")
+	// TODO generate error responses
+	if (false) {
+		// error responses if parsing failed
+		std::string str = "Couldn't parse the HTTP request";
+		client.data.response.setResponse(
+			ResponseBuilder("HTTP/1.1")
+			.setStatus(400)
+			.setHeader("Server", "Not-Apache")
+			.setDate()
+			.setHeader("Connection", "Close")
+			.setBody(str, str.length())
 			.build()
 		);
-		for (int i = 0; envp.getEnv()[i]; i++)
-			std::cout << envp.getEnv()[i] << std::endl;
-	} catch (std::exception &e) {
-		globalLogger.logItem(logger::ERROR, std::string("ENV could not be built: ") + e.what());
+		return;
+	}
+	std::map<std::string,std::string>::iterator hostIt = client.data.request._headers.find("HOST");
+	if (hostIt == client.data.request._headers.end()) {
+		// TODO what if no host header?
+		std::string str = "Missing host header";
+		client.data.response.setResponse(
+			ResponseBuilder("HTTP/1.1")
+			.setStatus(400)
+			.setHeader("Server", "Not-Apache")
+			.setDate()
+			.setHeader("Connection", "Close")
+			.setBody(str, str.length())
+			.build()
+		);
+		return;
+	}
+	std::string	host = (*hostIt).second;
+	host = host.substr(0, host.find(':'));
+
+	// what server do you belong to?
+	config::ServerBlock	*server = configuration->findServerBlock(host, client.getPort());
+	if (server == 0) {
+		std::string str = "No server block to handle";
+		client.data.response.setResponse(
+			ResponseBuilder("HTTP/1.1")
+			.setStatus(400)
+			.setHeader("Server", "Not-Apache")
+			.setDate()
+			.setHeader("Connection", "Close")
+			.setBody(str, str.length())
+			.build()
+		);
+		return;
+	}
+
+	// TODO what route block?
+	config::RouteBlock	*route = server->getRouteBlocks()[0];
+	if (route->shouldDoFile()) {
+		struct stat buf = {};
+		std::string uriWithoutQuery = client.data.request._uri;
+		uriWithoutQuery = uriWithoutQuery.substr(0, host.find('?'));
+		std::string file = route->getRoot() + uriWithoutQuery;
+
+		if (::stat(file.c_str(), &buf) == -1) {
+			if (errno == ENOENT) {
+				std::string str = "File not found";
+				client.data.response.setResponse(
+					ResponseBuilder("HTTP/1.1")
+					.setStatus(404)
+					.setHeader("Server", "Not-Apache")
+					.setDate()
+					.setHeader("Connection", "Close")
+					.setBody(str, str.length())
+					.build()
+				);
+				return;
+			}
+			std::string str = "Something went wrong";
+			client.data.response.setResponse(
+				ResponseBuilder("HTTP/1.1")
+				.setStatus(500)
+				.setHeader("Server", "Not-Apache")
+				.setDate()
+				.setHeader("Connection", "Close")
+				.setBody(str, str.length())
+				.build()
+			);
+			return;
+		}
+
+		if (S_ISDIR(buf.st_mode)) {
+			if (route->isDirectoryListing()) {
+				// TODO list the directory
+				std::string str = "directory listing here";
+				client.data.response.setResponse(
+					ResponseBuilder("HTTP/1.1")
+					.setStatus(200)
+					.setHeader("Server", "Not-Apache")
+					.setDate()
+					.setHeader("Connection", "Close")
+					.setBody(str, str.length())
+					.build()
+				);
+				return;
+			}
+			std::string str = "File not found";
+			client.data.response.setResponse(
+				ResponseBuilder("HTTP/1.1")
+				.setStatus(404)
+				.setHeader("Server", "Not-Apache")
+				.setDate()
+				.setHeader("Connection", "Close")
+				.setBody(str, str.length())
+				.build()
+			);
+		}
+		else if (!S_ISREG(buf.st_mode)) {
+			std::string str = "File not found";
+			client.data.response.setResponse(
+				ResponseBuilder("HTTP/1.1")
+				.setStatus(404)
+				.setHeader("Server", "Not-Apache")
+				.setDate()
+				.setHeader("Connection", "Close")
+				.setBody(str, str.length())
+				.build()
+			);
+		}
+
+		// serve the file
+		// TODO check file extension for cgi
+		std::string str = "File found :)";
+		client.data.response.setResponse(
+			ResponseBuilder("HTTP/1.1")
+			.setStatus(200)
+			.setHeader("Server", "Not-Apache")
+			.setDate()
+			.setHeader("Connection", "Close")
+			.setBody(str, str.length())
+			.build()
+		);
+		return;
+	}
+	else {
+		// TODO do proxy
+		std::string str = "Proxy not yet implemented";
+		client.data.response.setResponse(
+			ResponseBuilder("HTTP/1.1")
+			.setStatus(200)
+			.setHeader("Server", "Not-Apache")
+			.setDate()
+			.setHeader("Connection", "Close")
+			.setBody(str, str.length())
+			.build()
+		);
 	}
 }
