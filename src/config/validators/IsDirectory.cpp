@@ -4,6 +4,7 @@
 
 #include "config/validators/IsDirectory.hpp"
 #include <sys/stat.h>
+#include "utils/ErrorThrow.hpp"
 
 using namespace config;
 
@@ -14,13 +15,13 @@ void IsDirectory::test(const ConfigLine &line, const AConfigBlock &block) const 
 
 	// arg doesnt exist
 	if (line.getArgLength() < (ConfigLine::arg_size)_arg)
-		throw IsDirectoryException(line, &block);
+		ERROR_THROW(IsDirectoryException(line, &block));
 
 	// invalid path/no perms
 	if (::stat(line.getArg(_arg).c_str(), &buf) == -1)
-		throw IsDirectoryException(line, &block);
+		ERROR_THROW(IsDirectoryException(line, &block));
 
 	// check if regular file
 	if (!S_ISDIR(buf.st_mode))
-		throw IsDirectoryException(line, &block);
+		ERROR_THROW(IsDirectoryException(line, &block));
 }

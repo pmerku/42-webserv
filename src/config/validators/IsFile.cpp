@@ -4,6 +4,7 @@
 
 #include "config/validators/IsFile.hpp"
 #include <sys/stat.h>
+#include "utils/ErrorThrow.hpp"
 
 using namespace config;
 
@@ -14,13 +15,13 @@ void IsFile::test(const ConfigLine &line, const AConfigBlock &block) const {
 
 	// arg doesnt exist
 	if (line.getArgLength() < (ConfigLine::arg_size)_arg)
-		throw IsFileException(line, &block);
+		ERROR_THROW(IsFileException(line, &block));
 
 	// invalid path/no perms
 	if (::stat(line.getArg(_arg).c_str(), &buf) == -1)
-		throw IsFileException(line, &block);
+		ERROR_THROW(IsFileException(line, &block));
 
 	// check if regular file
 	if (!S_ISREG(buf.st_mode))
-		throw IsFileException(line, &block);
+		ERROR_THROW(IsFileException(line, &block));
 }
