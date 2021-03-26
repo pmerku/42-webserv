@@ -8,13 +8,8 @@
 
 char *utils::strdup(const std::string &str) {
 	size_t len = str.length();
-	char *mem;
-
-	if (!(mem = static_cast<char *>(malloc(sizeof(char) * (len + 1)))))
-		return NULL;
-	size_t i = 0;
-	for (; i < len; i++)
+	char *mem = new char[len + 1]();
+	for (size_t i = 0; i < len; i++)
 		mem[i] = str[i];
-	mem[i] = '\0';
 	return mem;
 }
