@@ -61,7 +61,6 @@ SRC	=\
 	utils/split.cpp\
 	utils/atoi.cpp\
 	utils/stoi.cpp\
-	utils/itos.cpp\
 	utils/toUpper.cpp\
 	utils/stoh.cpp\
 	utils/isDigit.cpp\
@@ -113,7 +112,6 @@ HEADERS	=\
 	utils/atoi.hpp\
 	utils/toUpper.hpp\
 	utils/stoi.hpp\
-	utils/itos.hpp\
 	utils/stoh.hpp\
 	utils/isDigit.hpp\
 	utils/countSpaces.hpp\

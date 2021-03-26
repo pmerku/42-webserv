@@ -60,7 +60,7 @@ const std::map<e_method, std::string> HTTPParser::methodMap_EtoS =
 
 HTTPParser::ParseState		 HTTPParser::parse(HTTPClient& client) {
 	if (client.data.request._rawRequest.length() > MAX_REQUEST)	{
-		globalLogger.logItem(logger::INFO, "Content-length exceeds max body size");
+		globalLogger.logItem(logger::DEBUG, "Content-length exceeds max body size");
 		client.data.request._statusCode = 400;
 		return ERROR;
 	}
@@ -78,7 +78,7 @@ HTTPParser::ParseState		HTTPParser::parseChunkedBody(HTTPClientRequest& _R, std:
 	SOB = rawRequest.find_first_of("\r\n");
 	if (SOB == std::string::npos)
 	{
-		globalLogger.logItem(logger::INFO, "No terminating character in body");
+		globalLogger.logItem(logger::DEBUG, "No terminating character in body");
 		_R._statusCode = 400;
 		return ERROR;
 	}
@@ -87,13 +87,13 @@ HTTPParser::ParseState		HTTPParser::parseChunkedBody(HTTPClientRequest& _R, std:
 	std::string size = rawRequest.substr(0, SOB);
 	if (size[0] != '0' && size[1] != 'x')
 	{
-		globalLogger.logItem(logger::INFO, "Failed to parse chunksize");
+		globalLogger.logItem(logger::DEBUG, "Failed to parse chunksize");
 		_R._statusCode = 400;
 		return ERROR;
 	}
 	size_t chunkSize = utils::stoh(size.substr(2));
 	if (_R._body.length() + chunkSize > MAX_BODY) {
-		globalLogger.logItem(logger::INFO, "Content-length exceeds max body size");
+		globalLogger.logItem(logger::DEBUG, "Content-length exceeds max body size");
 		_R._statusCode = 400;
 		return ERROR;
 	}
@@ -102,7 +102,7 @@ HTTPParser::ParseState		HTTPParser::parseChunkedBody(HTTPClientRequest& _R, std:
 	EOB = rawRequest.rfind("\r\n0\r\n\r\n");
 	// Check if chunksize matches body
 	if (rawRequest.rfind("\r\n")-SOB != chunkSize && EOB-SOB != chunkSize) {
-		globalLogger.logItem(logger::INFO, "Chunk size invalid");
+		globalLogger.logItem(logger::DEBUG, "Chunk size invalid");
 		_R._statusCode = 400;
 		return ERROR;
 	}
@@ -113,12 +113,12 @@ HTTPParser::ParseState		HTTPParser::parseChunkedBody(HTTPClientRequest& _R, std:
 	// Check if body is complete
 	if (EOB != std::string::npos) // 0x0?
 	{
-		globalLogger.logItem(logger::INFO, "Succesfully parsed chunked body");
+		globalLogger.logItem(logger::DEBUG, "Succesfully parsed chunked body");
 		return READY_FOR_WRITE;
 	}
 	else
 	{
-		globalLogger.logItem(logger::INFO, "UNFINISHED");
+		globalLogger.logItem(logger::DEBUG, "UNFINISHED");
 		_R._rawRequest.clear();
 		return UNFINISHED;
 	}
@@ -223,6 +223,7 @@ HTTPParser::ParseState		HTTPParser::parseRequestLine(HTTPClientRequest& _R, std:
 	// CHECK PROTOCOL
 	if (parts[2] != "HTTP/1.1") {
 		globalLogger.logItem(logger::ERROR, "Invalid protocol");
+		_R._statusCode = 505;
 		return ERROR;
 	}
 	return OK;
