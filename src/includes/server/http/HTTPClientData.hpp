@@ -46,10 +46,15 @@ namespace NotApache {
 	};
 
 	class HTTPClientResponse {
+		enum responseType {
+			FILE,
+			CGI_FILE,
+			PROXY
+		};
+
 	private:
 		std::string				_response;
 		std::string::size_type	_progress;
-		//FD						_fd;
 
 	public:
 		HTTPClientResponse();
@@ -59,6 +64,9 @@ namespace NotApache {
 
 		void					setResponse(const std::string &response);
 		void					setProgress(std::string::size_type index);
+		
+		FD						_fd;
+		FD						_bodyfd;
 	};
 
 	std::ostream& operator<<(std::ostream& o, HTTPClientRequest& x);

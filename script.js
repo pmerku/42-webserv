@@ -15,7 +15,7 @@ s.on('close', () => {
 })
 
 s.on('connect', async () => {
-    send('GET /');
+    send('GET /Users/Marty/Documents/Marty/GitHub/programming/webserv-fork/test.cgi');
     await sleep(1);
 	send(' HTTP/1.1\r\n');
     await sleep(1);

@@ -3,12 +3,16 @@
 //
 
 #include "server/http/HTTPResponder.hpp"
+#include "server/global/GlobalLogger.hpp"
+#include "utils/intToString.hpp"
+#include "utils/strdup.hpp"
+#include "utils/ErrorThrow.hpp"
 #include "server/http/ResponseBuilder.hpp"
 #include "server/http/HTTPParser.hpp"
 #include "env/ENVBuilder.hpp"
-#include "env/env.hpp"
-#include "server/global/GlobalLogger.hpp"
-#include "utils/intToString.hpp"
+
+#include <sys/stat.h>
+#include <unistd.h>
 
 using namespace NotApache;
 
@@ -52,7 +56,62 @@ void HTTPResponder::generateResponse(HTTPClient &client) {
 		);
 		for (int i = 0; envp.getEnv()[i]; i++)
 			std::cout << envp.getEnv()[i] << std::endl;
+		runCGI(client, envp);
 	} catch (std::exception &e) {
 		globalLogger.logItem(logger::ERROR, std::string("ENV could not be built: ") + e.what());
 	}
+
+}
+
+void	HTTPResponder::runCGI(HTTPClient &client, CGIenv::env& envp) {  // TODO error handling
+	int		pid;
+	FD		pipefd[2];
+	FD		bodyPipefd[2];
+	struct stat sb;
+	bool 	body = false;
+
+	char** args = new char *[2]();
+	args[0] = utils::strdup(client.data.request._uri.c_str());
+
+	if (::stat(args[0], &sb) == -1) {
+		globalLogger.logItem(logger::ERROR, "cgi not found");
+		//ERROR_THROW "file not found";
+	}
+
+	if (::pipe(pipefd) == -1) {
+		globalLogger.logItem(logger::ERROR, "pipe failed");
+		return ;
+	}
+	client.data.response._fd = pipefd[0];
+
+	if (client.data.request._body.length()) {
+		std::cout << "test\n";
+		::pipe(bodyPipefd);
+		client.data.response._bodyfd = bodyPipefd[0];
+		body = true;
+	}
+
+	pid = ::fork();
+	if (pid == -1) {
+		globalLogger.logItem(logger::ERROR, "fork failed");
+		return ;
+	}
+	if (!pid)
+	{
+		if (!body)
+			::close(STDIN_FILENO);
+		else
+			::dup2(STDIN_FILENO, bodyPipefd[0]);
+		if (::dup2(STDOUT_FILENO, pipefd[1]) == -1) {
+			globalLogger.logItem(logger::ERROR, "dup2 failed");
+			return ;
+		}
+		::close(pipefd[0]);
+		// ::close(pipefd[1]);
+		if (::execve(args[0], args, envp.getEnv()) == -1) {
+			globalLogger.logItem(logger::ERROR, "execve failed");
+			return ;
+		}
+	}
+	::close(pipefd[1]);
 }

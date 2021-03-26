@@ -6,12 +6,13 @@
 #define HTTPRESPONDER_HPP
 
 #include "server/http/HTTPClient.hpp"
+#include "env/env.hpp"
 
 namespace NotApache {
-
 	class HTTPResponder {
 	public:
-		static void	generateResponse(HTTPClient &client);
+		static void		generateResponse(HTTPClient &client);
+		static void		runCGI(HTTPClient &client, CGIenv::env& envp);
 	};
 
 }
