@@ -70,7 +70,6 @@ SRC	=\
 	server/handlers/StandardHandler.cpp\
 	server/handlers/HandlerHolder.cpp\
 	server/handlers/ThreadHandler.cpp\
-  	server/http/Cgi.cpp\
 	server/communication/TCPListener.cpp\
 	server/communication/ServerEventBus.cpp\
 	server/http/HTTPClient.cpp\
@@ -135,7 +134,6 @@ HEADERS	=\
   server/http/HTTPResponder.hpp\
   server/http/RequestBuilder.hpp\
   server/http/ResponseBuilder.hpp\
-  server/http/Cgi.hpp\
   server/terminal/TerminalClient.hpp\
   server/terminal/TerminalResponder.hpp\
   server/global/GlobalConfig.hpp\

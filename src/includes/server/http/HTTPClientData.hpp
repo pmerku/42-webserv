@@ -49,7 +49,7 @@ namespace NotApache {
 	private:
 		std::string				_response;
 		std::string::size_type	_progress;
-		FD						_fd;
+		//FD						_fd;
 
 	public:
 		HTTPClientResponse();
