@@ -9,7 +9,7 @@ using namespace NotApache;
 
 class cgi {
 	public:
-		void		runCGI(HTTPClientRequest& request);
+		void		runCGI(HTTPClientRequest& request, const std::string& path);
 
 	private:
 		void	setMetaVars(HTTPClientRequest& request);

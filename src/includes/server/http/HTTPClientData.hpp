@@ -5,6 +5,7 @@
 #ifndef HTTPCLIENTDATA_HPP
 #define HTTPCLIENTDATA_HPP
 
+#include "ServerTypes.hpp"
 #include <string>
 #include <map>
 

@@ -40,7 +40,6 @@ void StandardHandler::read(HTTPClient &client) {
 		client.connectionState = WRITING;
 		_eventBus->postEvent(ServerEventBus::CLIENT_STATE_UPDATED);
 	}
-	std::cout << client.data.request << std::endl; //
 	client.isHandled.setNoLock(false);
 	client.isHandled.unlock();
 }
