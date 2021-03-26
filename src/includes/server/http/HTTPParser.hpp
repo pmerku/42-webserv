@@ -39,8 +39,8 @@ namespace NotApache {
 		static ParseState		parseBody(HTTPClientRequest& _R, std::string rawRequest);
 		static ParseState		parseChunkedBody(HTTPClientRequest& _R, std::string rawRequest);
 	
-		static const std::map<std::string, e_method>			s_methodMap;
-		static const std::map<e_method, std::string>			e_methodMap;
+		static const std::map<std::string, e_method>			methodMap_StoE;
+		static const std::map<e_method, std::string>			methodMap_EtoS;
 
 	private:
 		static const std::string 								allowedURIChars;

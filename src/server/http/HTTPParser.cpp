@@ -9,7 +9,7 @@ namespace NotApache
 {
 	std::ostream& operator<<(std::ostream& o, HTTPClientRequest& x) {
 		o	<< "==REQUEST=="													<< std::endl
-			<< "Method: "	<< HTTPParser::e_methodMap.find(x._method)->second 	<< std::endl
+			<< "Method: "	<< HTTPParser::methodMap_EtoS.find(x._method)->second 	<< std::endl
 			<< "URI: "		<< x._uri											<< std::endl;
 
 			if (x._headers.size()) {
@@ -34,7 +34,7 @@ using namespace NotApache;
 
 const std::string HTTPParser::allowedURIChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_.~!#$&'()*+,/:;=?@[]";
 
-const std::map<std::string, e_method> HTTPParser::s_methodMap =
+const std::map<std::string, e_method> HTTPParser::methodMap_StoE =
 		utils::CreateMap<std::string, e_method>
 		("INVALID", INVALID)
 		("GET", GET)
@@ -46,7 +46,7 @@ const std::map<std::string, e_method> HTTPParser::s_methodMap =
 		("OPTIONS", OPTIONS)
 		("TRACE", TRACE);
 
-const std::map<e_method, std::string> HTTPParser::e_methodMap =
+const std::map<e_method, std::string> HTTPParser::methodMap_EtoS =
 		utils::CreateMap<e_method, std::string>
 		(INVALID, "INVALID")
 		(GET, "GET")
@@ -194,13 +194,13 @@ HTTPParser::ParseState		HTTPParser::parseRequestLine(HTTPClientRequest& _R, std:
 	}
 
 	// Check Method
-	if (s_methodMap.find(parts[0]) == s_methodMap.end()) {
+	if (methodMap_StoE.find(parts[0]) == methodMap_StoE.end()) {
 		_R._statusCode = 501; // 501 (Not Implemented)
 		globalLogger.logItem(logger::ERROR, "Invalid method");
 		return ERROR;
 	}
 	// Set Method
-	_R._method = s_methodMap.find(parts[0])->second;
+	_R._method = methodMap_StoE.find(parts[0])->second;
 
 	// CHECK URI
 	if (parts[1][0] != '/') {

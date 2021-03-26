@@ -54,3 +54,20 @@ void HTTPResponder::generateResponse(HTTPClient &client) {
 		globalLogger.logItem(logger::ERROR, std::string("ENV could not be built: ") + e.what());
 	}
 }
+
+void	cgi::runCGI(HTTPClientRequest& request, const std::string& path) {
+	int pid;
+	char** args;
+
+	setMetaVars(request);
+	setEnv();
+
+	pid = fork();
+	if (pid < 0)
+		return ; // error
+	if (!pid)
+	{
+		if (execve(args[0], args, _env) < 0)
+			return ; // error
+	}
+}
