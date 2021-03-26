@@ -49,6 +49,10 @@ SRC	=\
 	config/validators/ArgumentLength.cpp\
 	config/validators/RequiredKey.cpp\
 	config/validators/IntValidator.cpp\
+	config/validators/IsDirectory.cpp\
+    config/validators/IsFile.cpp\
+    config/validators/HTTPMethodValidator.cpp\
+    config/validators/IpValidator.cpp\
 	config/validators/MutuallyExclusive.cpp\
 	config/validators/BooleanValidator.cpp\
 	config/validators/Unique.cpp\
@@ -102,6 +106,10 @@ HEADERS	=\
   config/validators/IntValidator.hpp\
   config/validators/MutuallyExclusive.hpp\
   config/validators/BooleanValidator.hpp\
+  config/validators/IsDirectory.hpp\
+  config/validators/IsFile.hpp\
+  config/validators/HTTPMethodValidator.hpp\
+  config/validators/IpValidator.hpp\
   config/validators/Unique.hpp\
   config/ParseExceptions.hpp\
   env/env.hpp\

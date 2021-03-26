@@ -8,15 +8,17 @@
 #include "config/validators/Unique.hpp"
 #include "config/validators/RequiredKey.hpp"
 #include "config/validators/IntValidator.hpp"
+#include "config/validators/IpValidator.hpp"
 #include "utils/atoi.hpp"
 
 using namespace config;
 
 const AConfigBlock::validatorsMapType	ServerBlock::_validators =
 		ConfigValidatorBuilder()
-		.addKey("host", ConfigValidatorListBuilder() // TODO validate ip
+		.addKey("host", ConfigValidatorListBuilder()
 			  .add(new ArgumentLength(1))
 			  .add(new Unique())
+			  .add(new IpValidator(0))
 			  .build())
 	  	.addKey("port", ConfigValidatorListBuilder()
 			  .add(new ArgumentLength(1))
