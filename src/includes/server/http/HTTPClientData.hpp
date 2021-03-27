@@ -48,6 +48,7 @@ namespace NotApache {
 	class HTTPClientResponse {
 	private:
 		std::string				_response;
+		std::string 			_associatedData;
 		std::string::size_type	_progress;
 		//FD						_fd;
 
@@ -59,6 +60,10 @@ namespace NotApache {
 
 		void					setResponse(const std::string &response);
 		void					setProgress(std::string::size_type index);
+
+		const std::string		&getAssociatedDataRaw() const;
+		void					appendAssociatedData(const std::string	&newData);
+		void					setAssociatedData(const std::string &newData);
 	};
 
 	std::ostream& operator<<(std::ostream& o, HTTPClientRequest& x);

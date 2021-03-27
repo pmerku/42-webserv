@@ -3,7 +3,6 @@
 //
 
 #include "server/http/HTTPClientData.hpp"
-#include <iostream>
 
 using namespace NotApache;
 
@@ -39,3 +38,14 @@ void HTTPClientResponse::setProgress(std::string::size_type index) {
 	_progress = index;
 }
 
+const std::string &HTTPClientResponse::getAssociatedDataRaw() const {
+	return _associatedData;
+}
+
+void HTTPClientResponse::appendAssociatedData(const std::string &newData) {
+	_associatedData += newData;
+}
+
+void HTTPClientResponse::setAssociatedData(const std::string &newData) {
+	_associatedData = newData;
+}

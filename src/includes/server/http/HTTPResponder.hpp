@@ -12,6 +12,8 @@ namespace NotApache {
 	class HTTPResponder {
 	public:
 		static void	generateResponse(HTTPClient &client);
+
+		void generateAssociatedResponse(HTTPClient &client);
 	};
 
 }

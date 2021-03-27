@@ -4,7 +4,6 @@
 
 #include "server/Server.hpp"
 #include "server/global/GlobalConfig.hpp"
-#include "utils/ErrorThrow.hpp"
 #include <unistd.h>
 
 using namespace NotApache;
@@ -43,6 +42,10 @@ void Server::_createFdSets() {
 
 	// add clients
 	for (std::list<HTTPClient*>::iterator i = _clients.begin(); i != _clients.end(); ++i) {
+		(*i)->isHandled.lock();
+		bool isBeingHandled = (*i)->isHandled.get();
+		(*i)->isHandled.unlock();
+		if (isBeingHandled) continue;
 		if ((*i)->connectionState == READING || (*i)->connectionState == WRITING) {
 			FD	fd = (*i)->getFd();
 			if (fd > _maxFd) _maxFd = fd;
@@ -50,6 +53,13 @@ void Server::_createFdSets() {
 				FD_SET(fd, &_readFdSet);
 			else if ((*i)->connectionState == WRITING)
 				FD_SET(fd, &_writeFdSet);
+		}
+		else if ((*i)->connectionState == ASSOCIATED_FD) {
+			if ((*i)->responseState == FILE || (*i)->responseState == PROXY) {
+				if ((*i)->getAssociatedFd(0) > _maxFd) _maxFd = (*i)->getAssociatedFd(0);
+				FD_SET((*i)->getAssociatedFd(0), &_readFdSet);
+			}
+			// TODO cgi support
 		}
 	}
 }
@@ -82,6 +92,16 @@ void Server::_handleSelect() {
 		}
 		else if (FD_ISSET(fd, &_writeFdSet)) {
 			_handlers.handleClient(**i, HandlerHolder::WRITE);
+		}
+		else {
+			for (std::vector<FD>::size_type j = 0; j < (*i)->getAssociatedFdLength(); j++) {
+				if (FD_ISSET((*i)->getAssociatedFd(j), &_readFdSet)) {
+					_handlers.handleClient(**i, HandlerHolder::READ);
+				}
+				else if (FD_ISSET((*i)->getAssociatedFd(j), &_writeFdSet)) {
+					_handlers.handleClient(**i, HandlerHolder::WRITE);
+				}
+			}
 		}
 	}
 

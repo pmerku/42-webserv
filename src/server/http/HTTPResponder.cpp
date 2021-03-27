@@ -11,9 +11,26 @@
 #include "server/global/GlobalConfig.hpp"
 #include "utils/intToString.hpp"
 #include <sys/stat.h>
+#include <fcntl.h>
 #include <cerrno>
 
 using namespace NotApache;
+
+void HTTPResponder::generateAssociatedResponse(HTTPClient &client) {
+	if (client.responseState == FILE) {
+		client.data.response.setResponse(
+			ResponseBuilder("HTTP/1.1")
+			.setStatus(200)
+			.setHeader("Server", "Not-Apache")
+			.setDate()
+			.setHeader("Connection", "Close")
+			.setBody(client.data.response.getAssociatedDataRaw(), client.data.response.getAssociatedDataRaw().length())
+			.build()
+		);
+		return;
+	}
+	// TODO proxy & cgi
+}
 
 void HTTPResponder::generateResponse(HTTPClient &client) {
 
@@ -142,16 +159,23 @@ void HTTPResponder::generateResponse(HTTPClient &client) {
 
 		// serve the file
 		// TODO check file extension for cgi
-		std::string str = "File found :)";
-		client.data.response.setResponse(
-			ResponseBuilder("HTTP/1.1")
-			.setStatus(200)
-			.setHeader("Server", "Not-Apache")
-			.setDate()
-			.setHeader("Connection", "Close")
-			.setBody(str, str.length())
-			.build()
-		);
+		FD fileFd = ::open(file.c_str(), O_RDONLY);
+		if (fileFd == -1) {
+			std::string str = "Something went wrong";
+			client.data.response.setResponse(
+				ResponseBuilder("HTTP/1.1")
+				.setStatus(500)
+				.setHeader("Server", "Not-Apache")
+				.setDate()
+				.setHeader("Connection", "Close")
+				.setBody(str, str.length())
+				.build()
+			);
+			return;
+		}
+		client.addAssociatedFd(fileFd);
+		client.responseState = FILE;
+		client.connectionState = ASSOCIATED_FD;
 		return;
 	}
 	else {

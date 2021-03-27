@@ -18,6 +18,9 @@ namespace NotApache {
 		virtual void	read(HTTPClient &client);
 		virtual void	write(HTTPClient &client);
 
+		void handleAssociatedRead(HTTPClient &client);
+
+		void stopHandle(HTTPClient &client, bool shouldLock = true);
 	};
 }
 
