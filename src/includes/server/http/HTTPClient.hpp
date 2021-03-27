@@ -45,6 +45,7 @@ namespace NotApache {
 		HTTPClientData			data;
 
 		HTTPClient(FD clientFd, int port);
+		~HTTPClient();
 
 		FD	getFd() const;
 		int getPort() const;

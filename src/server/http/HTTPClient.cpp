@@ -3,6 +3,7 @@
 //
 
 #include "server/http/HTTPClient.hpp"
+#include <unistd.h>
 
 using namespace NotApache;
 
