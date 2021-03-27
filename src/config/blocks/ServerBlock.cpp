@@ -121,3 +121,13 @@ const std::string &ServerBlock::getServerName() const {
 	throwNotParsed();
 	return _serverName;
 }
+
+RouteBlock *ServerBlock::findRoute(const std::string &path) {
+	throwNotParsed();
+	for (std::vector<RouteBlock*>::iterator route = _routeBlocks.begin(); route != _routeBlocks.end(); ++route) {
+		if ((*route)->getLocation().match(path)) {
+			return *route;
+		}
+	}
+	return 0;
+}

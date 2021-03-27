@@ -40,6 +40,7 @@ namespace config {
 		const std::string				&getHost() const;
 		const std::vector<RouteBlock*>	&getRouteBlocks() const;
 		const std::string				&getServerName() const;
+		RouteBlock						*findRoute(const std::string &path);
 	};
 
 }

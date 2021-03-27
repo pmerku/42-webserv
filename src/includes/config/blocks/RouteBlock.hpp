@@ -6,6 +6,7 @@
 #define ROUTEBLOCK_HPP
 
 #include "config/AConfigBlock.hpp"
+#include "regex/Regex.hpp"
 
 namespace config {
 
@@ -27,7 +28,7 @@ namespace config {
 		std::string getType() const;
 
 	private:
-		std::string					_location;
+		regex::Regex				_location;
 		std::vector<std::string>	_allowedMethods;
 		std::string					_root;
 		bool						_directoryListing;
@@ -37,7 +38,7 @@ namespace config {
 		std::string					_proxyUrl;
 
 	public:
-		const std::string &getLocation() const;
+		regex::Regex &getLocation();
 		const std::vector<std::string> &getAllowedMethods() const;
 		const std::string &getRoot() const;
 		bool isDirectoryListing() const;

@@ -5,6 +5,7 @@
 #ifndef HTTPRESPONDER_HPP
 #define HTTPRESPONDER_HPP
 
+#include <config/blocks/ServerBlock.hpp>
 #include "server/http/HTTPClient.hpp"
 
 namespace NotApache {
@@ -13,7 +14,9 @@ namespace NotApache {
 	public:
 		static void	generateResponse(HTTPClient &client);
 
-		void generateAssociatedResponse(HTTPClient &client);
+		static void generateAssociatedResponse(HTTPClient &client);
+
+		static void serveFile(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const std::string &file);
 	};
 
 }

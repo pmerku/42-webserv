@@ -12,6 +12,7 @@
 #include "config/validators/HTTPMethodValidator.hpp"
 #include "config/validators/IsDirectory.hpp"
 #include "config/validators/IsFile.hpp"
+#include "regex/Regex.hpp"
 
 using namespace config;
 
@@ -75,7 +76,7 @@ const std::string						*RouteBlock::getAllowedBlocks() const {
 	return RouteBlock::_allowedBlocks;
 }
 
-RouteBlock::RouteBlock(const ConfigLine &line, int lineNumber, AConfigBlock *parent): AConfigBlock(line, lineNumber, parent) {}
+RouteBlock::RouteBlock(const ConfigLine &line, int lineNumber, AConfigBlock *parent): AConfigBlock(line, lineNumber, parent), _location("/"), _directoryListing() {}
 
 std::string RouteBlock::getType() const {
 	return "route";
@@ -99,10 +100,10 @@ void	RouteBlock::cleanup() {
 // TODO allowed methods parsing
 // TODO plugin parsing
 void RouteBlock::parseData() {
-	_location = getKey("location")->getArg(0);
+	_location = regex::Regex(getKey("location")->getArg(0));
 	_root = "";
 	_directoryListing = false;
-	_index = "index.html";
+	_index = "";
 	_saveUploads = "";
 	_proxyUrl = "";
 
@@ -119,7 +120,7 @@ void RouteBlock::parseData() {
 	_isParsed = true;
 }
 
-const std::string &RouteBlock::getLocation() const {
+regex::Regex &RouteBlock::getLocation() {
 	throwNotParsed();
 	return _location;
 }

@@ -2,7 +2,7 @@
 // Created by jelle on 3/27/2021.
 //
 
-#include "DataList.hpp"
+#include "utils/DataList.hpp"
 
 using namespace utils;
 
