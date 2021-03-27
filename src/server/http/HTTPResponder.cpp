@@ -24,7 +24,7 @@ void HTTPResponder::generateAssociatedResponse(HTTPClient &client) {
 			.setHeader("Server", "Not-Apache")
 			.setDate()
 			.setHeader("Connection", "Close")
-			.setBody(client.data.response.getAssociatedDataRaw(), client.data.response.getAssociatedDataRaw().length())
+			.setBody(client.data.response.getAssociatedDataRaw())
 			.build()
 		);
 		return;

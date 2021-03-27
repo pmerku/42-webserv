@@ -39,8 +39,7 @@ void StandardHandler::handleAssociatedRead(HTTPClient &client) {
 				stopHandle(client);
 				return;
 			default:
-				buf[ret] = 0; // make cstr out of it by setting 0 as last char
-				client.data.response.appendAssociatedData(buf);
+				client.data.response.appendAssociatedData(buf, ret);
 				stopHandle(client);
 				return;
 		}
@@ -98,10 +97,14 @@ void StandardHandler::write(HTTPClient &client) {
 	}
 
 	if (client.writeState == IS_WRITING) {
-		const std::string		&response = client.data.response.getResponse();
-		std::string::size_type	pos = client.data.response.getProgress();
-		std::string::size_type	len = response.length() - pos;
-		ssize_t ret = ::write(client.getFd(), response.c_str() + pos, len);
+		if (!client.data.response.hasProgress) {
+			client.data.response.currentPacket = client.data.response.getResponse().begin();
+			client.data.response.packetProgress = 0;
+			client.data.response.hasProgress = true;
+		}
+		std::string::size_type	pos = client.data.response.packetProgress;
+		std::string::size_type	len = client.data.response.currentPacket->size - pos;
+		ssize_t ret = ::write(client.getFd(), client.data.response.currentPacket->data + pos, len);
 		switch (ret) {
 			case -1:
 				globalLogger.logItem(logger::DEBUG, "Failed to write to client");
@@ -111,8 +114,12 @@ void StandardHandler::write(HTTPClient &client) {
 				// zero bytes is unlikely to happen, dont do anything if it does happen
 				break;
 			default:
-				client.data.response.setProgress(client.data.response.getProgress()+ret);
-				if (len == (std::string::size_type)ret) {
+				client.data.response.packetProgress += ret;
+				if (client.data.response.packetProgress == client.data.response.currentPacket->size) {
+					++client.data.response.currentPacket;
+					client.data.response.packetProgress = 0;
+				}
+				if (client.data.response.currentPacket == client.data.response.getResponse().end()) {
 					// wrote entire response, closing
 					client.isHandled.lock();
 					client.connectionState = CLOSED;

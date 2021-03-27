@@ -20,32 +20,20 @@ void HTTPClientRequest::setRawRequest(const std::string &newData) {
 	_rawRequest = newData;
 }
 
-HTTPClientResponse::HTTPClientResponse(): _response(),  _progress(0) {}
+HTTPClientResponse::HTTPClientResponse(): _response(), hasProgress(false), packetProgress(0), currentPacket(_response.begin()) {}
 
-const std::string &HTTPClientResponse::getResponse() const {
+utils::DataList &HTTPClientResponse::getResponse() {
 	return _response;
 }
 
-std::string::size_type HTTPClientResponse::getProgress() const {
-	return _progress;
-}
-
-void HTTPClientResponse::setResponse(const std::string &response) {
+void HTTPClientResponse::setResponse(const utils::DataList &response) {
 	_response = response;
 }
 
-void HTTPClientResponse::setProgress(std::string::size_type index) {
-	_progress = index;
-}
-
-const std::string &HTTPClientResponse::getAssociatedDataRaw() const {
+utils::DataList &HTTPClientResponse::getAssociatedDataRaw() {
 	return _associatedData;
 }
 
-void HTTPClientResponse::appendAssociatedData(const std::string &newData) {
-	_associatedData += newData;
-}
-
-void HTTPClientResponse::setAssociatedData(const std::string &newData) {
-	_associatedData = newData;
+void HTTPClientResponse::appendAssociatedData(const char *data, utils::DataList::size_type size) {
+	_associatedData.add(data, size);
 }
