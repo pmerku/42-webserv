@@ -143,6 +143,7 @@ void HTTPResponder::generateResponse(HTTPClient &client) {
 				.setBody(str, str.length())
 				.build()
 			);
+			return;
 		}
 		else if (!S_ISREG(buf.st_mode)) {
 			std::string str = "File not found";
@@ -155,6 +156,7 @@ void HTTPResponder::generateResponse(HTTPClient &client) {
 				.setBody(str, str.length())
 				.build()
 			);
+			return;
 		}
 
 		// serve the file

@@ -35,7 +35,7 @@ void StandardHandler::handleAssociatedRead(HTTPClient &client) {
 				return;
 			case -1:
 				globalLogger.logItem(logger::DEBUG, "Failed to read from associated file FD");
-				std::cout << "Failed to read: " << errno << std::endl;
+				std::cout << "Failed to read: " << std::strerror(errno) << std::endl;
 				stopHandle(client);
 				return;
 			default:
