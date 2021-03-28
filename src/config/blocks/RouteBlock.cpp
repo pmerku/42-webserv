@@ -41,10 +41,14 @@ const AConfigBlock::validatorsMapType	RouteBlock::_validators =
 		  .add(new ArgumentLength(1))
 		  .add(new Unique())
 		  .build())
-		.addKey("cgi", ConfigValidatorListBuilder()
+		.addKey("cgi", ConfigValidatorListBuilder() // TODO requires cgi_ext validator
 		  .add(new ArgumentLength(1))
 		  .add(new Unique())
 		  .add(new IsFile(0))
+		  .build())
+	  	.addKey("cgi_ext", ConfigValidatorListBuilder() // TODO file extension validator
+		  .add(new ArgumentLength(1))
+		  .add(new Unique())
 		  .build())
 		.addKey("save_uploads", ConfigValidatorListBuilder()
 		  .add(new ArgumentLength(1))
@@ -106,6 +110,8 @@ void RouteBlock::parseData() {
 	_index = "";
 	_saveUploads = "";
 	_proxyUrl = "";
+	_cgiExt = "";
+	_cgi = "";
 
 	if (hasKey("root"))
 		_root = getKey("root")->getArg(0);
@@ -117,6 +123,10 @@ void RouteBlock::parseData() {
 		_saveUploads = getKey("save_uploads")->getArg(0);
 	if (hasKey("proxy_url"))
 		_proxyUrl = getKey("proxy_url")->getArg(0);
+	if (hasKey("cgi"))
+		_cgi = getKey("cgi")->getArg(0);
+	if (hasKey("cgi_ext"))
+		_cgiExt = getKey("cgi_ext")->getArg(0);
 	_isParsed = true;
 }
 
@@ -148,6 +158,11 @@ const std::string &RouteBlock::getIndex() const {
 const std::string &RouteBlock::getCgi() const {
 	throwNotParsed();
 	return _cgi;
+}
+
+const std::string &RouteBlock::getCgiExt() const {
+	throwNotParsed();
+	return _cgiExt;
 }
 
 const std::string &RouteBlock::getSaveUploads() const {

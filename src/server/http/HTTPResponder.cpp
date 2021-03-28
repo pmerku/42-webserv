@@ -63,6 +63,77 @@ void HTTPResponder::handleError(HTTPClient &client, config::ServerBlock *server,
 	client.data.response.setResponse(res.build());
 }
 
+void HTTPResponder::serveDirectory(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const std::string &dirPath) {
+	// check index
+	if (!route.getIndex().empty()) {
+		struct stat indexData = {};
+		std::string indexFile = dirPath;
+		if (0 != indexFile.compare(indexFile.length() - 1, 1, "/"))
+			indexFile += "/";
+		indexFile += route.getIndex();
+		if (::stat(indexFile.c_str(), &indexData) == -1) {
+			if (errno != ENOENT) {
+				handleError(client, &server, 500);
+				return;
+			}
+		}
+
+		// index file exists, serve it
+		if (S_ISREG(indexData.st_mode)) {
+			FD fileFd = ::open(indexFile.c_str(), O_RDONLY);
+			if (fileFd == -1) {
+				handleError(client, &server, 500);
+				return;
+			}
+			client.addAssociatedFd(fileFd);
+			client.responseState = FILE;
+			client.connectionState = ASSOCIATED_FD;
+			return;
+		}
+	}
+
+	// not index, handle directory listing
+	if (route.isDirectoryListing()) {
+		DIR *dir = ::opendir(dirPath.c_str());
+		if (dir == 0) {
+			handleError(client, &server, 500);
+			return;
+		}
+		dirent *dirEntry;
+		std::string uriWithoutQuery = client.data.request._uri;
+		uriWithoutQuery = uriWithoutQuery.substr(0, uriWithoutQuery.find('?'));
+		std::string str = "<h1>";
+		str += uriWithoutQuery + "</h1><ul>";
+		while ((dirEntry = ::readdir(dir)) != 0) {
+			str += "<li><a href=\"";
+			str += uriWithoutQuery + "/";
+			str += dirEntry->d_name;
+			str += "\">";
+			if (dirEntry->d_type == DT_DIR) {
+				str += "DIR ";
+			}
+			str += dirEntry->d_name;
+			str += "</a></li>";
+		}
+		str += "</ul>";
+		::closedir(dir);
+		client.data.response.setResponse(
+				ResponseBuilder("HTTP/1.1")
+						.setStatus(200)
+						.setHeader("Server", "Not-Apache")
+						.setDate()
+						.setHeader("Connection", "Close")
+						.setHeader("Content-Type", "text/html")
+						.setBody(str)
+						.build()
+		);
+		return;
+	}
+
+	// normal directory handler
+	handleError(client, &server, 403);
+}
+
 void HTTPResponder::serveFile(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const std::string &file) {
 	struct stat buf = {};
 
@@ -77,72 +148,7 @@ void HTTPResponder::serveFile(HTTPClient &client, config::ServerBlock &server, c
 
 	// check for directory
 	if (S_ISDIR(buf.st_mode)) {
-		// check index
-		if (!route.getIndex().empty()) {
-			struct stat indexData = {};
-			std::string indexFile = file;
-			if (0 != indexFile.compare(indexFile.length() - 1, 1, "/"))
-				indexFile += "/";
-			indexFile += route.getIndex();
-			if (::stat(indexFile.c_str(), &indexData) == -1) {
-				if (errno != ENOENT) {
-					handleError(client, &server, 500);
-					return;
-				}
-			}
-
-			// index file exists, serve it
-			if (S_ISREG(indexData.st_mode)) {
-				FD fileFd = ::open(indexFile.c_str(), O_RDONLY);
-				if (fileFd == -1) {
-					handleError(client, &server, 500);
-					return;
-				}
-				client.addAssociatedFd(fileFd);
-				client.responseState = FILE;
-				client.connectionState = ASSOCIATED_FD;
-				return;
-			}
-		}
-
-		// not index, handle normal directory
-		if (route.isDirectoryListing()) {
-			DIR *dir = ::opendir(file.c_str());
-			if (dir == 0) {
-				handleError(client, &server, 500);
-				return;
-			}
-			dirent *dirEntry;
-			std::string uriWithoutQuery = client.data.request._uri;
-			uriWithoutQuery = uriWithoutQuery.substr(0, uriWithoutQuery.find('?'));
-			std::string str = "<h1>";
-			str += uriWithoutQuery + "</h1><ul>";
-			while ((dirEntry = ::readdir(dir)) != 0) {
-				str += "<li><a href=\"";
-				str += uriWithoutQuery + "/";
-				str += dirEntry->d_name;
-				str += "\">";
-				if (dirEntry->d_type == DT_DIR) {
-					str += "DIR ";
-				}
-				str += dirEntry->d_name;
-				str += "</a></li>";
-			}
-			str += "</ul>";
-			::closedir(dir);
-			client.data.response.setResponse(
-		ResponseBuilder("HTTP/1.1")
-				.setStatus(200)
-				.setHeader("Server", "Not-Apache")
-				.setDate()
-				.setHeader("Connection", "Close")
-				.setHeader("Content-Type", "text/html")
-				.setBody(str)
-				.build()
-			);
-			return;
-		}
-		handleError(client, &server, 403);
+		serveDirectory(client, server, route, file);
 		return;
 	}
 	else if (!S_ISREG(buf.st_mode)) {
@@ -151,7 +157,11 @@ void HTTPResponder::serveFile(HTTPClient &client, config::ServerBlock &server, c
 	}
 
 	// serve the file
-	// TODO check file extension for cgi
+	if (route.shouldDoCgi() && !route.getCgiExt().empty() &&
+		0 == file.compare(file.length() - route.getCgiExt().length(), route.getCgiExt().length(), route.getCgiExt())) {
+		globalLogger.logItem(logger::DEBUG, "Handling cgi request");
+		// TODO handle cgi
+	}
 	FD fileFd = ::open(file.c_str(), O_RDONLY);
 	if (fileFd == -1) {
 		handleError(client, &server, 500);
@@ -185,13 +195,14 @@ void HTTPResponder::generateResponse(HTTPClient &client) {
 		handleError(client, 0, 400);
 		return;
 	}
-	std::string	host = (*hostIt).second;
-	host = host.substr(0, host.find(':'));
+	std::string	domain = (*hostIt).second;
+	domain = domain.substr(0, domain.find(':'));
 
 	// what server do you belong to?
 	// TODO check host ip
-	config::ServerBlock	*server = configuration->findServerBlock(host, client.getPort());
+	config::ServerBlock	*server = configuration->findServerBlock(domain, client.getPort());
 	if (server == 0) {
+		// TODO what to return?
 		handleError(client, server, 400);
 		return;
 	}

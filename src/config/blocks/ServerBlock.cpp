@@ -25,7 +25,7 @@ const AConfigBlock::validatorsMapType	ServerBlock::_validators =
 			  .add(new Unique())
 			  .add(new IntValidator(0, 1, 65535))
 			  .build())
-		.addKey("server_name", ConfigValidatorListBuilder() // TODO default to something
+		.addKey("server_name", ConfigValidatorListBuilder() // TODO default to something & [a-Z0-9\-\.]+ validator
 			.add(new ArgumentLength(1))
 			.add(new Unique())
 			.build())
@@ -77,6 +77,7 @@ void	ServerBlock::cleanup() {
 }
 
 // TODO error_page parsing
+// TODO host ip parsing
 void ServerBlock::parseData() {
 	_serverName = "_";
 	_bodyLimit = -1;

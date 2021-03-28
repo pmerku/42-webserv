@@ -2,14 +2,17 @@
 #include "log/Logger.hpp"
 #include "server/Server.hpp"
 #include "config/ConfigParser.hpp"
-#include "sys/signal.h"
+#include <csignal>
 
 #include "server/handlers/ThreadHandler.hpp"
 
 using namespace NotApache;
 
+static void handleSignals() {
+	std::signal(SIGPIPE, SIG_IGN);
+}
+
 int main() {
-	::signal(SIGPIPE, SIG_IGN);
 
 	// setup loggers
 	logger::Logger logger = std::cout;
@@ -31,14 +34,29 @@ int main() {
 	server.setLogger(logger);
 
 	// add server listeners
-	// TODO only make listeners for every unique port+host combo
-	// TODO use host in TCPListener
-	for (std::vector<config::ServerBlock*>::const_iterator i = config->getServerBlocks().begin(); i != config->getServerBlocks().end(); ++i) {
-		server.addListener(new TCPListener((*i)->getPort()));
+	{
+		// only add unique host+port pairs
+		std::vector<std::pair<std::string, int> >	uniquePairs;
+		for (std::vector<config::ServerBlock *>::const_iterator i = config->getServerBlocks().begin(); i != config->getServerBlocks().end(); ++i) {
+			bool alreadyAdded = false;
+			for (std::vector<std::pair<std::string, int> >::const_iterator j = uniquePairs.begin(); j != uniquePairs.end(); ++j) {
+				// TODO check extra zeros in host ip (127.0.0.1 is the same as 127.000.000.001)
+				if (j->first == (*i)->getHost() && j->second == (*i)->getPort()) {
+					alreadyAdded = true;
+					break;
+				}
+			}
+			if (!alreadyAdded)
+				uniquePairs.push_back(std::pair<std::string, int>((*i)->getHost(), (*i)->getPort()));
+		}
+
+		for (std::vector<std::pair<std::string, int> >::const_iterator j = uniquePairs.begin(); j != uniquePairs.end(); ++j) {
+			server.addListener(new TCPListener(j->second));
+		}
 	}
 
-	// workers
-	if (config->getWorkerCount() == -1)
+	// add workers
+	if (config->getWorkerCount() == -1) // only use main thread
 		server.addHandler(new StandardHandler());
 	else {
 		for (int i = 0; i < config->getWorkerCount(); ++i) {
@@ -47,6 +65,7 @@ int main() {
 	}
 
 	// start server
+	handleSignals();
 	try {
 		server.startServer(config);
 	} catch (std::exception &e) {

@@ -34,6 +34,7 @@ namespace config {
 		bool						_directoryListing;
 		std::string					_index;
 		std::string					_cgi;
+		std::string					_cgiExt;
 		std::string					_saveUploads;
 		std::string					_proxyUrl;
 
@@ -44,6 +45,7 @@ namespace config {
 		bool isDirectoryListing() const;
 		const std::string &getIndex() const;
 		const std::string &getCgi() const;
+		const std::string &getCgiExt() const;
 		const std::string &getSaveUploads() const;
 		const std::string &getProxyUrl() const;
 		/// return if it should serve files (if false -> proxy)
