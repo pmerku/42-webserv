@@ -13,7 +13,7 @@ int main() {
 
 	// setup loggers
 	logger::Logger logger = std::cout;
-	logger.setFlags(logger::Flags::Color);
+	logger.setFlags(logger::Flags::Color | logger::Flags::Debug);
 
 	// parse configuration
 	config::ConfigParser parser;
