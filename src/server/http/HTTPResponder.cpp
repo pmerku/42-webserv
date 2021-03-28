@@ -34,37 +34,48 @@ void HTTPResponder::generateAssociatedResponse(HTTPClient &client) {
 	// TODO proxy & cgi
 }
 
-void HTTPResponder::serveFile(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const std::string &file) {
+void HTTPResponder::handleError(HTTPClient &client, config::ServerBlock *server, int code, bool doErrorPage) {
 	(void)server;
+	(void)doErrorPage;
+	std::string text;
+	ResponseBuilder res = ResponseBuilder()
+		.setStatus(code)
+		.setHeader("Server", "Not-Apache")
+		.setDate()
+		.setHeader("Connection", "Close");
+	// TODO handle error default page
+	switch (code) {
+		case 404:
+			text = "File not found!";
+			break;
+		case 403:
+			text = "Forbidden!";
+			break;
+		default:
+		case 500:
+			text = "Internal server error!";
+			break;
+		case 400:
+			text = "Bad request!";
+			break;
+	}
+	res.setBody(std::string("<h1>") + utils::intToString(code) + "</h1><p>" + text + "</p>");
+	client.data.response.setResponse(res.build());
+}
+
+void HTTPResponder::serveFile(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const std::string &file) {
 	struct stat buf = {};
 
+	// get file data
 	if (::stat(file.c_str(), &buf) == -1) {
-		if (errno == ENOENT) {
-			std::string str = "File not found";
-			client.data.response.setResponse(
-					ResponseBuilder("HTTP/1.1")
-							.setStatus(404)
-							.setHeader("Server", "Not-Apache")
-							.setDate()
-							.setHeader("Connection", "Close")
-							.setBody(str, str.length())
-							.build()
-			);
-			return;
-		}
-		std::string str = "Something went wrong";
-		client.data.response.setResponse(
-				ResponseBuilder("HTTP/1.1")
-						.setStatus(500)
-						.setHeader("Server", "Not-Apache")
-						.setDate()
-						.setHeader("Connection", "Close")
-						.setBody(str, str.length())
-						.build()
-		);
+		if (errno == ENOENT)
+			handleError(client, &server, 404);
+		else
+			handleError(client, &server, 500);
 		return;
 	}
 
+	// check for directory
 	if (S_ISDIR(buf.st_mode)) {
 		// check index
 		if (!route.getIndex().empty()) {
@@ -75,32 +86,16 @@ void HTTPResponder::serveFile(HTTPClient &client, config::ServerBlock &server, c
 			indexFile += route.getIndex();
 			if (::stat(indexFile.c_str(), &indexData) == -1) {
 				if (errno != ENOENT) {
-					std::string str = "Something went wrong";
-					client.data.response.setResponse(
-							ResponseBuilder("HTTP/1.1")
-									.setStatus(500)
-									.setHeader("Server", "Not-Apache")
-									.setDate()
-									.setHeader("Connection", "Close")
-									.setBody(str, str.length())
-									.build()
-					);
+					handleError(client, &server, 500);
+					return;
 				}
 			}
+
+			// index file exists, serve it
 			if (S_ISREG(indexData.st_mode)) {
-				// index file exists, serve it
 				FD fileFd = ::open(indexFile.c_str(), O_RDONLY);
 				if (fileFd == -1) {
-					std::string str = "Something went wrong";
-					client.data.response.setResponse(
-							ResponseBuilder("HTTP/1.1")
-									.setStatus(500)
-									.setHeader("Server", "Not-Apache")
-									.setDate()
-									.setHeader("Connection", "Close")
-									.setBody(str, str.length())
-									.build()
-					);
+					handleError(client, &server, 500);
 					return;
 				}
 				client.addAssociatedFd(fileFd);
@@ -114,15 +109,7 @@ void HTTPResponder::serveFile(HTTPClient &client, config::ServerBlock &server, c
 		if (route.isDirectoryListing()) {
 			DIR *dir = ::opendir(file.c_str());
 			if (dir == 0) {
-				client.data.response.setResponse(
-					ResponseBuilder()
-					.setStatus(500)
-					.setHeader("Server", "Not-Apache")
-					.setDate()
-					.setHeader("Connection", "Close")
-					.setBody("Something went wrong")
-					.build()
-				);
+				handleError(client, &server, 500);
 				return;
 			}
 			dirent *dirEntry;
@@ -155,29 +142,11 @@ void HTTPResponder::serveFile(HTTPClient &client, config::ServerBlock &server, c
 			);
 			return;
 		}
-		std::string str = "File not found";
-		client.data.response.setResponse(
-				ResponseBuilder("HTTP/1.1")
-						.setStatus(404)
-						.setHeader("Server", "Not-Apache")
-						.setDate()
-						.setHeader("Connection", "Close")
-						.setBody(str, str.length())
-						.build()
-		);
+		handleError(client, &server, 403);
 		return;
 	}
 	else if (!S_ISREG(buf.st_mode)) {
-		std::string str = "File not found";
-		client.data.response.setResponse(
-				ResponseBuilder("HTTP/1.1")
-						.setStatus(404)
-						.setHeader("Server", "Not-Apache")
-						.setDate()
-						.setHeader("Connection", "Close")
-						.setBody(str, str.length())
-						.build()
-		);
+		handleError(client, &server, 403);
 		return;
 	}
 
@@ -185,22 +154,12 @@ void HTTPResponder::serveFile(HTTPClient &client, config::ServerBlock &server, c
 	// TODO check file extension for cgi
 	FD fileFd = ::open(file.c_str(), O_RDONLY);
 	if (fileFd == -1) {
-		std::string str = "Something went wrong";
-		client.data.response.setResponse(
-				ResponseBuilder("HTTP/1.1")
-						.setStatus(500)
-						.setHeader("Server", "Not-Apache")
-						.setDate()
-						.setHeader("Connection", "Close")
-						.setBody(str, str.length())
-						.build()
-		);
+		handleError(client, &server, 500);
 		return;
 	}
 	client.addAssociatedFd(fileFd);
 	client.responseState = FILE;
 	client.connectionState = ASSOCIATED_FD;
-	return;
 }
 
 void HTTPResponder::generateResponse(HTTPClient &client) {
@@ -221,18 +180,9 @@ void HTTPResponder::generateResponse(HTTPClient &client) {
 		return;
 	}
 	std::map<std::string,std::string>::iterator hostIt = client.data.request._headers.find("HOST");
+	// no host header = invalid request
 	if (hostIt == client.data.request._headers.end()) {
-		// TODO what if no host header?
-		std::string str = "Missing host header";
-		client.data.response.setResponse(
-			ResponseBuilder("HTTP/1.1")
-			.setStatus(400)
-			.setHeader("Server", "Not-Apache")
-			.setDate()
-			.setHeader("Connection", "Close")
-			.setBody(str, str.length())
-			.build()
-		);
+		handleError(client, 0, 400);
 		return;
 	}
 	std::string	host = (*hostIt).second;
@@ -242,16 +192,7 @@ void HTTPResponder::generateResponse(HTTPClient &client) {
 	// TODO check host ip
 	config::ServerBlock	*server = configuration->findServerBlock(host, client.getPort());
 	if (server == 0) {
-		std::string str = "No server block to handle";
-		client.data.response.setResponse(
-			ResponseBuilder("HTTP/1.1")
-			.setStatus(400)
-			.setHeader("Server", "Not-Apache")
-			.setDate()
-			.setHeader("Connection", "Close")
-			.setBody(str, str.length())
-			.build()
-		);
+		handleError(client, server, 400);
 		return;
 	}
 
@@ -260,31 +201,22 @@ void HTTPResponder::generateResponse(HTTPClient &client) {
 	uriWithoutQuery = uriWithoutQuery.substr(0, uriWithoutQuery.find('?'));
 	config::RouteBlock	*route = server->findRoute(uriWithoutQuery);
 	if (route == 0) {
-		client.data.response.setResponse(
-			ResponseBuilder()
-			.setStatus(404)
-			.setHeader("Server", "Not-Apache")
-			.setDate()
-			.setHeader("Connection", "Close")
-			.setBody("Route not found")
-			.build()
-		);
+		handleError(client, server, 400);
 		return;
 	}
 	if (route->shouldDoFile()) {
 		std::string file = route->getRoot() + uriWithoutQuery;
-		HTTPResponder::serveFile(client, *server, *route, file);
+		serveFile(client, *server, *route, file);
 	}
 	else {
 		// TODO do proxy
-		std::string str = "Proxy not yet implemented";
 		client.data.response.setResponse(
-			ResponseBuilder("HTTP/1.1")
+			ResponseBuilder()
 			.setStatus(200)
 			.setHeader("Server", "Not-Apache")
 			.setDate()
 			.setHeader("Connection", "Close")
-			.setBody(str, str.length())
+			.setBody("Proxy not yet implemented")
 			.build()
 		);
 	}

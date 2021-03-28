@@ -17,6 +17,8 @@ namespace NotApache {
 		static void generateAssociatedResponse(HTTPClient &client);
 
 		static void serveFile(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const std::string &file);
+
+		static void handleError(HTTPClient &client, config::ServerBlock *server, int code, bool doErrorPage = true);
 	};
 
 }

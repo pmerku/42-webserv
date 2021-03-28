@@ -2,15 +2,18 @@
 #include "log/Logger.hpp"
 #include "server/Server.hpp"
 #include "config/ConfigParser.hpp"
+#include "sys/signal.h"
 
 #include "server/handlers/ThreadHandler.hpp"
 
 using namespace NotApache;
 
 int main() {
+	::signal(SIGPIPE, SIG_IGN);
+
 	// setup loggers
 	logger::Logger logger = std::cout;
-	logger.setFlags(logger::Flags::Debug | logger::Flags::Color);
+	logger.setFlags(logger::Flags::Color);
 
 	// parse configuration
 	config::ConfigParser parser;
