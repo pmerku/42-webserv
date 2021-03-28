@@ -79,6 +79,7 @@ void HTTPResponder::serveDirectory(HTTPClient &client, config::ServerBlock &serv
 		}
 
 		// index file exists, serve it
+		// TODO mime types
 		if (S_ISREG(indexData.st_mode)) {
 			FD fileFd = ::open(indexFile.c_str(), O_RDONLY);
 			if (fileFd == -1) {
@@ -162,6 +163,7 @@ void HTTPResponder::serveFile(HTTPClient &client, config::ServerBlock &server, c
 		globalLogger.logItem(logger::DEBUG, "Handling cgi request");
 		// TODO handle cgi
 	}
+	// TODO mime types
 	FD fileFd = ::open(file.c_str(), O_RDONLY);
 	if (fileFd == -1) {
 		handleError(client, &server, 500);

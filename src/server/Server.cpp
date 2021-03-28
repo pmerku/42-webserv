@@ -130,6 +130,7 @@ void Server::_clientCleanup() {
 
 		if (!isClosed)
 			continue;
+		globalLogger.logItem(logger::INFO, std::string("Served file: ") + (*i)->data.request._uri);
 		globalLogger.logItem(logger::DEBUG, "Closed client connection");
 		close((*i)->getFd());
 		delete *i;
