@@ -59,9 +59,10 @@ const std::map<e_method, std::string> HTTPParser::methodMap_EtoS =
 		(TRACE, "TRACE");
 
 HTTPParser::ParseState		 HTTPParser::parse(HTTPClient& client) {
+	// TODO check later
 	if (client.data.request._rawRequest.length() > MAX_REQUEST)	{
 		globalLogger.logItem(logger::DEBUG, "Content-length exceeds max body size");
-		client.data.request._statusCode = 400;
+		client.data.request._statusCode = 413;
 		return ERROR;
 	}
 	if (client.data.request._isChunked)
@@ -94,7 +95,7 @@ HTTPParser::ParseState		HTTPParser::parseChunkedBody(HTTPClientRequest& req, std
 	size_t chunkSize = utils::stoh(size.substr(2));
 	if (req._body.length() + chunkSize > MAX_BODY) {
 		globalLogger.logItem(logger::DEBUG, "Content-length exceeds max body size");
-		req._statusCode = 400;
+		req._statusCode = 413;
 		return ERROR;
 	}
 	SOB+=2;
@@ -129,7 +130,7 @@ HTTPParser::ParseState		HTTPParser::parseBody(HTTPClientRequest& req, std::strin
 	if (rawRequest.length() < contentLength)
 		return UNFINISHED;
 	if (contentLength > MAX_BODY) {
-		req._statusCode = 400;
+		req._statusCode = 413;
 		globalLogger.logItem(logger::ERROR, "Content-length exceeds max body size");
 		return ERROR;
 	}
@@ -204,14 +205,14 @@ HTTPParser::ParseState		HTTPParser::parseRequestLine(HTTPClientRequest& req, std
 
 	// CHECK URI
 	if (parts[1][0] != '/') {
-		req._statusCode = 401;
+		req._statusCode = 400;
 		globalLogger.logItem(logger::ERROR, "Invalid URI");
 		return ERROR;
 	}
 
 	for (size_t i = 0; i < parts[1].size(); ++i) {
 		if (allowedURIChars.find(parts[1][i]) == std::string::npos) {
-			req._statusCode = 401;
+			req._statusCode = 400;
 			globalLogger.logItem(logger::ERROR, "Invalid char in URI");
 			return ERROR;
 		}

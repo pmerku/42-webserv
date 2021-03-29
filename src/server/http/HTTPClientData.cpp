@@ -6,7 +6,7 @@
 
 using namespace NotApache;
 
-HTTPClientRequest::HTTPClientRequest(): _rawRequest(), _method(), _uri(), _headers(), _body(), _statusCode(), _isChunked(false) {}
+HTTPClientRequest::HTTPClientRequest(): _rawRequest(), _method(), _uri(), _headers(), _body(), _statusCode(200), _isChunked(false) {}
 
 const std::string &HTTPClientRequest::getRawRequest() const {
 	return _rawRequest;

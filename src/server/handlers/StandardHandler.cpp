@@ -76,7 +76,8 @@ void StandardHandler::read(HTTPClient &client) {
 
 	// parsing
 	client.isHandled.lock();
-	if (_parser->parse(client) == HTTPParser::READY_FOR_WRITE) {
+	HTTPParser::ParseState parseRet = _parser->parse(client);
+	if (parseRet == HTTPParser::READY_FOR_WRITE || parseRet == HTTPParser::ERROR) {
 		client.connectionState = WRITING;
 	}
 	stopHandle(client, false);

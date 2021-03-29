@@ -90,8 +90,9 @@ ResponseBuilder::ResponseBuilder(const std::string &protocol) {
 
 ResponseBuilder &ResponseBuilder::setStatus(int code) {
 	std::map<int, std::string>::const_iterator it = statusMap.find(code);
-	if (it == statusMap.end())
-		ERROR_THROW(StatusCodeError());
+	if (it == statusMap.end()) {
+		it = statusMap.find(500);
+	}
 	_statusLine.first = utils::intToString(it->first);
 	_statusLine.second = it->second;
 	return *this;
@@ -131,9 +132,6 @@ std::string ResponseBuilder::convertTime(time_t time) {
 
 	currentTime = std::localtime(&time); // TODO calculate yourself
 	int ret = strftime(date, sizeof(date), "%a, %d %B %Y %H:%M:%S ", currentTime);
-	if (ret < 0)
-		ERROR_THROW(DateError());
-
 	return std::string(date, ret) + "GMT";
 }
 

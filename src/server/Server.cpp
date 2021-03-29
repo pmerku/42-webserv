@@ -59,7 +59,12 @@ void Server::_createFdSets() {
 				if ((*i)->getAssociatedFd(0) > _maxFd) _maxFd = (*i)->getAssociatedFd(0);
 				FD_SET((*i)->getAssociatedFd(0), &_readFdSet);
 			}
-			// TODO cgi support
+			else if ((*i)->responseState == CGI) {
+				if ((*i)->getAssociatedFd(0) > _maxFd) _maxFd = (*i)->getAssociatedFd(0);
+				FD_SET((*i)->getAssociatedFd(0), &_readFdSet);
+				if ((*i)->getAssociatedFd(1) > _maxFd) _maxFd = (*i)->getAssociatedFd(1);
+				FD_SET((*i)->getAssociatedFd(0), &_writeFdSet);
+			}
 		}
 	}
 }

@@ -37,28 +37,14 @@ void HTTPResponder::generateAssociatedResponse(HTTPClient &client) {
 void HTTPResponder::handleError(HTTPClient &client, config::ServerBlock *server, int code, bool doErrorPage) {
 	(void)server;
 	(void)doErrorPage;
-	std::string text;
 	ResponseBuilder res = ResponseBuilder()
 		.setStatus(code)
 		.setHeader("Server", "Not-Apache")
 		.setDate()
 		.setHeader("Connection", "Close");
 	// TODO handle error default page
-	switch (code) {
-		case 404:
-			text = "File not found!";
-			break;
-		case 403:
-			text = "Forbidden!";
-			break;
-		default:
-		case 500:
-			text = "Internal server error!";
-			break;
-		case 400:
-			text = "Bad request!";
-			break;
-	}
+	std::map<int,std::string>::const_iterator it = ResponseBuilder::statusMap.find(code);
+	std::string text = it == ResponseBuilder::statusMap.end() ? "Internal server error!" : it->second;
 	res.setBody(std::string("<h1>") + utils::intToString(code) + "</h1><p>" + text + "</p>");
 	client.data.response.setResponse(res.build());
 }
@@ -175,10 +161,9 @@ void HTTPResponder::serveFile(HTTPClient &client, config::ServerBlock &server, c
 }
 
 void HTTPResponder::generateResponse(HTTPClient &client) {
-	// TODO generate error responses
-	if (false) {
+	if (client.data.request._statusCode != 200) {
 		// error responses if parsing failed
-		handleError(client, 0, 500);
+		handleError(client, 0, client.data.request._statusCode);
 		return;
 	}
 	std::map<std::string,std::string>::iterator hostIt = client.data.request._headers.find("HOST");

@@ -37,27 +37,6 @@ namespace NotApache {
 		ResponseBuilder		&setBody(const utils::DataList &data);
 		ResponseBuilder		&setDate();
 		utils::DataList		build();
-
-		class ResponseBuilderException : public std::exception {
-		public:
-			virtual const char *what() const throw() {
-				return "Failed to build response";
-			}
-		};
-
-		class DateError : public ResponseBuilderException {
-		public:
-			const char *what() const throw() {
-				return "Failed to populate Date header";
-			}
-		};
-
-		class StatusCodeError : public ResponseBuilderException {
-		public:
-			const char *what() const throw() {
-				return "Unhandled status code";
-			}
-		};
 	};
 
 } // namespace NotApache
