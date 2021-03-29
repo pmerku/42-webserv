@@ -7,6 +7,8 @@
 
 #include "server/ServerTypes.hpp"
 #include "utils/DataList.hpp"
+#include "server/http/RequestBuilder.hpp"
+#include "server/http/ResponseBuilder.hpp"
 #include <string>
 #include <map>
 
@@ -57,6 +59,7 @@ namespace NotApache {
 		bool 						hasProgress;
 		utils::DataList::size_type	packetProgress;
 		utils::DataList::iterator 	currentPacket;
+		ResponseBuilder				builder;
 
 		utils::DataList			&getResponse();
 

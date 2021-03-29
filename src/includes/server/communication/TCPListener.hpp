@@ -29,13 +29,13 @@ namespace NotApache {
 
 		HTTPClient	*acceptClient();
 
-		class FailedToListen : std::exception {
+		class FailedToListen : public std::exception {
 			const char *what() const throw() {
 				return "TCPListener: Failed to bind and listen on port";
 			}
 		};
 
-		class FailedToAccept : std::exception {
+		class FailedToAccept : public std::exception {
 			const char *what() const throw() {
 				return "TCPListener: Failed to accept client";
 			}

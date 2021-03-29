@@ -145,7 +145,7 @@ utils::DataList	ResponseBuilder::build() {
 
 	// {Header}: {Header value} \r\n
 	for (std::map<std::string, std::string>::iterator it = _headerMap.begin(); it != _headerMap.end(); it++) {
-		if (!it->first.empty() && !it->second.empty())
+		if (!it->first.empty())
 			response += it->first + ": " + it->second;
 		response += _endLine;
 	}
