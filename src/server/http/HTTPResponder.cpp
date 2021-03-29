@@ -175,20 +175,10 @@ void HTTPResponder::serveFile(HTTPClient &client, config::ServerBlock &server, c
 }
 
 void HTTPResponder::generateResponse(HTTPClient &client) {
-
 	// TODO generate error responses
 	if (false) {
 		// error responses if parsing failed
-		std::string str = "Couldn't parse the HTTP request";
-		client.data.response.setResponse(
-			ResponseBuilder("HTTP/1.1")
-			.setStatus(400)
-			.setHeader("Server", "Not-Apache")
-			.setDate()
-			.setHeader("Connection", "Close")
-			.setBody(str, str.length())
-			.build()
-		);
+		handleError(client, 0, 500);
 		return;
 	}
 	std::map<std::string,std::string>::iterator hostIt = client.data.request._headers.find("HOST");
