@@ -9,6 +9,9 @@
 #include "config/validators/Unique.hpp"
 #include "config/validators/MutuallyExclusive.hpp"
 #include "config/validators/BooleanValidator.hpp"
+#include "config/validators/HTTPMethodValidator.hpp"
+#include "config/validators/IsDirectory.hpp"
+#include "config/validators/IsFile.hpp"
 
 using namespace config;
 
@@ -18,15 +21,17 @@ const AConfigBlock::validatorsMapType	RouteBlock::_validators =
 		  .add(new ArgumentLength(1))
 		  .add(new Unique())
 		  .build())
-		.addKey("allowed_methods", ConfigValidatorListBuilder() // TODO method validator
+		.addKey("allowed_methods", ConfigValidatorListBuilder()
 		  .add(new ArgumentLength(0, 9))
+		  .add(new HTTPMethodValidator())
 		  .add(new Unique())
 		  .build())
-		.addKey("root", ConfigValidatorListBuilder() // TODO directory validator
+		.addKey("root", ConfigValidatorListBuilder()
 		  .add(new ArgumentLength(1))
 		  .add(new Unique())
+		  .add(new IsDirectory(0))
 		  .build())
-		.addKey("directory_listing", ConfigValidatorListBuilder() // TODO boolean validator
+		.addKey("directory_listing", ConfigValidatorListBuilder()
 		  .add(new ArgumentLength(1))
 		  .add(new BooleanValidator(0))
 		  .add(new Unique())
@@ -35,13 +40,15 @@ const AConfigBlock::validatorsMapType	RouteBlock::_validators =
 		  .add(new ArgumentLength(1))
 		  .add(new Unique())
 		  .build())
-		.addKey("cgi", ConfigValidatorListBuilder() // TODO file validator
+		.addKey("cgi", ConfigValidatorListBuilder()
 		  .add(new ArgumentLength(1))
 		  .add(new Unique())
+		  .add(new IsFile(0))
 		  .build())
-		.addKey("save_uploads", ConfigValidatorListBuilder() // TODO directory validator
+		.addKey("save_uploads", ConfigValidatorListBuilder()
 		  .add(new ArgumentLength(1))
 		  .add(new Unique())
+		  .add(new IsDirectory(0))
 		  .build())
 		.addKey("use_plugin", ConfigValidatorListBuilder() // TODO plugin validator
 		  .add(new ArgumentLength(1))
@@ -154,4 +161,9 @@ const std::string &RouteBlock::getProxyUrl() const {
 bool RouteBlock::shouldDoFile() const {
 	throwNotParsed();
 	return _proxyUrl.empty();
+}
+
+bool RouteBlock::shouldDoCgi() const {
+	throwNotParsed();
+	return !_cgi.empty();
 }

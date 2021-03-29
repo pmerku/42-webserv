@@ -6,6 +6,7 @@
 #include "config/ConfigValidatorBuilder.hpp"
 #include "config/validators/ArgumentLength.hpp"
 #include "config/validators/IntValidator.hpp"
+#include "utils/atoi.hpp"
 #include <cstdlib>
 
 using namespace config;
@@ -19,7 +20,7 @@ const AConfigBlock::validatorsMapType	RootBlock::_validators =
 	  	.build();
 
 const AConfigBlock::validatorListType 	RootBlock::_blockValidators =
-		ConfigValidatorListBuilder() // TODO validate server duplicates
+		ConfigValidatorListBuilder()
 		.build();
 
 const std::string 						RootBlock::_allowedBlocks[] = { "server", "" };
@@ -53,11 +54,10 @@ void	RootBlock::cleanup() {
 	}
 }
 
-// TODO parse int
 void	RootBlock::parseData() {
 	_workerCount = -1;
 	if (hasKey("use_workers"))
-		_workerCount = std::atoi(getKey("use_workers")->getArg(0).c_str());
+		_workerCount = utils::atoi(getKey("use_workers")->getArg(0).c_str());
 	for (std::vector<AConfigBlock*>::iterator i = _blocks.begin(); i != _blocks.end(); ++i) {
 		if (dynamic_cast<ServerBlock*>(*i))
 			_serverBlocks.push_back(reinterpret_cast<ServerBlock*>(*i));

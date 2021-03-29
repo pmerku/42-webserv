@@ -28,6 +28,8 @@ int main() {
 	server.setLogger(logger);
 
 	// add server listeners
+	// TODO only make listeners for every unique port+host combo
+	// TODO use host in TCPListener
 	for (std::vector<config::ServerBlock*>::const_iterator i = config->getServerBlocks().begin(); i != config->getServerBlocks().end(); ++i) {
 		server.addListener(new TCPListener((*i)->getPort()));
 	}
