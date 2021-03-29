@@ -9,12 +9,14 @@
 #include <ostream>
 #include "LogItem.hpp"
 #include "config/ConfigException.hpp"
+#include "utils/mutex.hpp"
 
 namespace logger {
 
 	class Logger {
 	private:
 		std::vector<std::ostream *> _streams;
+		utils::MutexLock			_lock;
 		Flags::flagType 			_loggerFlags;
 
 	public:

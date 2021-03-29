@@ -22,9 +22,11 @@ Logger::Logger(const Logger &logger) {
 
 void    Logger::log(const LogItem &item) {
 	if (item.logType == DEBUG && !(_loggerFlags & Flags::Debug)) return;
+	_lock.lock();
 	for (std::vector<std::ostream*>::const_iterator first = _streams.begin(); first != _streams.end(); ++first) {
 		**first << item.toString(_loggerFlags) << std::endl;
 	}
+	_lock.unlock();
 }
 
 void    Logger::log(const LogItem &item, const config::ConfigException &e) {

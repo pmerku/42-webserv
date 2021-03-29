@@ -1,68 +1,74 @@
 //
-// Created by jelle on 3/2/2021.
+// Created by jelle on 3/12/2021.
 //
 
 #ifndef SERVER_HPP
 #define SERVER_HPP
 
-#include "log/Loggable.hpp"
+#include "config/blocks/RootBlock.hpp"
+#include "log/Logger.hpp"
 #include "server/ServerTypes.hpp"
-#include "server/handlers/AHandler.hpp"
-#include "server/listeners/AListener.hpp"
-#include "server/parsers/AParser.hpp"
-#include "server/responders/AResponder.hpp"
-#include "server/Client.hpp"
-#include <vector>
+#include "server/communication/TCPListener.hpp"
+#include "server/communication/ServerEventBus.hpp"
+#include "server/handlers/HandlerHolder.hpp"
+#include "server/http/HTTPParser.hpp"
+#include "server/http/HTTPResponder.hpp"
+#include "server/terminal/TerminalResponder.hpp"
+#include "server/terminal/TerminalClient.hpp"
+#include "server/global/GlobalLogger.hpp"
 #include <sys/socket.h>
+#include <vector>
+#include <list>
 #include <exception>
 
 namespace NotApache {
 
-	///	Generic server, combines listeners, parsers and handlers
-	/// All Listeners, handlers, parsers, responders and clients added will be deleted at destruction
-	class Server: public logger::ILoggable {
+	class Server {
 	private:
-		std::vector<AListener *> _listeners;
-		std::vector<AHandler *> _handlers;
-		std::vector<AParser *> _parsers;
-		std::vector<AResponder *> _responders;
-		std::vector<AHandler *>::size_type _handlerBalance;
+		enum SelectReturn {
+			SUCCESS,
+			TIMEOUT,
+			ERROR
+		};
 
-		std::vector<Client *> _clients;
-		fd_set _readFDSet;
-		fd_set _writeFDSet;
+		// select fd sets
+		fd_set	_readFdSet;
+		fd_set	_writeFdSet;
+		FD		_maxFd;
 
-		FD _maxFD();
+		// parts
+		std::vector<TCPListener *>	_listeners;
+		std::list<HTTPClient *>		_clients;
+		HandlerHolder				_handlers;
+		ServerEventBus				_eventBus;
 
-		void _createFDSets();
+		// responders & parsers
+		HTTPParser			_httpParser;
+		HTTPResponder		_httpResponder;
+		TerminalClient		_termClient;
+		TerminalResponder	_termResponder;
+
+		SelectReturn	_runSelect();
+		void			_createFdSets();
+		void			_handleSelect();
+		void			_clientCleanup();
 
 	public:
 		Server();
-
 		virtual ~Server();
 
-		void serve();
+		void 			addListener(TCPListener *listener);
+		void 			addHandler(AHandler *handler);
+		void 			setLogger(logger::Logger &logger);
+		void			startServer(config::RootBlock *config);
 
-		void addListener(AListener *listener);
-
-		void addHandler(AHandler *handler);
-
-		void addParser(AParser *parser);
-
-		void addResponder(AResponder *responder);
-
-		class ConnectionListeningFailed : public std::exception {
-			const char *what() const throw() {
-				return "Failed to listen for new client connection.";
-			}
-		};
-
-		class PortBindingFailed : public std::exception {
-			const char *what() const throw() {
-				return "Failed to bind to port";
+		class IoSelectingFailed: public std::exception {
+		public:
+			const char * what() const throw() {
+				return "Failed to run select() on clients";
 			}
 		};
 	};
-}
 
+}
 #endif //SERVER_HPP

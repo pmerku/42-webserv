@@ -3,27 +3,16 @@
 #include "server/Server.hpp"
 #include "config/ConfigParser.hpp"
 
-// listeners
-#include "server/listeners/TCPListener.hpp"
-#include "server/listeners/TerminalListener.hpp"
-
-// handlers
-#include "server/handlers/StandardHandler.hpp"
-
-// responders
-#include "server/responders/HTTPResponder.hpp"
-#include "server/responders/TerminalResponder.hpp"
-
-// parsers
-#include "server/parsers/HTTPParser.hpp"
-#include "server/parsers/TerminalParser.hpp"
+#include "server/handlers/ThreadHandler.hpp"
 
 using namespace NotApache;
 
 int main() {
+	// setup loggers
 	logger::Logger logger = std::cout;
 	logger.setFlags(logger::Flags::Debug | logger::Flags::Color);
 
+	// parse configuration
 	config::ConfigParser parser;
 	parser.setLogger(logger);
 	config::RootBlock *config;
@@ -34,6 +23,7 @@ int main() {
 		return 1;
 	}
 
+	// create server
 	Server server;
 	server.setLogger(logger);
 
@@ -41,27 +31,22 @@ int main() {
 	for (std::vector<config::ServerBlock*>::const_iterator i = config->getServerBlocks().begin(); i != config->getServerBlocks().end(); ++i) {
 		server.addListener(new TCPListener((*i)->getPort()));
 	}
-	server.addListener(new TerminalListener());
 
 	// workers
 	if (config->getWorkerCount() == -1)
 		server.addHandler(new StandardHandler());
 	else {
 		for (int i = 0; i < config->getWorkerCount(); ++i) {
-			server.addHandler(new StandardHandler());
+			server.addHandler(new ThreadHandler());
 		}
 	}
 
-	server.addResponder(new HTTPResponder());
-	server.addResponder(new TerminalResponder());
-
-	server.addParser(new HTTPParser());
-	server.addParser(new TerminalParser());
-
+	// start server
 	try {
-		server.serve();
+		server.startServer(config);
 	} catch (std::exception &e) {
 		logger.log(logger::LogItem(logger::ERROR, e.what()));
+		return 1;
 	}
 	return 0;
 }

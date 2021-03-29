@@ -1,31 +1,12 @@
 //
-// Created by jelle on 3/2/2021.
+// Created by jelle on 3/12/2021.
 //
 
 #ifndef SERVERTYPES_HPP
 #define SERVERTYPES_HPP
 
 namespace NotApache {
-	typedef int 	FD;
-
-	enum ClientStates {
-		READING,
-		WRITING,
-		CLOSED
-	};
-
-	enum ResponseStates {
-		PARSE_ERROR,
-		IS_RESPONDING,
-		IS_WRITING,
-		ERRORED,
-		TIMED_OUT
-	};
-
-	enum ClientTypes {
-		TERMINAL,
-		CONNECTION
-	};
+	typedef int FD;
 }
 
 #endif //SERVERTYPES_HPP

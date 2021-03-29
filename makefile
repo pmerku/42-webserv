@@ -52,20 +52,36 @@ SRC	=\
 	config/validators/MutuallyExclusive.cpp\
 	config/validators/BooleanValidator.cpp\
 	config/validators/Unique.cpp\
+	env/env.cpp\
+	env/ENVBuilder.cpp\
+	utils/AThread.cpp\
+	utils/intToString.cpp\
 	utils/isSpace.cpp\
+	utils/mutex.cpp\
+	utils/split.cpp\
+	utils/atoi.cpp\
+	utils/stoi.cpp\
+	utils/toUpper.cpp\
+	utils/stoh.cpp\
+	utils/isDigit.cpp\
+	utils/countSpaces.cpp\
+	utils/strdup.cpp\
 	server/handlers/AHandler.cpp\
 	server/handlers/StandardHandler.cpp\
-	server/listeners/TCPListener.cpp\
-	server/listeners/TerminalListener.cpp\
-	server/parsers/AParser.cpp\
-	server/parsers/HTTPParser.cpp\
-	server/parsers/TerminalParser.cpp\
-	server/responders/AResponder.cpp\
-	server/responders/HTTPResponder.cpp\
-	server/responders/TerminalResponder.cpp\
-	server/Client.cpp\
-	server/Server.cpp\
-	server/TerminalClient.cpp
+	server/handlers/HandlerHolder.cpp\
+	server/handlers/ThreadHandler.cpp\
+	server/communication/TCPListener.cpp\
+	server/communication/ServerEventBus.cpp\
+	server/http/HTTPClient.cpp\
+	server/http/HTTPClientData.cpp\
+	server/http/HTTPParser.cpp\
+	server/http/HTTPResponder.cpp\
+	server/http/RequestBuilder.cpp\
+	server/http/ResponseBuilder.cpp\
+	server/terminal/TerminalClient.cpp\
+	server/terminal/TerminalResponder.cpp\
+	server/globals.cpp\
+	server/Server.cpp
 
 HEADERS	=\
 	log/Loggable.hpp\
@@ -73,38 +89,57 @@ HEADERS	=\
 	log/LogItem.hpp\
 	regex/Regex.hpp\
 	config/ConfigValidatorBuilder.hpp\
-    config/ConfigParser.hpp\
-    config/ConfigLine.hpp\
-    config/ConfigException.hpp\
-    config/AConfigValidator.hpp\
-    config/AConfigBlock.hpp\
-    config/blocks/RootBlock.hpp\
-    config/blocks/RouteBlock.hpp\
-    config/blocks/ServerBlock.hpp\
-    config/validators/ArgumentLength.hpp\
-    config/validators/RequiredKey.hpp\
-    config/validators/IntValidator.hpp\
-    config/validators/MutuallyExclusive.hpp\
-    config/validators/BooleanValidator.hpp\
-    config/validators/Unique.hpp\
-    config/ParseExceptions.hpp\
-    utils/isSpace.hpp\
+  config/ConfigParser.hpp\
+  config/ConfigLine.hpp\
+  config/ConfigException.hpp\
+  config/AConfigValidator.hpp\
+  config/AConfigBlock.hpp\
+  config/blocks/RootBlock.hpp\
+  config/blocks/RouteBlock.hpp\
+  config/blocks/ServerBlock.hpp\
+  config/validators/ArgumentLength.hpp\
+  config/validators/RequiredKey.hpp\
+  config/validators/IntValidator.hpp\
+  config/validators/MutuallyExclusive.hpp\
+  config/validators/BooleanValidator.hpp\
+  config/validators/Unique.hpp\
+  config/ParseExceptions.hpp\
+  env/env.hpp\
+	env/ENVBuilder.hpp\
+  utils/AThread.hpp\
+	utils/split.hpp\
+	utils/atoi.hpp\
+	utils/toUpper.hpp\
+	utils/stoi.hpp\
+	utils/stoh.hpp\
+	utils/isDigit.hpp\
+	utils/countSpaces.hpp\
+  utils/CreateMap.hpp\
+  utils/CreateVector.hpp\
+  utils/ErrorThrow.hpp\
+  utils/intToString.hpp\
+	utils/isSpace.hpp\
+	utils/localTime.hpp\
+	utils/mutex.hpp\
+	utils/strdup.hpp\
 	server/handlers/AHandler.hpp\
-	server/handlers/StandardHandler.hpp\
-	server/listeners/AListener.hpp\
-	server/listeners/TCPListener.hpp\
-	server/listeners/TerminalListener.hpp\
-	server/parsers/AParser.hpp\
-	server/parsers/HTTPParser.hpp\
-	server/parsers/TerminalParser.hpp\
-	server/responders/AResponder.hpp\
-	server/responders/HTTPResponder.hpp\
-	server/responders/TerminalResponder.hpp\
-	server/Client.hpp\
-	server/Server.hpp\
-	server/ServerTypes.hpp\
-	server/TerminalClient.hpp\
-	utils/ErrorThrow.hpp
+  server/handlers/StandardHandler.hpp\
+  server/handlers/HandlerHolder.hpp\
+  server/handlers/ThreadHandler.hpp\
+  server/communication/TCPListener.hpp\
+  server/communication/ServerEventBus.hpp\
+  server/http/HTTPClient.hpp\
+  server/http/HTTPClientData.hpp\
+  server/http/HTTPParser.hpp\
+  server/http/HTTPResponder.hpp\
+  server/http/RequestBuilder.hpp\
+  server/http/ResponseBuilder.hpp\
+  server/terminal/TerminalClient.hpp\
+  server/terminal/TerminalResponder.hpp\
+  server/global/GlobalConfig.hpp\
+  server/global/GlobalLogger.hpp\
+  server/ServerTypes.hpp\
+  server/Server.hpp
 
 # Fix sources and headers
 OBJ				= $(patsubst %.cpp,%.o,$(SRC))
