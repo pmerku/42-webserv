@@ -3,13 +3,12 @@
 //
 
 #include "config/validators/IntValidator.hpp"
-#include <cstdlib>
+#include "utils/atoi.hpp"
 
 using namespace config;
 
 IntValidator::IntValidator(int argnum, int min, int max): AConfigValidator(false), _min(min), _max(max), _argnum(argnum) {}
 
-// TODO parse int
 void IntValidator::test(const ConfigLine &line, const AConfigBlock &block) const {
 	const std::string &numStr = line.getArg(_argnum);
 
@@ -19,6 +18,6 @@ void IntValidator::test(const ConfigLine &line, const AConfigBlock &block) const
 	}
 
 	// check range
-	int num = std::atoi(line.getArg(_argnum).c_str());
+	int num = utils::atoi(line.getArg(_argnum).c_str());
 	if (num < _min || num > _max) ERROR_THROW(IntValidatorRangeException(line, &block));
 }

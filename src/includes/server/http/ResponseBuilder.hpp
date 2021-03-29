@@ -23,6 +23,8 @@ namespace NotApache {
 		static const std::string				_endLine;
 		static std::string	convertTime(time_t currentTime);
 
+		ResponseBuilder		&setDefaults();
+
 	public:
 		static const std::map<int, std::string>	statusMap;
 
@@ -32,7 +34,11 @@ namespace NotApache {
 		ResponseBuilder		&setStatus(int code);
 		ResponseBuilder		&setHeader(const std::string &key, const std::string &value);
 		ResponseBuilder		&setBody(const std::string &data, size_t length);
+		ResponseBuilder		&setBody(const std::string &data);
 		ResponseBuilder		&setDate();
+		ResponseBuilder		&setServer();
+		ResponseBuilder		&setConnection();
+		ResponseBuilder		&removeHeader(const std::string &header);
 		std::string			build();
 
 		class ResponseBuilderException : public std::exception {
