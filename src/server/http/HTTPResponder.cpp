@@ -224,8 +224,7 @@ void HTTPResponder::generateResponse(HTTPClient &client) {
 	domain = domain.substr(0, domain.find(':'));
 
 	// what server do you belong to?
-	// TODO check host ip
-	config::ServerBlock	*server = configuration->findServerBlock(domain, client.getPort());
+	config::ServerBlock	*server = configuration->findServerBlock(domain, client.getPort(), client.getHost());
 	if (server == 0) {
 		handleError(client, server, 400);
 		return;

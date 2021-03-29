@@ -35,6 +35,7 @@ namespace NotApache {
 	private:
 		FD				_fd;
 		int				_port;
+		long 			_host;
 		std::vector<FD>	_associatedFds;
 
 	public:
@@ -44,16 +45,18 @@ namespace NotApache {
 		utils::Mutex<bool>		isHandled;
 		HTTPClientData			data;
 
-		HTTPClient(FD clientFd, int port);
+		HTTPClient(FD clientFd, int port, long host);
 		~HTTPClient();
 
 		FD	getFd() const;
 		int getPort() const;
+		long getHost() const;
 
 		void	addAssociatedFd(FD fd);
 		void	removeAssociatedFd(FD fd);
 		FD		getAssociatedFd(std::vector<FD>::size_type i) const;
 		std::vector<FD>::size_type	getAssociatedFdLength() const;
+
 	};
 
 }

@@ -11,6 +11,7 @@
 #include "config/validators/IsFile.hpp"
 #include "config/validators/IpValidator.hpp"
 #include "utils/stoi.hpp"
+#include <arpa/inet.h>
 
 using namespace config;
 
@@ -78,14 +79,13 @@ void	ServerBlock::cleanup() {
 	}
 }
 
-// TODO host ip parsing
 void ServerBlock::parseData() {
 	_serverName = "_";
 	_bodyLimit = -1;
 	_errorPages.clear();
 
 	_port = utils::stoi(getKey("port")->getArg(0));
-	_host = getKey("host")->getArg(0);
+	_host = inet_addr(getKey("host")->getArg(0).c_str());
 
 	if (hasKey("server_name"))
 		_serverName = getKey("server_name")->getArg(0);
@@ -111,7 +111,7 @@ int ServerBlock::getPort() const {
 	return _port;
 }
 
-const std::string &ServerBlock::getHost() const {
+long ServerBlock::getHost() const {
 	throwNotParsed();
 	return _host;
 }

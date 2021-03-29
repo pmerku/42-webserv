@@ -111,6 +111,10 @@ void RouteBlock::parseData() {
 	_cgiExt = "";
 	_cgi = "";
 	_allowedMethods.clear();
+	_allowedMethods.push_back("GET");_allowedMethods.push_back("POST");
+	_allowedMethods.push_back("PUT");_allowedMethods.push_back("PATCH");
+	_allowedMethods.push_back("DELETE");_allowedMethods.push_back("OPTIONS");
+	_allowedMethods.push_back("HEAD");_allowedMethods.push_back("TRACE");
 
 	if (hasKey("root"))
 		_root = getKey("root")->getArg(0);
@@ -127,6 +131,7 @@ void RouteBlock::parseData() {
 	if (hasKey("cgi_ext"))
 		_cgiExt = getKey("cgi_ext")->getArg(0);
 	if (hasKey("allowed_methods")) {
+		_allowedMethods.clear();
 		for (ConfigLine::arg_size i = 0; i < getKey("allowed_methods")->getArgLength(); i++)
 			_allowedMethods.push_back(getKey("allowed_methods")->getArg(i));
 	}

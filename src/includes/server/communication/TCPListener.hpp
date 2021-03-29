@@ -16,12 +16,13 @@ namespace NotApache {
 	class TCPListener {
 	private:
 		int _port;
+		long _host;
 		FD _fd;
 		int _backlog;
 		sockaddr_in svr_addr;
 
 	public:
-		TCPListener(int port, int backLog = 5);
+		TCPListener(int port, long host, int backLog = 5);
 		virtual ~TCPListener();
 
 		FD getFD();
