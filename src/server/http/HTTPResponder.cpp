@@ -3,17 +3,14 @@
 //
 
 #include "server/http/HTTPResponder.hpp"
-#include "server/http/ResponseBuilder.hpp"
 #include "server/http/HTTPParser.hpp"
 #include "env/ENVBuilder.hpp"
-#include "env/env.hpp"
 #include "server/global/GlobalLogger.hpp"
 #include "server/global/GlobalConfig.hpp"
 #include "utils/intToString.hpp"
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <cerrno>
-#include <sys/types.h>
 #include <dirent.h>
 #include "utils/Uri.hpp"
 #include "server/http/HTTPMimeTypes.hpp"
@@ -40,18 +37,7 @@ void HTTPResponder::handleError(HTTPClient &client, config::ServerBlock *server,
 }
 
 void HTTPResponder::handleError(HTTPClient &client, config::ServerBlock *server,  config::RouteBlock *route, int code, bool doErrorPage) {
-	(void)server;
-	(void)doErrorPage;
-	ResponseBuilder res = ResponseBuilder()
-		.setStatus(code)
-		.setHeader("Server", "Not-Apache")
-		.setDate()
-		.setHeader("Connection", "Close")
-		.setHeader("Content-Type", "text/html");
-	// TODO handle error default page
-	std::map<int,std::string>::const_iterator statusIt = ResponseBuilder::statusMap.find(code);
-	std::string text = statusIt == ResponseBuilder::statusMap.end() ? "Internal server error!" : statusIt->second;
-	res.setBody(std::string("<h1>") + utils::intToString(code) + "</h1><p>" + text + "</p>");
+	// allow header in 405
 	if (code == 405) {
 		std::string allowedMethods = "";
 		for (std::vector<std::string>::const_iterator it = route->getAllowedMethods().begin(); it !=  route->getAllowedMethods().end(); ++it) {
@@ -59,9 +45,55 @@ void HTTPResponder::handleError(HTTPClient &client, config::ServerBlock *server,
 				allowedMethods += ", ";
 			allowedMethods += *it;
 		}
-		res.setHeader("Allow", allowedMethods);
+		client.data.response.builder.setHeader("Allow", allowedMethods);
 	}
-	client.data.response.setResponse(res.build());
+
+	// handle error pages
+	if (doErrorPage && server != 0 && !server->getErrorPage(code).empty()) {
+		struct stat errorPageData = {};
+		utils::Uri errorPageFile(server->getErrorPage(code));
+		if (::stat(errorPageFile.path.c_str(), &errorPageData) == -1) {
+			if (errno != ENOENT && errno != ENOTDIR) {
+				handleError(client, server, route, 500, false);
+				return;
+			}
+		}
+		if (S_ISREG(errorPageData.st_mode)) {
+			FD fileFd = ::open(errorPageFile.path.c_str(), O_RDONLY);
+			if (fileFd == -1) {
+				handleError(client, server, route, 500, false);
+				return;
+			}
+			client.data.response.builder.setHeader("Content-Type", MimeTypes::getMimeType(errorPageFile.getExt()));
+			client.data.response.builder.setStatus(code);
+			client.addAssociatedFd(fileFd);
+			client.responseState = FILE;
+			client.connectionState = ASSOCIATED_FD;
+			return;
+		}
+	}
+
+	// generate error page
+	client.data.response.builder
+		.setStatus(code)
+		.setHeader("Server", "Not-Apache")
+		.setDate()
+		.setHeader("Connection", "Close")
+		.setHeader("Content-Type", "text/html");
+
+	std::map<int,std::string>::const_iterator statusIt = ResponseBuilder::statusMap.find(code);
+	std::string text = statusIt == ResponseBuilder::statusMap.end() ? "Internal server error!" : statusIt->second;
+	client.data.response.builder.setBody(std::string("<h1>") + utils::intToString(code) + "</h1><p>" + text + "</p>");
+	if (code == 405) {
+		std::string allowedMethods = "";
+		for (std::vector<std::string>::const_iterator it = route->getAllowedMethods().begin(); it !=  route->getAllowedMethods().end(); ++it) {
+			if (!allowedMethods.empty())
+				allowedMethods += ", ";
+			allowedMethods += *it;
+		}
+		client.data.response.builder.setHeader("Allow", allowedMethods);
+	}
+	client.data.response.setResponse(client.data.response.builder.build());
 }
 
 void HTTPResponder::serveDirectory(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const std::string &d) {
@@ -72,7 +104,7 @@ void HTTPResponder::serveDirectory(HTTPClient &client, config::ServerBlock &serv
 		utils::Uri indexFile = d;
 		indexFile.appendPath(route.getIndex());
 		if (::stat(indexFile.path.c_str(), &indexData) == -1) {
-			if (errno != ENOENT) {
+			if (errno != ENOENT && errno != ENOTDIR) {
 				handleError(client, &server, 500);
 				return;
 			}
@@ -120,14 +152,14 @@ void HTTPResponder::serveDirectory(HTTPClient &client, config::ServerBlock &serv
 		str += "</ul>";
 		::closedir(dir);
 		client.data.response.setResponse(
-				ResponseBuilder("HTTP/1.1")
-						.setStatus(200)
-						.setHeader("Server", "Not-Apache")
-						.setDate()
-						.setHeader("Connection", "Close")
-						.setHeader("Content-Type", "text/html")
-						.setBody(str)
-						.build()
+	ResponseBuilder("HTTP/1.1")
+			.setStatus(200)
+			.setHeader("Server", "Not-Apache")
+			.setDate()
+			.setHeader("Connection", "Close")
+			.setHeader("Content-Type", "text/html")
+			.setBody(str)
+			.build()
 		);
 		return;
 	}
@@ -142,7 +174,7 @@ void HTTPResponder::serveFile(HTTPClient &client, config::ServerBlock &server, c
 	// get file data
 	utils::Uri file = f;
 	if (::stat(file.path.c_str(), &buf) == -1) {
-		if (errno == ENOENT)
+		if (errno == ENOENT || errno == ENOTDIR)
 			handleError(client, &server, 404);
 		else
 			handleError(client, &server, 500);
