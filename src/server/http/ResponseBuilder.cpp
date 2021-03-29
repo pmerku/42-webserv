@@ -107,6 +107,12 @@ ResponseBuilder &ResponseBuilder::setBody(const std::string &data, size_t length
 	return *this;
 }
 
+ResponseBuilder &ResponseBuilder::setBody(const std::string &data) {
+	setHeader("Content-Length", utils::intToString(data.length()));
+	_body = data;
+	return *this;
+}
+
 ResponseBuilder &ResponseBuilder::setDate() {
 	struct timeval tv = {};
 	gettimeofday(&tv, NULL);
@@ -126,9 +132,60 @@ std::string ResponseBuilder::convertTime(time_t time) {
 	return std::string(date, ret) + "GMT";
 }
 
+ResponseBuilder &ResponseBuilder::setServer() {
+	setHeader("Server", "Not-Apache");
+	return *this;
+}
+
+ResponseBuilder &ResponseBuilder::setConnection() {
+	setHeader("Connection", "Close");
+	return *this;
+}
+
+ResponseBuilder &ResponseBuilder::removeHeader(const std::string &header) {
+	for (std::map<std::string, std::string>::iterator it = _headerMap.begin(); it != _headerMap.end(); it++) {
+		if (it->first == header) {
+			_headerMap.erase(it);
+			return *this;
+		}
+	}
+	return *this;
+}
+
+ResponseBuilder &ResponseBuilder::setDefaults() {
+	// if no status code set to default 200
+	if (_statusLine.first.empty())
+		setStatus(200);
+
+	// if no date header set it
+	std::map<std::string, std::string>::iterator it = _headerMap.find("Date");
+	if (it == _headerMap.end())
+		setDate();
+
+	// if no server header set it
+	it = _headerMap.find("Server");
+	if (it == _headerMap.end())
+		setServer();
+
+	// if no connection header set it
+	it = _headerMap.find("Connection");
+	if (it == _headerMap.end())
+		setConnection();
+
+	// if body is empty set content-length to 0
+	if (_body.empty())
+		setBody("");
+
+	return *this;
+}
+
 std::string	ResponseBuilder::build() {
 	// HTTP/1.1 {code} {string value} \r\n
 	std::string response = _protocol;
+
+	// set defaults
+	setDefaults();
+
 	response += " " + _statusLine.first;
 	response += " " + _statusLine.second;
 	response += _endLine;
