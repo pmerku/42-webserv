@@ -3,31 +3,28 @@
 //
 
 #include "server/http/HTTPResponder.hpp"
-#include "server/global/GlobalLogger.hpp"
 #include "utils/intToString.hpp"
 #include "utils/strdup.hpp"
 #include "utils/ErrorThrow.hpp"
 #include "server/http/ResponseBuilder.hpp"
 #include "server/http/HTTPParser.hpp"
 #include "env/ENVBuilder.hpp"
-#include "env/env.hpp"
 #include "server/global/GlobalLogger.hpp"
 #include "server/global/GlobalConfig.hpp"
-#include "utils/intToString.hpp"
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <cerrno>
-#include <sys/types.h>
 #include <dirent.h>
 #include <unistd.h>
+#include "utils/Uri.hpp"
+#include "server/http/HTTPMimeTypes.hpp"
 
 using namespace NotApache;
 
 void HTTPResponder::generateAssociatedResponse(HTTPClient &client) {
 	if (client.responseState == FILE) {
 		client.data.response.setResponse(
-			ResponseBuilder("HTTP/1.1")
-			.setStatus(200)
+			client.data.response.builder
 			.setHeader("Server", "Not-Apache")
 			.setDate()
 			.setHeader("Connection", "Close")
@@ -40,43 +37,92 @@ void HTTPResponder::generateAssociatedResponse(HTTPClient &client) {
 }
 
 void HTTPResponder::handleError(HTTPClient &client, config::ServerBlock *server, int code, bool doErrorPage) {
-	(void)server;
-	(void)doErrorPage;
-	ResponseBuilder res = ResponseBuilder()
+	handleError(client, server, 0, code, doErrorPage);
+}
+
+void HTTPResponder::handleError(HTTPClient &client, config::ServerBlock *server,  config::RouteBlock *route, int code, bool doErrorPage) {
+	// allow header in 405
+	if (code == 405) {
+		std::string allowedMethods = "";
+		for (std::vector<std::string>::const_iterator it = route->getAllowedMethods().begin(); it !=  route->getAllowedMethods().end(); ++it) {
+			if (!allowedMethods.empty())
+				allowedMethods += ", ";
+			allowedMethods += *it;
+		}
+		client.data.response.builder.setHeader("Allow", allowedMethods);
+	}
+
+	// handle error pages
+	if (doErrorPage && server != 0 && !server->getErrorPage(code).empty()) {
+		struct stat errorPageData = {};
+		utils::Uri errorPageFile(server->getErrorPage(code));
+		if (::stat(errorPageFile.path.c_str(), &errorPageData) == -1) {
+			if (errno != ENOENT && errno != ENOTDIR) {
+				handleError(client, server, route, 500, false);
+				return;
+			}
+		}
+		if (S_ISREG(errorPageData.st_mode)) {
+			FD fileFd = ::open(errorPageFile.path.c_str(), O_RDONLY);
+			if (fileFd == -1) {
+				handleError(client, server, route, 500, false);
+				return;
+			}
+			client.data.response.builder.setHeader("Content-Type", MimeTypes::getMimeType(errorPageFile.getExt()));
+			client.data.response.builder.setStatus(code);
+			client.addAssociatedFd(fileFd);
+			client.responseState = FILE;
+			client.connectionState = ASSOCIATED_FD;
+			return;
+		}
+	}
+
+	// generate error page
+	client.data.response.builder
 		.setStatus(code)
 		.setHeader("Server", "Not-Apache")
 		.setDate()
-		.setHeader("Connection", "Close");
-	// TODO handle error default page
-	std::map<int,std::string>::const_iterator it = ResponseBuilder::statusMap.find(code);
-	std::string text = it == ResponseBuilder::statusMap.end() ? "Internal server error!" : it->second;
-	res.setBody(std::string("<h1>") + utils::intToString(code) + "</h1><p>" + text + "</p>");
-	client.data.response.setResponse(res.build());
+		.setHeader("Connection", "Close")
+		.setHeader("Content-Type", "text/html");
+
+	std::map<int,std::string>::const_iterator statusIt = ResponseBuilder::statusMap.find(code);
+	std::string text = statusIt == ResponseBuilder::statusMap.end() ? "Internal server error!" : statusIt->second;
+	client.data.response.builder.setBody(std::string("<h1>") + utils::intToString(code) + "</h1><p>" + text + "</p>");
+	if (code == 405) {
+		std::string allowedMethods = "";
+		for (std::vector<std::string>::const_iterator it = route->getAllowedMethods().begin(); it !=  route->getAllowedMethods().end(); ++it) {
+			if (!allowedMethods.empty())
+				allowedMethods += ", ";
+			allowedMethods += *it;
+		}
+		client.data.response.builder.setHeader("Allow", allowedMethods);
+	}
+	client.data.response.setResponse(client.data.response.builder.build());
 }
 
-void HTTPResponder::serveDirectory(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const std::string &dirPath) {
+void HTTPResponder::serveDirectory(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const std::string &d) {
 	// check index
+	utils::Uri dirPath = d;
 	if (!route.getIndex().empty()) {
 		struct stat indexData = {};
-		std::string indexFile = dirPath;
-		if (0 != indexFile.compare(indexFile.length() - 1, 1, "/"))
-			indexFile += "/";
-		indexFile += route.getIndex();
-		if (::stat(indexFile.c_str(), &indexData) == -1) {
-			if (errno != ENOENT) {
+		utils::Uri indexFile = d;
+		indexFile.appendPath(route.getIndex());
+		if (::stat(indexFile.path.c_str(), &indexData) == -1) {
+			if (errno != ENOENT && errno != ENOTDIR) {
 				handleError(client, &server, 500);
 				return;
 			}
 		}
 
 		// index file exists, serve it
-		// TODO mime types
 		if (S_ISREG(indexData.st_mode)) {
-			FD fileFd = ::open(indexFile.c_str(), O_RDONLY);
+			FD fileFd = ::open(indexFile.path.c_str(), O_RDONLY);
 			if (fileFd == -1) {
 				handleError(client, &server, 500);
 				return;
 			}
+			client.data.response.builder.setHeader("Content-Type", MimeTypes::getMimeType(indexFile.getExt()));
+			client.data.response.builder.setStatus(200);
 			client.addAssociatedFd(fileFd);
 			client.responseState = FILE;
 			client.connectionState = ASSOCIATED_FD;
@@ -86,20 +132,20 @@ void HTTPResponder::serveDirectory(HTTPClient &client, config::ServerBlock &serv
 
 	// not index, handle directory listing
 	if (route.isDirectoryListing()) {
-		DIR *dir = ::opendir(dirPath.c_str());
+		DIR *dir = ::opendir(dirPath.path.c_str());
 		if (dir == 0) {
 			handleError(client, &server, 500);
 			return;
 		}
 		dirent *dirEntry;
-		std::string uriWithoutQuery = client.data.request._uri;
-		uriWithoutQuery = uriWithoutQuery.substr(0, uriWithoutQuery.find('?'));
+		utils::Uri uri = client.data.request._uri;
 		std::string str = "<h1>";
-		str += uriWithoutQuery + "</h1><ul>";
+		str += uri.path + "</h1><ul>";
 		while ((dirEntry = ::readdir(dir)) != 0) {
+			utils::Uri path = uri;
+			path.appendPath(dirEntry->d_name);
 			str += "<li><a href=\"";
-			str += uriWithoutQuery + "/";
-			str += dirEntry->d_name;
+			str += path.path;
 			str += "\">";
 			if (dirEntry->d_type == DT_DIR) {
 				str += "DIR ";
@@ -110,14 +156,14 @@ void HTTPResponder::serveDirectory(HTTPClient &client, config::ServerBlock &serv
 		str += "</ul>";
 		::closedir(dir);
 		client.data.response.setResponse(
-				ResponseBuilder("HTTP/1.1")
-						.setStatus(200)
-						.setHeader("Server", "Not-Apache")
-						.setDate()
-						.setHeader("Connection", "Close")
-						.setHeader("Content-Type", "text/html")
-						.setBody(str)
-						.build()
+	ResponseBuilder("HTTP/1.1")
+			.setStatus(200)
+			.setHeader("Server", "Not-Apache")
+			.setDate()
+			.setHeader("Connection", "Close")
+			.setHeader("Content-Type", "text/html")
+			.setBody(str)
+			.build()
 		);
 		return;
 	}
@@ -126,12 +172,13 @@ void HTTPResponder::serveDirectory(HTTPClient &client, config::ServerBlock &serv
 	handleError(client, &server, 403);
 }
 
-void HTTPResponder::serveFile(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const std::string &file) {
+void HTTPResponder::serveFile(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const std::string &f) {
 	struct stat buf = {};
 
 	// get file data
-	if (::stat(file.c_str(), &buf) == -1) {
-		if (errno == ENOENT)
+	utils::Uri file = f;
+	if (::stat(file.path.c_str(), &buf) == -1) {
+		if (errno == ENOENT || errno == ENOTDIR)
 			handleError(client, &server, 404);
 		else
 			handleError(client, &server, 500);
@@ -140,7 +187,7 @@ void HTTPResponder::serveFile(HTTPClient &client, config::ServerBlock &server, c
 
 	// check for directory
 	if (S_ISDIR(buf.st_mode)) {
-		serveDirectory(client, server, route, file);
+		serveDirectory(client, server, route, file.path);
 		return;
 	}
 	else if (!S_ISREG(buf.st_mode)) {
@@ -149,18 +196,18 @@ void HTTPResponder::serveFile(HTTPClient &client, config::ServerBlock &server, c
 	}
 
 	// serve the file
-	if (route.shouldDoCgi() && !route.getCgiExt().empty() &&
-		0 == file.compare(file.length() - route.getCgiExt().length(), route.getCgiExt().length(), route.getCgiExt())) {
+	if (route.shouldDoCgi() && !route.getCgiExt().empty() && file.getExt() == route.getCgiExt()) {
 		globalLogger.logItem(logger::DEBUG, "Handling cgi request");
 		// TODO handle cgi
 		runCGI(client);
 	}
-	// TODO mime types
-	FD fileFd = ::open(file.c_str(), O_RDONLY);
+	FD fileFd = ::open(file.path.c_str(), O_RDONLY);
 	if (fileFd == -1) {
 		handleError(client, &server, 500);
 		return;
 	}
+	client.data.response.builder.setHeader("Content-Type", MimeTypes::getMimeType(file.getExt()));
+	client.data.response.builder.setStatus(200);
 	client.addAssociatedFd(fileFd);
 	client.responseState = FILE;
 	client.connectionState = ASSOCIATED_FD;
@@ -182,28 +229,35 @@ void HTTPResponder::generateResponse(HTTPClient &client) {
 	domain = domain.substr(0, domain.find(':'));
 
 	// what server do you belong to?
-	// TODO check host ip
-	config::ServerBlock	*server = configuration->findServerBlock(domain, client.getPort());
+	config::ServerBlock	*server = configuration->findServerBlock(domain, client.getPort(), client.getHost());
 	if (server == 0) {
-		// TODO what to return?
 		handleError(client, server, 400);
 		return;
 	}
 
 	// find which route block to use
-	std::string uriWithoutQuery = client.data.request._uri;
-	uriWithoutQuery = uriWithoutQuery.substr(0, uriWithoutQuery.find('?'));
-	config::RouteBlock *route = server->findRoute(uriWithoutQuery);
+	utils::Uri uri = client.data.request._uri;
+	config::RouteBlock	*route = server->findRoute(uri.path);
 	if (route == 0) {
 		handleError(client, server, 400);
 		return;
 	}
+
+	// check allowed methods
+	if (!route->isAllowedMethod(HTTPParser::methodMap_EtoS.find(client.data.request._method)->second)) {
+		handleError(client, server, route, 405);
+		return;
+	}
+
 	if (route->shouldDoFile()) {
-		std::string file = route->getRoot() + uriWithoutQuery;
-		serveFile(client, *server, *route, file);
+		utils::Uri file = route->getRoot();
+		file.appendPath(uri.path);
+		serveFile(client, *server, *route, file.path);
+		return;
 	}
 	else {
 		// TODO do proxy
+		route->getProxyUrl();
 		client.data.response.setResponse(
 			ResponseBuilder()
 			.setStatus(200)
@@ -213,6 +267,7 @@ void HTTPResponder::generateResponse(HTTPClient &client) {
 			.setBody("Proxy not yet implemented")
 			.build()
 		);
+		return;
 	}
 }
 

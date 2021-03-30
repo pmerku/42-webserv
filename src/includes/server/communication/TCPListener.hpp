@@ -16,12 +16,13 @@ namespace NotApache {
 	class TCPListener {
 	private:
 		int _port;
+		long _host;
 		FD _fd;
 		int _backlog;
 		sockaddr_in svr_addr;
 
 	public:
-		TCPListener(int port, int backLog = 5);
+		TCPListener(int port, long host, int backLog = 5);
 		virtual ~TCPListener();
 
 		FD getFD();
@@ -29,13 +30,13 @@ namespace NotApache {
 
 		HTTPClient	*acceptClient();
 
-		class FailedToListen : std::exception {
+		class FailedToListen : public std::exception {
 			const char *what() const throw() {
 				return "TCPListener: Failed to bind and listen on port";
 			}
 		};
 
-		class FailedToAccept : std::exception {
+		class FailedToAccept : public std::exception {
 			const char *what() const throw() {
 				return "TCPListener: Failed to accept client";
 			}

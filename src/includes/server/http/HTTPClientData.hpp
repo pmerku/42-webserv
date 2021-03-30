@@ -7,6 +7,8 @@
 
 #include "server/ServerTypes.hpp"
 #include "utils/DataList.hpp"
+#include "server/http/RequestBuilder.hpp"
+#include "server/http/ResponseBuilder.hpp"
 #include <string>
 #include <map>
 
@@ -64,14 +66,15 @@ namespace NotApache {
 		utils::DataList::size_type	packetProgress;
 		utils::DataList::iterator 	currentPacket;
 		
-		utils::DataList				&getResponse();
-
-		void						setResponse(const utils::DataList &response);
-		utils::DataList				&getAssociatedDataRaw();
-		void						appendAssociatedData(const char *data, utils::DataList::size_type size);
-		
 		FD							_fd;
 		FD							_bodyfd;
+		ResponseBuilder				builder;
+
+		utils::DataList			&getResponse();
+
+		void					setResponse(const utils::DataList &response);
+		utils::DataList			&getAssociatedDataRaw();
+		void					appendAssociatedData(const char *data, utils::DataList::size_type size);
 	};
 
 	std::ostream& operator<<(std::ostream& o, HTTPClientRequest& x);

@@ -71,6 +71,8 @@ SRC	=\
 	utils/countSpaces.cpp\
 	utils/strdup.cpp\
 	utils/DataList.cpp\
+    utils/Uri.cpp\
+    utils/ArgParser.cpp\
 	server/handlers/AHandler.cpp\
 	server/handlers/StandardHandler.cpp\
 	server/handlers/HandlerHolder.cpp\
@@ -81,6 +83,7 @@ SRC	=\
 	server/http/HTTPClientData.cpp\
 	server/http/HTTPParser.cpp\
 	server/http/HTTPResponder.cpp\
+	server/http/HTTPMimeTypes.cpp\
 	server/http/RequestBuilder.cpp\
 	server/http/ResponseBuilder.cpp\
 	server/terminal/TerminalClient.cpp\
@@ -132,6 +135,8 @@ HEADERS	=\
 	utils/mutex.hpp\
 	utils/strdup.hpp\
 	utils/DataList.hpp\
+	utils/Uri.hpp\
+	utils/ArgParser.hpp\
 	server/handlers/AHandler.hpp\
   server/handlers/StandardHandler.hpp\
   server/handlers/HandlerHolder.hpp\
@@ -142,6 +147,7 @@ HEADERS	=\
   server/http/HTTPClientData.hpp\
   server/http/HTTPParser.hpp\
   server/http/HTTPResponder.hpp\
+  server/http/HTTPMimeTypes.hpp\
   server/http/RequestBuilder.hpp\
   server/http/ResponseBuilder.hpp\
   server/terminal/TerminalClient.hpp\

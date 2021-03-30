@@ -3,7 +3,7 @@
 #include "server/Server.hpp"
 #include "config/ConfigParser.hpp"
 #include <csignal>
-
+#include "utils/ArgParser.hpp"
 #include "server/handlers/ThreadHandler.hpp"
 
 using namespace NotApache;
@@ -12,18 +12,34 @@ static void handleSignals() {
 	std::signal(SIGPIPE, SIG_IGN);
 }
 
-int main() {
+int main(int argc, char *argv[]) {
+	logger::Logger logger = std::cout;
+	utils::ArgParser args;
+	try {
+		args = utils::ArgParser(argc, argv);
+	} catch (const utils::ArgParser::ArgParserException &e) {
+		std::cout << utils::ArgParser::printUsage() << std::endl;
+		logger.log(logger::LogItem(logger::ERROR, e.what()));
+		return 1;
+	} catch (const std::exception &e) {
+		logger.log(logger::LogItem(logger::ERROR, std::string("Unhandled exception: ") + e.what()));
+		return 1;
+	}
 
 	// setup loggers
-	logger::Logger logger = std::cout;
-	logger.setFlags(logger::Flags::Color | logger::Flags::Debug);
+	logger::Flags::flagType flags = 0;
+	if (args.colorPrint())
+		flags |= logger::Flags::Color;
+	if (args.verbosePrint())
+		flags |= logger::Flags::Debug;
+	logger.setFlags(flags);
 
 	// parse configuration
 	config::ConfigParser parser;
 	parser.setLogger(logger);
 	config::RootBlock *config;
 	try {
-		config = parser.parseFile("../resources/example-configs/basic.conf");
+		config = parser.parseFile(args.configFile());
 	} catch (const std::exception &e) {
 		logger.log(logger::LogItem(logger::ERROR, std::string("Config could not be parsed: ") + e.what()));
 		return 1;
@@ -36,22 +52,21 @@ int main() {
 	// add server listeners
 	{
 		// only add unique host+port pairs
-		std::vector<std::pair<std::string, int> >	uniquePairs;
+		std::vector<std::pair<long, int> >	uniquePairs;
 		for (std::vector<config::ServerBlock *>::const_iterator i = config->getServerBlocks().begin(); i != config->getServerBlocks().end(); ++i) {
 			bool alreadyAdded = false;
-			for (std::vector<std::pair<std::string, int> >::const_iterator j = uniquePairs.begin(); j != uniquePairs.end(); ++j) {
-				// TODO check extra zeros in host ip (127.0.0.1 is the same as 127.000.000.001)
+			for (std::vector<std::pair<long, int> >::const_iterator j = uniquePairs.begin(); j != uniquePairs.end(); ++j) {
 				if (j->first == (*i)->getHost() && j->second == (*i)->getPort()) {
 					alreadyAdded = true;
 					break;
 				}
 			}
 			if (!alreadyAdded)
-				uniquePairs.push_back(std::pair<std::string, int>((*i)->getHost(), (*i)->getPort()));
+				uniquePairs.push_back(std::pair<long, int>((*i)->getHost(), (*i)->getPort()));
 		}
 
-		for (std::vector<std::pair<std::string, int> >::const_iterator j = uniquePairs.begin(); j != uniquePairs.end(); ++j) {
-			server.addListener(new TCPListener(j->second));
+		for (std::vector<std::pair<long, int> >::const_iterator j = uniquePairs.begin(); j != uniquePairs.end(); ++j) {
+			server.addListener(new TCPListener(j->second, j->first));
 		}
 	}
 
