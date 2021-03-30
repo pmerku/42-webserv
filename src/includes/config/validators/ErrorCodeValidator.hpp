@@ -23,7 +23,7 @@ namespace config {
 
 		class ErrorCodeValidatorException: public ConfigException {
 		protected:
-			const char *getTemplate() const throw() {
+			std::string getTemplate() const throw() {
 				return "Status code in {KEY} is not a valid error code";
 			}
 

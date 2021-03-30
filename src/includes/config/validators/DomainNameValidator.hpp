@@ -21,7 +21,7 @@ namespace config {
 
 		class DomainNameValidatorException : public ConfigException {
 		protected:
-			const char *getTemplate() const throw() {
+			std::string getTemplate() const throw() {
 				return "key {KEY} is not a valid domain name";
 			}
 

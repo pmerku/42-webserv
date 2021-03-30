@@ -17,12 +17,12 @@ ErrorCodeValidator::ErrorCodeValidator(int argnum): AConfigValidator(false), _ar
 
 void ErrorCodeValidator::test(const ConfigLine &line, const AConfigBlock &block) const {
 	if (line.getArgLength() <= (unsigned long)_argnum)
-		throw ErrorCodeValidatorException(line, &block);
+		ERROR_THROW(ErrorCodeValidatorException(line, &block));
 	int code = utils::stoi(line.getArg(_argnum));
 	for (std::vector<int>::const_iterator it = _errorCodes.begin(); it != _errorCodes.end(); ++it) {
 		if (*it == code)
 			return; // found valid code
 	}
 	// not found, invalid
-	throw ErrorCodeValidatorException(line, &block);
+	ERROR_THROW(ErrorCodeValidatorException(line, &block));
 }
