@@ -2,7 +2,6 @@
 
 int main(int argc, char** argv, char** envp) 
 {
-	printf("text.html");
 	printf("argc: %d\n", argc);
 	printf("\nargv:\n");
 	for (int i = 0; argv[i]; ++i)

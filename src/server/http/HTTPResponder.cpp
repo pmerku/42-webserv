@@ -199,7 +199,8 @@ void HTTPResponder::serveFile(HTTPClient &client, config::ServerBlock &server, c
 	if (route.shouldDoCgi() && !route.getCgiExt().empty() && file.getExt() == route.getCgiExt()) {
 		globalLogger.logItem(logger::DEBUG, "Handling cgi request");
 		// TODO handle cgi
-		runCGI(client);
+		runCGI(client, f);
+		return ;
 	}
 	FD fileFd = ::open(file.path.c_str(), O_RDONLY);
 	if (fileFd == -1) {
@@ -271,46 +272,54 @@ void HTTPResponder::generateResponse(HTTPClient &client) {
 	}
 }
 
-void	HTTPResponder::setEnv(HTTPClient& client, CGIenv::env& envp, std::string& uri) {
+void	HTTPResponder::setEnv(HTTPClient& client, CGIenv::env& envp, std::string& uri, const std::string &f) {
+	//CGIenv::ENVBuilder env();
 	try {
 		char cwd[PATH_MAX];
 		if (getcwd(cwd, PATH_MAX) == NULL)
 			ERROR_THROW(CWDFail());
+		std::string	domain = (*client.data.request._headers.find("HOST")).second;
+		domain = domain.substr(0, domain.find(':'));
+
+		// Check if set
 		envp.setEnv(CGIenv::ENVBuilder()
 			.AUTH_TYPE(client.data.request._headers["AUTHORIZATION"])
 			.CONTENT_LENGTH(utils::intToString(client.data.request._body.length()))
 			.CONTENT_TYPE(client.data.request._headers["CONTENT_TYPE"])
 			.GATEWAY_INTERFACE("CGI/1.1")
-			.PATH_INFO(uri) // TODO ?
-			.PATH_TRANSLATED(cwd + uri) // TODO ?
+			.PATH_INFO(uri) // TODO URL translating/encoding
+			.PATH_TRANSLATED(f)
 			.QUERY_STRING(uri.substr(uri.find('?')+1))
-			//.REMOTE_ADDR() ?
-			//.REMOTE_IDENT() ?
+			.REMOTE_ADDR(utils::intToString(client.getCliAddr().sin_addr.s_addr)) // TODO store in client
+			.REMOTE_IDENT("")
 			.REMOTE_USER(client.data.request._headers["REMOTE_USER"])
 			.REQUEST_METHOD(HTTPParser::methodMap_EtoS.find(client.data.request._method)->second)
 			.REQUEST_URI(uri)
 			.SCRIPT_NAME(uri)
-			//.SERVER_NAME("") host header zonder port
-			.SERVER_PORT(utils::intToString(client.getPort()) //port uit port header
+			.SERVER_NAME(domain)
+			.SERVER_PORT(utils::intToString(client.getPort()))
 			.SERVER_PROTOCOL("HTTP/1.1")
 			.SERVER_SOFTWARE("HTTP 1.1")
 			.build()
 		);
+		for (int i = 0; envp.getEnv()[i]; i++)
+			std::cout << envp.getEnv()[i] << std::endl;
 	} catch (std::exception &e) {
 		globalLogger.logItem(logger::ERROR, std::string("ENV could not be built: ") + e.what());
 	}
 }
 
-void	HTTPResponder::runCGI(HTTPClient& client) {
+void	HTTPResponder::runCGI(HTTPClient& client, const std::string &f) {
 	FD				pipefd[2];
 	FD				bodyPipefd[2];
 	struct stat 	sb;
 	CGIenv::env 	envp;
 	bool 			body = false;
 
-	setEnv(client, envp, client.data.request._uri);
+	setEnv(client, envp, client.data.request._uri, f);
 	char** args = new char *[2]();
-	args[0] = utils::strdup(client.data.request._uri.c_str());
+	//args[0] = utils::strdup(client.data.request._uri.c_str());
+	args[0] = utils::strdup("../resources/test-root/env.cgi");
 
 	if (::stat(args[0], &sb) == -1)
 		ERROR_THROW(NotFound());
@@ -359,4 +368,10 @@ void	HTTPResponder::runCGI(HTTPClient& client) {
 	}
 	if (::close(pipefd[1]) == -1)
 		ERROR_THROW(CloseFail());
+
+	client.addAssociatedFd(pipefd[0]);
+	client.data.response.builder.setHeader("Content-Type", "text/html");
+	client.data.response.builder.setStatus(200);
+	client.responseState = FILE;
+	client.connectionState = ASSOCIATED_FD;
 }

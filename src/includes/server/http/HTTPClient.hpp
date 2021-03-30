@@ -9,6 +9,7 @@
 #include "utils/mutex.hpp"
 #include "server/http/HTTPClientData.hpp"
 #include <vector>
+#include <netinet/in.h>
 
 namespace NotApache {
 
@@ -36,6 +37,7 @@ namespace NotApache {
 		FD				_fd;
 		int				_port;
 		long 			_host;
+		sockaddr_in		_cli_addr;
 		std::vector<FD>	_associatedFds;
 
 	public:
@@ -45,12 +47,13 @@ namespace NotApache {
 		utils::Mutex<bool>		isHandled;
 		HTTPClientData			data;
 
-		HTTPClient(FD clientFd, int port, long host);
+		HTTPClient(FD clientFd, int port, long host, sockaddr_in cli_addr);
 		~HTTPClient();
 
 		FD	getFd() const;
 		int getPort() const;
 		long getHost() const;
+		sockaddr_in getCliAddr() const;
 
 		void	addAssociatedFd(FD fd);
 		void	removeAssociatedFd(FD fd);

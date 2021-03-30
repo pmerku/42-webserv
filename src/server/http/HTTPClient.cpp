@@ -4,10 +4,11 @@
 
 #include "server/http/HTTPClient.hpp"
 #include <unistd.h>
+#include <sys/socket.h>
 
 using namespace NotApache;
 
-HTTPClient::HTTPClient(FD clientFd, int port, long host): _fd(clientFd), _port(port), _host(host), _associatedFds(), writeState(NO_RESPONSE), connectionState(READING), responseState(NONE), isHandled(false) {}
+HTTPClient::HTTPClient(FD clientFd, int port, long host, sockaddr_in cli_addr) : _fd(clientFd), _port(port), _host(host), _cli_addr(cli_addr), _associatedFds(), writeState(NO_RESPONSE), connectionState(READING), responseState(NONE), isHandled(false) {}
 
 HTTPClient::~HTTPClient() {
 	for (std::vector<FD>::iterator it = _associatedFds.begin(); it != _associatedFds.end(); it++) {
@@ -26,6 +27,10 @@ int HTTPClient::getPort() const {
 
 long HTTPClient::getHost() const {
 	return _host;
+}
+
+sockaddr_in HTTPClient::getCliAddr() const {
+	return _cli_addr;
 }
 
 void HTTPClient::addAssociatedFd(FD fd) {

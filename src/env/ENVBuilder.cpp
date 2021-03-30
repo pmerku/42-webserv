@@ -49,8 +49,8 @@ ENVBuilder &ENVBuilder::REMOTE_ADDR(const std::string &value) {
 	return *this;
 }
 
-ENVBuilder &ENVBuilder::REMOTE_INDENT(const std::string &value) {
-	_metaVariables["REMOTE_INDENT"] = value;
+ENVBuilder &ENVBuilder::REMOTE_IDENT(const std::string &value) {
+	_metaVariables["REMOTE_IDENT"] = value;
 	return *this;
 }
 
