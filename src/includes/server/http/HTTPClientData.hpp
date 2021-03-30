@@ -6,11 +6,14 @@
 #define HTTPCLIENTDATA_HPP
 
 #include "server/ServerTypes.hpp"
+#include "utils/DataList.hpp"
+#include "server/http/RequestBuilder.hpp"
+#include "server/http/ResponseBuilder.hpp"
 #include <string>
 #include <map>
 
 namespace NotApache {
-		enum e_method {
+	enum e_method {
 		INVALID,
 		GET,
 		HEAD,
@@ -47,18 +50,22 @@ namespace NotApache {
 
 	class HTTPClientResponse {
 	private:
-		std::string				_response;
-		std::string::size_type	_progress;
-		//FD						_fd;
+		utils::DataList 		_response;
+		utils::DataList 		_associatedData;
 
 	public:
 		HTTPClientResponse();
 
-		const std::string		&getResponse() const;
-		std::string::size_type	getProgress() const;
+		bool 						hasProgress;
+		utils::DataList::size_type	packetProgress;
+		utils::DataList::iterator 	currentPacket;
+		ResponseBuilder				builder;
 
-		void					setResponse(const std::string &response);
-		void					setProgress(std::string::size_type index);
+		utils::DataList			&getResponse();
+
+		void					setResponse(const utils::DataList &response);
+		utils::DataList			&getAssociatedDataRaw();
+		void					appendAssociatedData(const char *data, utils::DataList::size_type size);
 	};
 
 	std::ostream& operator<<(std::ostream& o, HTTPClientRequest& x);

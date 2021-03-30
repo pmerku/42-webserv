@@ -3,56 +3,265 @@
 //
 
 #include "server/http/HTTPResponder.hpp"
-#include "server/http/ResponseBuilder.hpp"
 #include "server/http/HTTPParser.hpp"
 #include "env/ENVBuilder.hpp"
-#include "env/env.hpp"
 #include "server/global/GlobalLogger.hpp"
+#include "server/global/GlobalConfig.hpp"
 #include "utils/intToString.hpp"
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <cerrno>
+#include <dirent.h>
+#include "utils/Uri.hpp"
+#include "server/http/HTTPMimeTypes.hpp"
 
 using namespace NotApache;
 
-void HTTPResponder::generateResponse(HTTPClient &client) {
-	std::string str = "lorem ipsum dolor sit amet";
-	try {
+void HTTPResponder::generateAssociatedResponse(HTTPClient &client) {
+	if (client.responseState == FILE) {
 		client.data.response.setResponse(
-				ResponseBuilder("HTTP/1.1")
-				.setStatus(400)
-				.setHeader("Server", "Not-Apache")
-				.setDate()
-			 	.setHeader("Connection", "Close")
-			 	.setBody(str, str.length())
-			 	.build()
-			 	);
-	} catch (std::exception &e) {
-		globalLogger.logItem(logger::ERROR, std::string("Response could not be built: ") + e.what());
-	}
-
-	try {
-		CGIenv::env envp;
-		envp.setEnv(CGIenv::ENVBuilder()
-			.AUTH_TYPE(client.data.request._headers["AUTHORIZATION"])
-			.CONTENT_LENGTH(utils::intToString(client.data.request._body.length()))
-			.CONTENT_TYPE(client.data.request._headers["CONTENT_TYPE"])
-			.GATEWAY_INTERFACE("CGI/1.1")
-			//.PATH_INFO()
-			//.PATH_TRANSLATED()
-			//.QUERY_STRING()
-			//.REMOTE_ADDR()
-			//.REMOTE_IDENT()
-			.REMOTE_USER(client.data.request._headers["REMOTE-USER"])
-			.REQUEST_METHOD(HTTPParser::methodMap_EtoS.find(client.data.request._method)->second)
-			.REQUEST_URI(client.data.request._uri)
-			//.SCRIPT_NAME()
-			//.SERVER_NAME()
-			//.SERVER_PORT()
-			.SERVER_PROTOCOL("HTTP/1.1")
-			.SERVER_SOFTWARE("HTTP 1.1")
+			client.data.response.builder
+			.setHeader("Server", "Not-Apache")
+			.setDate()
+			.setHeader("Connection", "Close")
+			.setBody(client.data.response.getAssociatedDataRaw())
 			.build()
 		);
-		for (int i = 0; envp.getEnv()[i]; i++)
-			std::cout << envp.getEnv()[i] << std::endl;
-	} catch (std::exception &e) {
-		globalLogger.logItem(logger::ERROR, std::string("ENV could not be built: ") + e.what());
+		return;
+	}
+	// TODO proxy & cgi
+}
+
+void HTTPResponder::handleError(HTTPClient &client, config::ServerBlock *server, int code, bool doErrorPage) {
+	handleError(client, server, 0, code, doErrorPage);
+}
+
+void HTTPResponder::handleError(HTTPClient &client, config::ServerBlock *server,  config::RouteBlock *route, int code, bool doErrorPage) {
+	// allow header in 405
+	if (code == 405) {
+		std::string allowedMethods = "";
+		for (std::vector<std::string>::const_iterator it = route->getAllowedMethods().begin(); it !=  route->getAllowedMethods().end(); ++it) {
+			if (!allowedMethods.empty())
+				allowedMethods += ", ";
+			allowedMethods += *it;
+		}
+		client.data.response.builder.setHeader("Allow", allowedMethods);
+	}
+
+	// handle error pages
+	if (doErrorPage && server != 0 && !server->getErrorPage(code).empty()) {
+		struct stat errorPageData = {};
+		utils::Uri errorPageFile(server->getErrorPage(code));
+		if (::stat(errorPageFile.path.c_str(), &errorPageData) == -1) {
+			if (errno != ENOENT && errno != ENOTDIR) {
+				handleError(client, server, route, 500, false);
+				return;
+			}
+		}
+		if (S_ISREG(errorPageData.st_mode)) {
+			FD fileFd = ::open(errorPageFile.path.c_str(), O_RDONLY);
+			if (fileFd == -1) {
+				handleError(client, server, route, 500, false);
+				return;
+			}
+			client.data.response.builder.setHeader("Content-Type", MimeTypes::getMimeType(errorPageFile.getExt()));
+			client.data.response.builder.setStatus(code);
+			client.addAssociatedFd(fileFd);
+			client.responseState = FILE;
+			client.connectionState = ASSOCIATED_FD;
+			return;
+		}
+	}
+
+	// generate error page
+	client.data.response.builder
+		.setStatus(code)
+		.setHeader("Server", "Not-Apache")
+		.setDate()
+		.setHeader("Connection", "Close")
+		.setHeader("Content-Type", "text/html");
+
+	std::map<int,std::string>::const_iterator statusIt = ResponseBuilder::statusMap.find(code);
+	std::string text = statusIt == ResponseBuilder::statusMap.end() ? "Internal server error!" : statusIt->second;
+	client.data.response.builder.setBody(std::string("<h1>") + utils::intToString(code) + "</h1><p>" + text + "</p>");
+	if (code == 405) {
+		std::string allowedMethods = "";
+		for (std::vector<std::string>::const_iterator it = route->getAllowedMethods().begin(); it !=  route->getAllowedMethods().end(); ++it) {
+			if (!allowedMethods.empty())
+				allowedMethods += ", ";
+			allowedMethods += *it;
+		}
+		client.data.response.builder.setHeader("Allow", allowedMethods);
+	}
+	client.data.response.setResponse(client.data.response.builder.build());
+}
+
+void HTTPResponder::serveDirectory(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const std::string &d) {
+	// check index
+	utils::Uri dirPath = d;
+	if (!route.getIndex().empty()) {
+		struct stat indexData = {};
+		utils::Uri indexFile = d;
+		indexFile.appendPath(route.getIndex());
+		if (::stat(indexFile.path.c_str(), &indexData) == -1) {
+			if (errno != ENOENT && errno != ENOTDIR) {
+				handleError(client, &server, 500);
+				return;
+			}
+		}
+
+		// index file exists, serve it
+		if (S_ISREG(indexData.st_mode)) {
+			FD fileFd = ::open(indexFile.path.c_str(), O_RDONLY);
+			if (fileFd == -1) {
+				handleError(client, &server, 500);
+				return;
+			}
+			client.data.response.builder.setHeader("Content-Type", MimeTypes::getMimeType(indexFile.getExt()));
+			client.data.response.builder.setStatus(200);
+			client.addAssociatedFd(fileFd);
+			client.responseState = FILE;
+			client.connectionState = ASSOCIATED_FD;
+			return;
+		}
+	}
+
+	// not index, handle directory listing
+	if (route.isDirectoryListing()) {
+		DIR *dir = ::opendir(dirPath.path.c_str());
+		if (dir == 0) {
+			handleError(client, &server, 500);
+			return;
+		}
+		dirent *dirEntry;
+		utils::Uri uri = client.data.request._uri;
+		std::string str = "<h1>";
+		str += uri.path + "</h1><ul>";
+		while ((dirEntry = ::readdir(dir)) != 0) {
+			utils::Uri path = uri;
+			path.appendPath(dirEntry->d_name);
+			str += "<li><a href=\"";
+			str += path.path;
+			str += "\">";
+			if (dirEntry->d_type == DT_DIR) {
+				str += "DIR ";
+			}
+			str += dirEntry->d_name;
+			str += "</a></li>";
+		}
+		str += "</ul>";
+		::closedir(dir);
+		client.data.response.setResponse(
+	ResponseBuilder("HTTP/1.1")
+			.setStatus(200)
+			.setHeader("Server", "Not-Apache")
+			.setDate()
+			.setHeader("Connection", "Close")
+			.setHeader("Content-Type", "text/html")
+			.setBody(str)
+			.build()
+		);
+		return;
+	}
+
+	// normal directory handler
+	handleError(client, &server, 403);
+}
+
+void HTTPResponder::serveFile(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const std::string &f) {
+	struct stat buf = {};
+
+	// get file data
+	utils::Uri file = f;
+	if (::stat(file.path.c_str(), &buf) == -1) {
+		if (errno == ENOENT || errno == ENOTDIR)
+			handleError(client, &server, 404);
+		else
+			handleError(client, &server, 500);
+		return;
+	}
+
+	// check for directory
+	if (S_ISDIR(buf.st_mode)) {
+		serveDirectory(client, server, route, file.path);
+		return;
+	}
+	else if (!S_ISREG(buf.st_mode)) {
+		handleError(client, &server, 403);
+		return;
+	}
+
+	// serve the file
+	if (route.shouldDoCgi() && !route.getCgiExt().empty() && file.getExt() == route.getCgiExt()) {
+		globalLogger.logItem(logger::DEBUG, "Handling cgi request");
+		// TODO handle cgi
+	}
+	FD fileFd = ::open(file.path.c_str(), O_RDONLY);
+	if (fileFd == -1) {
+		handleError(client, &server, 500);
+		return;
+	}
+	client.data.response.builder.setHeader("Content-Type", MimeTypes::getMimeType(file.getExt()));
+	client.data.response.builder.setStatus(200);
+	client.addAssociatedFd(fileFd);
+	client.responseState = FILE;
+	client.connectionState = ASSOCIATED_FD;
+}
+
+void HTTPResponder::generateResponse(HTTPClient &client) {
+	if (client.data.request._statusCode != 200) {
+		// error responses if parsing failed
+		handleError(client, 0, client.data.request._statusCode);
+		return;
+	}
+	std::map<std::string,std::string>::iterator hostIt = client.data.request._headers.find("HOST");
+	// no host header = invalid request
+	if (hostIt == client.data.request._headers.end()) {
+		handleError(client, 0, 400);
+		return;
+	}
+	std::string	domain = (*hostIt).second;
+	domain = domain.substr(0, domain.find(':'));
+
+	// what server do you belong to?
+	config::ServerBlock	*server = configuration->findServerBlock(domain, client.getPort(), client.getHost());
+	if (server == 0) {
+		handleError(client, server, 400);
+		return;
+	}
+
+	// find which route block to use
+	utils::Uri uri = client.data.request._uri;
+	config::RouteBlock	*route = server->findRoute(uri.path);
+	if (route == 0) {
+		handleError(client, server, 400);
+		return;
+	}
+
+	// check allowed methods
+	if (!route->isAllowedMethod(HTTPParser::methodMap_EtoS.find(client.data.request._method)->second)) {
+		handleError(client, server, route, 405);
+		return;
+	}
+
+	if (route->shouldDoFile()) {
+		utils::Uri file = route->getRoot();
+		file.appendPath(uri.path);
+		serveFile(client, *server, *route, file.path);
+		return;
+	}
+	else {
+		// TODO do proxy
+		route->getProxyUrl();
+		client.data.response.setResponse(
+			ResponseBuilder()
+			.setStatus(200)
+			.setHeader("Server", "Not-Apache")
+			.setDate()
+			.setHeader("Connection", "Close")
+			.setBody("Proxy not yet implemented")
+			.build()
+		);
+		return;
 	}
 }

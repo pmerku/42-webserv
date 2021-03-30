@@ -8,8 +8,10 @@
 #include "config/validators/Unique.hpp"
 #include "config/validators/RequiredKey.hpp"
 #include "config/validators/IntValidator.hpp"
+#include "config/validators/IsFile.hpp"
 #include "config/validators/IpValidator.hpp"
-#include "utils/atoi.hpp"
+#include "utils/stoi.hpp"
+#include <arpa/inet.h>
 
 using namespace config;
 
@@ -25,12 +27,13 @@ const AConfigBlock::validatorsMapType	ServerBlock::_validators =
 			  .add(new Unique())
 			  .add(new IntValidator(0, 1, 65535))
 			  .build())
-		.addKey("server_name", ConfigValidatorListBuilder() // TODO default to something
+		.addKey("server_name", ConfigValidatorListBuilder() // TODO default to something & [a-Z0-9\-\.]+ validator
 			.add(new ArgumentLength(1))
 			.add(new Unique())
 			.build())
-		.addKey("error_page", ConfigValidatorListBuilder() // TODO file validator + status code validator
+		.addKey("error_page", ConfigValidatorListBuilder() // TODO status code validator
 			.add(new ArgumentLength(2))
+			.add(new IsFile(1))
 			.add(new IntValidator(0, 400, 600))
 			.build())
 		.addKey("body_limit", ConfigValidatorListBuilder()
@@ -76,24 +79,30 @@ void	ServerBlock::cleanup() {
 	}
 }
 
-// TODO error_page parsing
 void ServerBlock::parseData() {
 	_serverName = "_";
 	_bodyLimit = -1;
+	_errorPages.clear();
 
-	_port = utils::atoi(getKey("port")->getArg(0).c_str());
-	_host = getKey("host")->getArg(0);
+	_port = utils::stoi(getKey("port")->getArg(0));
+	_host = inet_addr(getKey("host")->getArg(0).c_str());
 
 	if (hasKey("server_name"))
 		_serverName = getKey("server_name")->getArg(0);
 	if (hasKey("body_limit"))
-		_bodyLimit = utils::atoi(getKey("body_limit")->getArg(0).c_str());
+		_bodyLimit = utils::stoi(getKey("body_limit")->getArg(0));
+
+	for (std::vector<ConfigLine>::const_iterator i = _lines.begin(); i != _lines.end(); ++i) {
+		if (i->getKey() != "error_page") continue;
+		_errorPages[utils::stoi(i->getArg(0))] = i->getArg(1);
+	}
 
 	for (std::vector<AConfigBlock*>::iterator i = _blocks.begin(); i != _blocks.end(); ++i) {
 		if (dynamic_cast<RouteBlock*>(*i))
 			_routeBlocks.push_back(reinterpret_cast<RouteBlock*>(*i));
 		(*i)->parseData();
 	}
+
 	_isParsed = true;
 }
 
@@ -102,7 +111,7 @@ int ServerBlock::getPort() const {
 	return _port;
 }
 
-const std::string &ServerBlock::getHost() const {
+long ServerBlock::getHost() const {
 	throwNotParsed();
 	return _host;
 }
@@ -120,4 +129,21 @@ int ServerBlock::getBodyLimit() const {
 const std::string &ServerBlock::getServerName() const {
 	throwNotParsed();
 	return _serverName;
+}
+
+RouteBlock *ServerBlock::findRoute(const std::string &path) {
+	throwNotParsed();
+	for (std::vector<RouteBlock*>::iterator route = _routeBlocks.begin(); route != _routeBlocks.end(); ++route) {
+		if ((*route)->getLocation().match(path)) {
+			return *route;
+		}
+	}
+	return 0;
+}
+
+std::string	ServerBlock::getErrorPage(int code) const {
+	std::map<int, std::string>::const_iterator it = _errorPages.find(code);
+	if (it == _errorPages.end())
+		return "";
+	return it->second;
 }

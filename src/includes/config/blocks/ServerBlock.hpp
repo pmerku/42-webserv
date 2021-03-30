@@ -7,6 +7,7 @@
 
 #include "config/AConfigBlock.hpp"
 #include "config/blocks/RouteBlock.hpp"
+#include <map>
 
 namespace config {
 
@@ -30,16 +31,19 @@ namespace config {
 	private:
 		int							_port;
 		int							_bodyLimit;
-		std::string					_host;
+		long						_host;
 		std::string					_serverName;
 		std::vector<RouteBlock*>	_routeBlocks;
+		std::map<int ,std::string>	_errorPages;
 
 	public:
 		int								getPort() const;
 		int								getBodyLimit() const;
-		const std::string				&getHost() const;
+		long getHost() const;
 		const std::vector<RouteBlock*>	&getRouteBlocks() const;
 		const std::string				&getServerName() const;
+		std::string						getErrorPage(int code) const;
+		RouteBlock						*findRoute(const std::string &path);
 	};
 
 }

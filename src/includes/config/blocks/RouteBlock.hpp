@@ -6,6 +6,7 @@
 #define ROUTEBLOCK_HPP
 
 #include "config/AConfigBlock.hpp"
+#include "regex/Regex.hpp"
 
 namespace config {
 
@@ -27,22 +28,24 @@ namespace config {
 		std::string getType() const;
 
 	private:
-		std::string					_location;
+		regex::Regex				_location;
 		std::vector<std::string>	_allowedMethods;
 		std::string					_root;
 		bool						_directoryListing;
 		std::string					_index;
 		std::string					_cgi;
+		std::string					_cgiExt;
 		std::string					_saveUploads;
 		std::string					_proxyUrl;
 
 	public:
-		const std::string &getLocation() const;
+		regex::Regex &getLocation();
 		const std::vector<std::string> &getAllowedMethods() const;
 		const std::string &getRoot() const;
 		bool isDirectoryListing() const;
 		const std::string &getIndex() const;
 		const std::string &getCgi() const;
+		const std::string &getCgiExt() const;
 		const std::string &getSaveUploads() const;
 		const std::string &getProxyUrl() const;
 		/// return if it should serve files (if false -> proxy)
@@ -50,6 +53,7 @@ namespace config {
 		/// return if it cgi is enabled
 		bool shouldDoCgi() const;
 
+		bool isAllowedMethod(const std::string &method) const;
 	};
 
 }

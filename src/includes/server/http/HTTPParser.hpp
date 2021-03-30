@@ -33,11 +33,11 @@ namespace NotApache {
 		};
 
 		static ParseState		parse(HTTPClient &client);
-		static ParseState		parseRequest(HTTPClientRequest& _R);
-		static ParseState		parseHeaders(HTTPClientRequest& _R, std::string rawRequest);
-		static ParseState		parseRequestLine(HTTPClientRequest& _R, std::string rawRequest);
-		static ParseState		parseBody(HTTPClientRequest& _R, std::string rawRequest);
-		static ParseState		parseChunkedBody(HTTPClientRequest& _R, std::string rawRequest);
+		static ParseState		parseRequest(HTTPClientRequest& req);
+		static ParseState		parseHeaders(HTTPClientRequest& req, std::string rawRequest);
+		static ParseState		parseRequestLine(HTTPClientRequest& req, std::string rawRequest);
+		static ParseState		parseBody(HTTPClientRequest& req, std::string rawRequest);
+		static ParseState		parseChunkedBody(HTTPClientRequest& req, std::string rawRequest);
 	
 		static const std::map<std::string, e_method>			methodMap_StoE;
 		static const std::map<e_method, std::string>			methodMap_EtoS;
