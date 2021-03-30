@@ -7,7 +7,7 @@
 
 using namespace NotApache;
 
-HTTPClient::HTTPClient(FD clientFd, int port): _fd(clientFd), _port(port), _associatedFds(), writeState(NO_RESPONSE), connectionState(READING), responseState(NONE), isHandled(false) {}
+HTTPClient::HTTPClient(FD clientFd, int port, long host): _fd(clientFd), _port(port), _host(host), _associatedFds(), writeState(NO_RESPONSE), connectionState(READING), responseState(NONE), isHandled(false) {}
 
 HTTPClient::~HTTPClient() {
 	for (std::vector<FD>::iterator it = _associatedFds.begin(); it != _associatedFds.end(); it++) {
@@ -24,6 +24,10 @@ int HTTPClient::getPort() const {
 	return _port;
 }
 
+long HTTPClient::getHost() const {
+	return _host;
+}
+
 void HTTPClient::addAssociatedFd(FD fd) {
 	for (std::vector<FD>::iterator it = _associatedFds.begin(); it != _associatedFds.end(); it++) {
 		if (*it == fd)
@@ -35,7 +39,7 @@ void HTTPClient::addAssociatedFd(FD fd) {
 void HTTPClient::removeAssociatedFd(FD fd) {
 	for (std::vector<FD>::iterator it = _associatedFds.begin(); it != _associatedFds.end(); it++) {
 		if (*it == fd) {
-			::close(*it); // TODO check if this causes issues
+			::close(*it);
 			_associatedFds.erase(it);
 			return;
 		}

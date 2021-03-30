@@ -35,7 +35,7 @@ namespace config {
 	public:
 		int								getWorkerCount() const;
 		const std::vector<ServerBlock*>	&getServerBlocks() const;
-		ServerBlock						*findServerBlock(const std::string &host, int port = 80) const;
+		ServerBlock						*findServerBlock(const std::string &host, int port = 80, long hostIp = 0) const;
 
 	};
 

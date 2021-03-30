@@ -53,6 +53,7 @@ namespace config {
 		/// return if it cgi is enabled
 		bool shouldDoCgi() const;
 
+		bool isAllowedMethod(const std::string &method) const;
 	};
 
 }

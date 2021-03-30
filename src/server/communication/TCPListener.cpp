@@ -10,7 +10,7 @@
 
 using namespace NotApache;
 
-TCPListener::TCPListener(int port, int backLog): _port(port), _fd(-1), _backlog(backLog) {}
+TCPListener::TCPListener(int port, long host, int backLog): _port(port), _host(host), _fd(-1), _backlog(backLog) {}
 
 TCPListener::~TCPListener() {
 	if (_fd > 0) ::close(_fd);
@@ -32,7 +32,7 @@ void TCPListener::start() {
 	// set socket options
 	setsockopt(_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(int));
 	svr_addr.sin_family = AF_INET;
-	svr_addr.sin_addr.s_addr = INADDR_ANY;
+	svr_addr.sin_addr.s_addr = _host;
 	svr_addr.sin_port = htons(_port);
 
 	if (::bind(_fd, reinterpret_cast<struct sockaddr *>(&svr_addr), sizeof(svr_addr)) == -1) {
@@ -61,6 +61,6 @@ HTTPClient *TCPListener::acceptClient() {
 	}
 
 	fcntl(client_fd, F_SETFL, O_NONBLOCK);
-	HTTPClient	*out = new HTTPClient(client_fd, _port);
+	HTTPClient	*out = new HTTPClient(client_fd, _port, _host);
 	return out;
 }
