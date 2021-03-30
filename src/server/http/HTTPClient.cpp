@@ -3,11 +3,49 @@
 //
 
 #include "server/http/HTTPClient.hpp"
+#include <unistd.h>
 
 using namespace NotApache;
 
-HTTPClient::HTTPClient(FD clientFd): _fd(clientFd), writeState(NO_RESPONSE), connectionState(READING), isHandled(false) {}
+HTTPClient::HTTPClient(FD clientFd, int port): _fd(clientFd), _port(port), _associatedFds(), writeState(NO_RESPONSE), connectionState(READING), responseState(NONE), isHandled(false) {}
+
+HTTPClient::~HTTPClient() {
+	for (std::vector<FD>::iterator it = _associatedFds.begin(); it != _associatedFds.end(); it++) {
+		::close(*it);
+	}
+	_associatedFds.clear();
+}
 
 FD HTTPClient::getFd() const {
 	return _fd;
+}
+
+int HTTPClient::getPort() const {
+	return _port;
+}
+
+void HTTPClient::addAssociatedFd(FD fd) {
+	for (std::vector<FD>::iterator it = _associatedFds.begin(); it != _associatedFds.end(); it++) {
+		if (*it == fd)
+			return;
+	}
+	_associatedFds.push_back(fd);
+}
+
+void HTTPClient::removeAssociatedFd(FD fd) {
+	for (std::vector<FD>::iterator it = _associatedFds.begin(); it != _associatedFds.end(); it++) {
+		if (*it == fd) {
+			::close(*it); // TODO check if this causes issues
+			_associatedFds.erase(it);
+			return;
+		}
+	}
+}
+
+FD HTTPClient::getAssociatedFd(std::vector<FD>::size_type i) const {
+	return _associatedFds[i];
+}
+
+std::vector<FD>::size_type HTTPClient::getAssociatedFdLength() const {
+	return _associatedFds.size();
 }

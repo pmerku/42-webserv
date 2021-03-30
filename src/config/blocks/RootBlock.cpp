@@ -75,3 +75,22 @@ const std::vector<ServerBlock *>	&RootBlock::getServerBlocks() const {
 	throwNotParsed();
 	return _serverBlocks;
 }
+
+ServerBlock	*RootBlock::findServerBlock(const std::string &host, int port) const {
+	throwNotParsed();
+	ServerBlock	*firstBlock = 0;
+
+	for (std::vector<ServerBlock *>::const_iterator it = _serverBlocks.begin(); it != _serverBlocks.end(); ++it) {
+		// TODO check host ip
+		if ((*it)->getPort() == port) {
+			if (!firstBlock) {
+				firstBlock = *it;
+			}
+
+			if (((*it)->getServerName() == host || (*it)->getServerName() == "_")) {
+				return *it;
+			}
+		}
+	}
+	return firstBlock;
+}

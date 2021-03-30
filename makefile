@@ -70,6 +70,7 @@ SRC	=\
 	utils/isDigit.cpp\
 	utils/countSpaces.cpp\
 	utils/strdup.cpp\
+	utils/DataList.cpp\
 	server/handlers/AHandler.cpp\
 	server/handlers/StandardHandler.cpp\
 	server/handlers/HandlerHolder.cpp\
@@ -130,6 +131,7 @@ HEADERS	=\
 	utils/localTime.hpp\
 	utils/mutex.hpp\
 	utils/strdup.hpp\
+	utils/DataList.hpp\
 	server/handlers/AHandler.hpp\
   server/handlers/StandardHandler.hpp\
   server/handlers/HandlerHolder.hpp\

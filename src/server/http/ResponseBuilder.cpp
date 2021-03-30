@@ -8,6 +8,7 @@
 #include "utils/localTime.hpp"
 #include "utils/ErrorThrow.hpp"
 #include "utils/CreateMap.hpp"
+#include "utils/DataList.hpp"
 
 using namespace NotApache;
 
@@ -89,8 +90,9 @@ ResponseBuilder::ResponseBuilder(const std::string &protocol) {
 
 ResponseBuilder &ResponseBuilder::setStatus(int code) {
 	std::map<int, std::string>::const_iterator it = statusMap.find(code);
-	if (it == statusMap.end())
-		ERROR_THROW(StatusCodeError());
+	if (it == statusMap.end()) {
+		it = statusMap.find(500);
+	}
 	_statusLine.first = utils::intToString(it->first);
 	_statusLine.second = it->second;
 	return *this;
@@ -103,12 +105,16 @@ ResponseBuilder &ResponseBuilder::setHeader(const std::string &key, const std::s
 
 ResponseBuilder &ResponseBuilder::setBody(const std::string &data, size_t length) {
 	setHeader("Content-Length", utils::intToString(length));
-	_body = data;
+	_body.add(data.c_str());
 	return *this;
 }
 
 ResponseBuilder &ResponseBuilder::setBody(const std::string &data) {
-	setHeader("Content-Length", utils::intToString(data.length()));
+	return setBody(data, data.length());
+}
+
+ResponseBuilder &ResponseBuilder::setBody(const utils::DataList &data) {
+	setHeader("Content-Length", utils::intToString(data.size()));
 	_body = data;
 	return *this;
 }
@@ -126,9 +132,6 @@ std::string ResponseBuilder::convertTime(time_t time) {
 
 	currentTime = std::localtime(&time); // TODO calculate yourself
 	int ret = strftime(date, sizeof(date), "%a, %d %B %Y %H:%M:%S ", currentTime);
-	if (ret < 0)
-		ERROR_THROW(DateError());
-
 	return std::string(date, ret) + "GMT";
 }
 
@@ -179,8 +182,9 @@ ResponseBuilder &ResponseBuilder::setDefaults() {
 	return *this;
 }
 
-std::string	ResponseBuilder::build() {
+utils::DataList	ResponseBuilder::build() {
 	// HTTP/1.1 {code} {string value} \r\n
+	utils::DataList	output;
 	std::string response = _protocol;
 
 	// set defaults
@@ -200,9 +204,10 @@ std::string	ResponseBuilder::build() {
 	// \r\n {body} \r\n
 	if (!_body.empty()) {
 		response += _endLine;
-		response += _body;
-		response += _endLine;
+		output = _body;
+		output.add(_endLine.c_str());
 	}
 
-	return response;
+	output.add_front(response.c_str());
+	return output;
 }

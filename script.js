@@ -15,11 +15,11 @@ s.on('close', () => {
 })
 
 s.on('connect', async () => {
-    send('GET /Users/Marty/Documents/Marty/GitHub/programming/webserv-fork/test.cgi');
+    send('GET /test.cgi');
     await sleep(1);
 	send(' HTTP/1.1\r\n');
     await sleep(1);
-	send('TRANSFER-ENCODING: chunked\r\nbladiebla: hoptidoe\r\ntestest: tadaaa\r\n\r\n0x9\r\nabcdefghi\r\n');
+	send('HOST: localhost:8080\r\nTRANSFER-ENCODING: chunked\r\nbladiebla: hoptidoe\r\ntestest: tadaaa\r\n\r\n0x9\r\nabcdefghi\r\n');
 	await sleep(1);
 	send('0x7\r\n1234567\r\n0\r\n\r\n');
 
@@ -33,7 +33,7 @@ s.on('connect', async () => {
     //send('8\r\nBODYBODY\r\n');
 })
 
-s.connect(8081);
+s.connect(8080);
 
 
 //send('POST / HTTP/1.1\r\nHost: localhost:8080\r\nConnection: keep-alive\r\nCONTENT-LENGTH: 12\r\nUser-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.182 Safari/537.36\r\nAccept-Language: nl-NL,nl;q=0.9,en-US;q=0.8,en;q=0.7\r\n\r\nBODYBODYBODY\r\n');
