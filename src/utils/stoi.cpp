@@ -1,4 +1,5 @@
 #include "utils/stoi.hpp"
+#include <climits>
 
 int		utils::stoi(const std::string& str)
 {

@@ -3,19 +3,20 @@
 //
 
 #include "server/http/HTTPParser.hpp"
+#include "server/http/HTTPParseData.hpp"
 #include "server/global/GlobalLogger.hpp"
 #include "server/global/GlobalConfig.hpp"
 
 namespace NotApache
 {
-	std::ostream& operator<<(std::ostream& o, HTTPClientRequest& x) {
+	std::ostream& operator<<(std::ostream& o, HTTPParseData& x) {
 		o	<< "==REQUEST=="													<< std::endl
-			<< "Method: "	<< HTTPParser::methodMap_EtoS.find(x._method)->second 	<< std::endl
-			<< "URI: "		<< x._uri											<< std::endl;
+			<< "Method: "	<< HTTPParser::methodMap_EtoS.find(x.method)->second 	<< std::endl
+			<< "URI: "		<< x.uri.getFull()										<< std::endl;
 
 			if (!x.headers.empty()) {
 				o << std::endl << "-HEADERS-" << std::endl;
-				for (std::map<std::string, std::string>::iterator it = x._headers.begin(); it != x._headers.end(); ++it)
+				for (std::map<std::string, std::string>::iterator it = x.headers.begin(); it != x.headers.end(); ++it)
 					o << "Header: [" << it->first << ": " << it->second << "]" 	<< std::endl;
 			}
 			else
@@ -59,6 +60,154 @@ const std::map<e_method, std::string> HTTPParser::methodMap_EtoS =
 		(CONNECT, "CONNECT")
 		(OPTIONS, "OPTIONS")
 		(TRACE, "TRACE");
+
+HTTPParser::ParseReturn		HTTPParser::parseRequestLine(HTTPParseData &data, const std::string &line) {
+	// check if spaces count in line is correct
+	std::vector<std::string> parts = utils::split(line, " ");
+	if (utils::countSpaces(line) != 2 || parts.size() != 3) {
+		globalLogger.logItem(logger::ERROR, "Invalid request line");
+		data.parseStatusCode = 400;
+		return ERROR;
+	}
+
+	// check if method is known
+	if (methodMap_StoE.find(parts[0]) == methodMap_StoE.end()) {
+		globalLogger.logItem(logger::ERROR, "Unknown method");
+		data.parseStatusCode = 501;
+		return ERROR;
+	}
+	// set known method
+	data.method = methodMap_StoE.find(parts[0])->second;
+
+	// check if URI is valid
+	if (parts[1][0] != '/') {
+		globalLogger.logItem(logger::ERROR, "URI is malformed");
+		data.parseStatusCode = 400;
+		return ERROR;
+	}
+
+	if (parts[1].find_first_not_of(allowedURIChars) != std::string::npos) {
+		globalLogger.logItem(logger::ERROR, "Invalid character in URI");
+		data.parseStatusCode = 400;
+		return ERROR;
+	}
+	// set URI
+	data.uri = parts[1];
+
+	if (parts[2] != "HTTP/1.1") {
+		globalLogger.logItem(logger::ERROR, "HTTP protocol not supported");
+		data.parseStatusCode = 505;
+		return ERROR;
+	}
+	return OK;
+}
+
+HTTPParser::ParseReturn		HTTPParser::parseResponseLine(HTTPParseData &data, const std::string &line) {
+	// check if spaces count in line is correct
+	std::vector<std::string> parts = utils::split(line, " ");
+	if (utils::countSpaces(line) != 2 || parts.size() != 3) {
+		globalLogger.logItem(logger::ERROR, "Invalid request line");
+		data.parseStatusCode = 400;
+		return ERROR;
+	}
+
+	if (parts[0] != "HTTP/1.1") {
+		globalLogger.logItem(logger::ERROR, "HTTP protocol not supported");
+		data.parseStatusCode = 505;
+		return ERROR;
+	}
+
+	// parse status code (ignore reason-phrase)
+	if (parts[1].length() != 3) {
+		globalLogger.logItem(logger::ERROR, "Invalid status code");
+		data.parseStatusCode = 400;
+		return ERROR;
+	}
+	for (std::string::size_type i = 0; i < 3; ++i) {
+		if (!utils::isDigit(parts[1][i])) {
+			globalLogger.logItem(logger::ERROR, "Invalid status code");
+			data.parseStatusCode = 400;
+			return ERROR;
+		}
+	}
+	data.statusCode = utils::stoi(parts[1]);
+	return OK;
+}
+
+HTTPParser::ParseReturn		HTTPParser::parseHeaders(HTTPParseData &data, const std::string &headers, HTTPClient *client) {
+	std::vector<std::string> headersArray = utils::split(headers, "\r\n");
+	for (std::vector<std::string>::iterator it = headersArray.begin(); it != headersArray.end(); ++it) {
+		std::string::size_type colonPos = it->find(':');
+		if (colonPos == std::string::npos) {
+			globalLogger.logItem(logger::ERROR, "no \":\" in header field");
+			data.parseStatusCode = 400;
+			return ERROR;
+		}
+
+		// key parsing
+		std::string	key = it->substr(0, colonPos);
+		utils::toUpper(key);
+		if (key.find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.~!#$&'*+") != std::string::npos) {
+			globalLogger.logItem(logger::ERROR, "Invalid character in header field name");
+			data.parseStatusCode = 400;
+			return ERROR;
+		}
+
+		// add to map
+		std::string	value = it->substr(colonPos+1);
+		value = value.substr(value.find_first_not_of(' '), value.find_last_not_of(' '));
+		data.headers[key] = value;
+		// TODO ignore on cgi & parse stricter (transfer-encoding: gzip, chunked should fail)
+		if (key == "TRANSFER-ENCODING" && value.find("chunked") != std::string::npos)
+			data._isChunked = true;
+	}
+
+	// at least one header
+	if (data.headers.empty()) {
+		globalLogger.logItem(logger::ERROR, "No headers in parsed data");
+		data.parseStatusCode = 400;
+		return ERROR;
+	}
+
+	// content-length and transfer encoding may not exist on same request (ignore on cgi
+	if (data._type != HTTPParseData::CGI_RESPONSE) {
+		std::map<std::string, std::string>::iterator transferIt = data.headers.find("TRANSFER-ENCODING");
+		std::map<std::string, std::string>::iterator contentIt = data.headers.find("CONTENT-LENGTH");
+		if (transferIt != data.headers.end() && data._isChunked && contentIt != data.headers.end()) {
+			globalLogger.logItem(logger::ERROR, "Headers Transfer-encoding + Content-length not allowed");
+			data.parseStatusCode = 400;
+			return ERROR;
+		}
+	}
+
+	// host header needs to exist on requests
+	if (data._type == HTTPParseData::REQUEST) {
+		int contentLength = 0;
+		std::map<std::string,std::string>::iterator hostIt = data.headers.find("HOST");
+		if (hostIt == data.headers.end()) {
+			globalLogger.logItem(logger::ERROR, "Missing Host header");
+			data.parseStatusCode = 400;
+			return ERROR;
+		}
+
+		std::map<std::string,std::string>::iterator contentLengthIt = data.headers.find("CONTENT-LENGTH");
+		if (contentLengthIt != data.headers.end())
+			contentLength = utils::stoi(contentLengthIt->second);
+		config::ServerBlock *server = NotApache::configuration->findServerBlock(hostIt->second, client->getPort(), client->getHost());
+		if (server == 0) {
+			globalLogger.logItem(logger::ERROR, "No matching server block");
+			data.parseStatusCode = 500;
+			return ERROR;
+		}
+		if (server->getBodyLimit() != -1 && ( contentLength == -1 || contentLength > server->getBodyLimit()) ) {
+			globalLogger.logItem(logger::ERROR, "Body too large");
+			data.parseStatusCode = 413;
+			return ERROR;
+		}
+	}
+
+	return OK;
+}
 
 HTTPParser::ParseState		 HTTPParser::parse(HTTPClient& client) {
 	return parse(client.data.request.data, &client);
