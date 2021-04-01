@@ -5,7 +5,7 @@
 # include "isDigit.hpp"
 
 namespace utils {
-	size_t		stoi(const std::string& str);
+	int		stoi(const std::string& str);
 }
 
 #endif //STOI_HPP

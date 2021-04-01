@@ -9,41 +9,33 @@
 #include "utils/DataList.hpp"
 #include "server/http/RequestBuilder.hpp"
 #include "server/http/ResponseBuilder.hpp"
+#include "server/http/HTTPParseData.hpp"
 #include <string>
 #include <map>
 
 namespace NotApache {
-	enum e_method {
-		INVALID,
-		GET,
-		HEAD,
-		POST,
-		PUT,
-		DELETE,
-		CONNECT,
-		OPTIONS,
-		TRACE
-	};
 
 	class HTTPClientRequest {
 	private:
+		utils::DataList	_associatedData;
+
 	public:
-		std::string							_rawRequest;
-		e_method							_method;
-		std::string							_uri;
-		std::map<std::string, std::string>	_headers;
-		std::string							_body;
-		int									_statusCode;
-		bool								_isChunked;
+		HTTPParseData				data;
+		bool 						hasProgress;
+		utils::DataList::size_type	packetProgress;
+		utils::DataList::iterator 	currentPacket;
+		ResponseBuilder				builder;
 
 		HTTPClientRequest();
 
 		friend class HTTPParser;
 
-		const std::string		&getRawRequest() const;
+		utils::DataList			&getRequest();
 
-		void					appendRequestData(const std::string	&newData);
-		void					setRawRequest(const std::string &newData);
+		void					setRequest(const utils::DataList &request);
+		utils::DataList			&getAssociatedDataRaw();
+		void					appendAssociatedData(const char *data, utils::DataList::size_type size);
+		void 					appendRequestData(const char *data, utils::DataList::size_type size);
 
 		friend std::ostream& 	operator<<(std::ostream& o, HTTPClientRequest& x);
 	};

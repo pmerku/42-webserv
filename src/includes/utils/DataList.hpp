@@ -59,6 +59,7 @@ namespace utils {
 			typedef char&		reference;
 
 			DataListIterator(std::list<DataListSection>::iterator it, DataList::size_type index) : _it(it), _index(index) {}
+			friend class DataList;
 
 			reference	operator*() const { return _it->data[_index]; }
 			pointer		operator->() const { return _it->data[_index]; }
@@ -114,6 +115,8 @@ namespace utils {
 
 		DataList();
 		size_type	size() const;
+		size_type	size(DataListIterator start);
+		size_type	size(DataListIterator start, DataListIterator last);
 		bool		empty() const;
 
 		void	add(const char *data, size_type size);

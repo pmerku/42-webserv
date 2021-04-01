@@ -6,3 +6,8 @@ int		utils::toUpper(int c)
 		c = c - 32;
 	return (c);
 }
+
+void	utils::toUpper(std::string &str) {
+	for (std::string::size_type i = 0; i < str.length(); ++i)
+		str[i] = utils::toUpper(str[i]);
+}
