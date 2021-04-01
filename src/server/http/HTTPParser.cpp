@@ -4,6 +4,7 @@
 
 #include "server/http/HTTPParser.hpp"
 #include "server/global/GlobalLogger.hpp"
+#include "utils/DataList.hpp"
 
 namespace NotApache
 {
@@ -19,10 +20,11 @@ namespace NotApache
 			}
 			else
 				o	<< "-NO HEADERS-" 											<< std::endl;
-			if (x._body.length()) {
-				o	<< "Body length: " << x._body.length() 						<< std::endl << std::endl
-					<< "-BODY-" 												<< std::endl 
-					<< x._body 													<< std::endl;
+			if (x._body.size()) {
+				o	<< "Body length: " << x._body.size() 						<< std::endl << std::endl
+					<< "-BODY-" 												<< std::endl;
+					for(std::list<utils::DataList::DataListSection>::iterator it = x._body.begin(); it != x._body.end(); ++it)
+						o	<< it->data << std::endl;
 			}
 			else
 				o << std::endl << "-NO BODY-" 									<< std::endl;
@@ -60,11 +62,6 @@ const std::map<e_method, std::string> HTTPParser::methodMap_EtoS =
 
 HTTPParser::ParseState		 HTTPParser::parse(HTTPClient& client) {
 	// TODO check later
-	if (client.data.request._rawRequest.length() > MAX_REQUEST)	{
-		globalLogger.logItem(logger::DEBUG, "Content-length exceeds max body size");
-		client.data.request._statusCode = 413;
-		return ERROR;
-	}
 	if (client.data.request._isChunked)
 		return (parseChunkedBody(client.data.request, client.data.request._rawRequest));
 	else
@@ -93,7 +90,7 @@ HTTPParser::ParseState		HTTPParser::parseChunkedBody(HTTPClientRequest& req, std
 		return ERROR;
 	}
 	size_t chunkSize = utils::stoh(size.substr(2));
-	if (req._body.length() + chunkSize > MAX_BODY) {
+	if (req._body.size() + chunkSize > MAX_BODY) {
 		globalLogger.logItem(logger::DEBUG, "Content-length exceeds max body size");
 		req._statusCode = 413;
 		return ERROR;
@@ -109,7 +106,7 @@ HTTPParser::ParseState		HTTPParser::parseChunkedBody(HTTPClientRequest& req, std
 	}
 
 	// Append body
-	req._body += rawRequest.substr(SOB, chunkSize);
+	req._body.add(rawRequest.substr(SOB, chunkSize).c_str());
 
 	// Check if body is complete
 	if (EOB != std::string::npos) // 0x0?
@@ -134,7 +131,7 @@ HTTPParser::ParseState		HTTPParser::parseBody(HTTPClientRequest& req, std::strin
 		globalLogger.logItem(logger::ERROR, "Content-length exceeds max body size");
 		return ERROR;
 	}
-	req._body += rawRequest.substr(0, contentLength);
+	req._body .add(rawRequest.substr(0, contentLength).c_str());
 	return READY_FOR_WRITE;
 }
 

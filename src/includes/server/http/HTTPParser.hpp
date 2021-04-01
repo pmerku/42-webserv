@@ -28,8 +28,7 @@ namespace NotApache {
 
 		enum MaxSize {
 			MAX_HEADER = 8000,
-			MAX_BODY = 8000,
-			MAX_REQUEST = 24000
+			MAX_BODY = 8000 // TODO get from config
 		};
 
 		static ParseState		parse(HTTPClient &client);

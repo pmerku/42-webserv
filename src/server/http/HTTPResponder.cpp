@@ -273,7 +273,9 @@ void HTTPResponder::generateResponse(HTTPClient &client) {
 }
 
 void	HTTPResponder::setEnv(HTTPClient& client, CGIenv::env& envp, std::string& uri, const std::string &f) {
-	//CGIenv::ENVBuilder env();
+	CGIenv::ENVBuilder env;
+	std::map<std::string, std::string>::iterator it;
+	std::map<std::string, std::string>::iterator end = client.data.request._headers.end();
 	try {
 		char cwd[PATH_MAX];
 		if (getcwd(cwd, PATH_MAX) == NULL)
@@ -281,27 +283,33 @@ void	HTTPResponder::setEnv(HTTPClient& client, CGIenv::env& envp, std::string& u
 		std::string	domain = (*client.data.request._headers.find("HOST")).second;
 		domain = domain.substr(0, domain.find(':'));
 
-		// Check if set
-		envp.setEnv(CGIenv::ENVBuilder()
-			.AUTH_TYPE(client.data.request._headers["AUTHORIZATION"])
-			.CONTENT_LENGTH(utils::intToString(client.data.request._body.length()))
-			.CONTENT_TYPE(client.data.request._headers["CONTENT_TYPE"])
+		env.SERVER_NAME(domain)
+			.CONTENT_LENGTH(utils::intToString(client.data.request._body.size()))
 			.GATEWAY_INTERFACE("CGI/1.1")
 			.PATH_INFO(uri) // TODO URL translating/encoding
 			.PATH_TRANSLATED(f)
 			.QUERY_STRING(uri.substr(uri.find('?')+1))
-			.REMOTE_ADDR(utils::intToString(client.getCliAddr().sin_addr.s_addr)) // TODO store in client
-			.REMOTE_IDENT("")
-			.REMOTE_USER(client.data.request._headers["REMOTE_USER"])
+			.REMOTE_ADDR(utils::intToString(client.getCliAddr().sin_addr.s_addr)) //TODO convert to valid IP
+			.REMOTE_IDENT("") // TODO what is this?
 			.REQUEST_METHOD(HTTPParser::methodMap_EtoS.find(client.data.request._method)->second)
 			.REQUEST_URI(uri)
 			.SCRIPT_NAME(uri)
-			.SERVER_NAME(domain)
 			.SERVER_PORT(utils::intToString(client.getPort()))
 			.SERVER_PROTOCOL("HTTP/1.1")
-			.SERVER_SOFTWARE("HTTP 1.1")
-			.build()
-		);
+			.SERVER_SOFTWARE("HTTP 1.1");
+			
+		it = client.data.request._headers.find("AUTHORIZATION");
+		if (it != end)
+			env.AUTH_TYPE(it->second);
+		it = client.data.request._headers.find("CONTENT_TYPE");
+		if (it != end)
+			env.CONTENT_TYPE(it->second);
+		it = client.data.request._headers.find("REMOTE_USER");
+		if (it != end)
+			env.CONTENT_TYPE(it->second);
+			
+		envp.setEnv(env.build());
+
 		for (int i = 0; envp.getEnv()[i]; i++)
 			std::cout << envp.getEnv()[i] << std::endl;
 	} catch (std::exception &e) {
@@ -328,7 +336,7 @@ void	HTTPResponder::runCGI(HTTPClient& client, const std::string &f) {
 		ERROR_THROW(PipeFail());
 	client.data.response._fd = pipefd[0];
 
-	if (client.data.request._body.length()) {
+	if (client.data.request._body.size()) {
 		if (::pipe(bodyPipefd))
 			ERROR_THROW(PipeFail());
 		client.data.response._bodyfd = bodyPipefd[0];
@@ -369,9 +377,9 @@ void	HTTPResponder::runCGI(HTTPClient& client, const std::string &f) {
 	if (::close(pipefd[1]) == -1)
 		ERROR_THROW(CloseFail());
 
-	client.addAssociatedFd(pipefd[0]);
-	client.data.response.builder.setHeader("Content-Type", "text/html");
-	client.data.response.builder.setStatus(200);
-	client.responseState = FILE;
-	client.connectionState = ASSOCIATED_FD;
+	client.addAssociatedFd(pipefd[0]); //
+	client.data.response.builder.setHeader("Content-Type", "text/html"); //
+	client.data.response.builder.setStatus(200); //
+	client.responseState = FILE; // 
+	client.connectionState = ASSOCIATED_FD; //
 }

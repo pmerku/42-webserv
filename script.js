@@ -15,7 +15,7 @@ s.on('close', () => {
 })
 
 s.on('connect', async () => {
-    send('GET /test.cgi');
+    send('GET /hello.world');
     await sleep(1);
 	send(' HTTP/1.1\r\n');
     await sleep(1);

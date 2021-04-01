@@ -32,7 +32,7 @@ namespace NotApache {
 		e_method							_method;
 		std::string							_uri;
 		std::map<std::string, std::string>	_headers;
-		std::string							_body;
+		utils::DataList						_body;
 		int									_statusCode;
 		bool								_isChunked;
 
