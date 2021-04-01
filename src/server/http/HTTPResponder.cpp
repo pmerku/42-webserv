@@ -348,7 +348,7 @@ void	HTTPResponder::runCGI(HTTPClient& client, const std::string &f) {
 	int pid = ::fork();
 	if (pid == -1)
 		ERROR_THROW(ForkFail());
-	if (!pid)
+	if (!pid) // TODO ERROR logging
 	{
 		if (body) {
 			if (::dup2(bodyPipefd[0], STDIN_FILENO) == -1) {
