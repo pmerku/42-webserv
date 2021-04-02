@@ -3,7 +3,6 @@
 //
 
 #include "server/http/HTTPParser.hpp"
-#include "server/http/HTTPParseData.hpp"
 #include "server/global/GlobalLogger.hpp"
 #include "server/global/GlobalConfig.hpp"
 #include <algorithm>
@@ -361,7 +360,8 @@ HTTPParser::ParseState		HTTPParser::parse(HTTPParseData &data, HTTPClient *clien
 		}
 		else if (ret == ERROR)
 			return READY_FOR_WRITE;
-		return UNFINISHED;
+		else
+			return UNFINISHED;
 	}
 
 	if (data.isChunked && !data._gotTrailHeaders) {
