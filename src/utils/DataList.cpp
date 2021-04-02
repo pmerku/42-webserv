@@ -4,6 +4,7 @@
 
 #include "utils/DataList.hpp"
 #include <algorithm>
+#include <cstring>
 
 using namespace utils;
 
@@ -82,14 +83,56 @@ DataList::DataListIterator DataList::endList() {
 	return DataListIterator(_list.end(), 0);
 }
 
-DataList DataList::subList(DataList::const_iterator start, DataList::const_iterator finish) {
-	DataList newDataList;
-	const_iterator it = _list.begin();
-	for (; it != start && it != _list.end(); ++it);
-	for (; it != finish && it != _list.end(); ++it) {
-		newDataList._list.push_back(DataListSection((*it).data, (*it).size));
+void DataList::resize(DataListIterator start, DataListIterator finish) {
+	// make finish an end
+	if (finish._index != 0)
+		++finish._it;
+
+	// resize packet list
+	_list.erase(_list.begin(), start._it);
+	_list.erase(finish._it, _list.end());
+
+	// resize packets themselves
+	if (finish._index != 0)
+		--finish._it;
+	if (finish._it == start._it) {
+		// resize with two indexes
+		size_type size = finish._index - start._index;
+		if (size == 0) {
+			clear();
+			return;
+		}
+		char *newData = new char[size];
+		start._it->size = size;
+		std::memcpy(newData, start._it->data + start._index, size);
+		delete[] start._it->data;
+		start._it->data = newData;
 	}
-	return newDataList;
+	else {
+		// resize start
+		{
+			size_type size = start._it->size - start._index;
+			char *newData = new char[size];
+			start._it->size = size;
+			std::memcpy(newData, start._it->data + start._index, size);
+			delete[] start._it->data;
+			start._it->data = newData;
+		}
+		// resize end
+		if (finish._index != 0) {
+			// 0123456789
+			// 6, 10
+			size_type size = finish._index;
+			char *newData = new char[size];
+			finish._it->size = size;
+			std::memcpy(newData, finish._it->data + finish._index, size);
+			delete[] finish._it->data;
+			finish._it->data = newData;
+		}
+	}
+
+	// recalculate size
+	_size = size(beginList(), endList());
 }
 
 DataList::DataListIterator DataList::find(const std::string &data, DataListIterator first) {

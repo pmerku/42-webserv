@@ -5,6 +5,7 @@
 #include <csignal>
 #include "utils/ArgParser.hpp"
 #include "server/handlers/ThreadHandler.hpp"
+#include <cstdlib>
 
 using namespace NotApache;
 

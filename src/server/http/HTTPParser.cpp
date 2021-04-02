@@ -183,6 +183,20 @@ HTTPParser::ParseReturn		HTTPParser::parseHeaders(HTTPParseData &data, const std
 	return OK;
 }
 
+HTTPParser::ParseReturn		HTTPParser::parseBody(HTTPParseData &data, utils::DataList::DataListIterator it) {
+	std::cout << "Size: " << data.data.size(it) << std::endl;
+	if (data.data.size(it) < (utils::DataList::size_type)data.bodyLength)
+		return OK; // unfinished
+	data.data.resize(it, data.data.endList());
+	return FINISHED;
+}
+
+HTTPParser::ParseReturn		HTTPParser::parseChunkedBody(HTTPParseData &data, utils::DataList::DataListIterator it) {
+	(void)data;
+	(void)it;
+	return FINISHED;
+}
+
 HTTPParser::ParseState		 HTTPParser::parse(HTTPClient& client) {
 	return parse(client.data.request.data, &client);
 }

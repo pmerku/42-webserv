@@ -124,7 +124,8 @@ namespace utils {
 		void	add_front(const char *data, size_type size);
 		void	add_front(const char *str);
 
-		DataList subList(const_iterator start, const_iterator finish);
+		void	resize(DataListIterator start, DataListIterator finish);
+		void	clear();
 
 		iterator begin();
 		iterator end();

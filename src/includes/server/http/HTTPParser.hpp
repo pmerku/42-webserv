@@ -42,6 +42,9 @@ namespace NotApache {
 
 		static ParseReturn		parseHeaders(HTTPParseData &data, const std::string &headers, HTTPClient *client);
 
+		static ParseReturn		parseBody(HTTPParseData &data, utils::DataList::DataListIterator it);
+		static ParseReturn		parseChunkedBody(HTTPParseData &data, utils::DataList::DataListIterator it);
+
 	public:
 
 		static ParseState		parse(HTTPClient &client);

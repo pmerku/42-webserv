@@ -76,6 +76,7 @@ void StandardHandler::read(HTTPClient &client) {
 	// parsing
 	client.isHandled.lock();
 	HTTPParser::ParseState parseRet = _parser->parse(client);
+	std::cout << client.data.request.data << std::endl;
 	if (parseRet == HTTPParser::READY_FOR_WRITE) {
 		client.connectionState = WRITING;
 	}
