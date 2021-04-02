@@ -26,7 +26,7 @@ namespace NotApache {
 					   const std::string &dirPath);
 
 		static void			setEnv(HTTPClient& client, CGIenv::env& envp, std::string& uri, const std::string& f);
-		static void			runCGI(HTTPClient& client, const std::string& f);
+		static void			runCGI(HTTPClient& client, const std::string &f, const std::string& cgi);
 
 		class NotFound : public std::exception {
 			public:

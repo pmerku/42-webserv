@@ -199,7 +199,7 @@ void HTTPResponder::serveFile(HTTPClient &client, config::ServerBlock &server, c
 	if (route.shouldDoCgi() && !route.getCgiExt().empty() && file.getExt() == route.getCgiExt()) {
 		globalLogger.logItem(logger::DEBUG, "Handling cgi request");
 		// TODO handle cgi
-		runCGI(client, f);
+		runCGI(client, f, route.getCgi());
 		return ;
 	}
 	FD fileFd = ::open(file.path.c_str(), O_RDONLY);
@@ -273,13 +273,8 @@ void HTTPResponder::generateResponse(HTTPClient &client) {
 }
 
 void	HTTPResponder::setEnv(HTTPClient& client, CGIenv::env& envp, std::string& uri, const std::string &f) {
-	CGIenv::ENVBuilder env;
-	std::map<std::string, std::string>::iterator it;
-	std::map<std::string, std::string>::iterator end = client.data.request._headers.end();
 	try {
-		char cwd[PATH_MAX];
-		if (getcwd(cwd, PATH_MAX) == NULL)
-			ERROR_THROW(CWDFail());
+		CGIenv::ENVBuilder env;
 		std::string	domain = (*client.data.request._headers.find("HOST")).second;
 		domain = domain.substr(0, domain.find(':'));
 
@@ -298,6 +293,8 @@ void	HTTPResponder::setEnv(HTTPClient& client, CGIenv::env& envp, std::string& u
 			.SERVER_PROTOCOL("HTTP/1.1")
 			.SERVER_SOFTWARE("HTTP 1.1");
 			
+		std::map<std::string, std::string>::iterator it;
+		std::map<std::string, std::string>::iterator end = client.data.request._headers.end();
 		it = client.data.request._headers.find("AUTHORIZATION");
 		if (it != end)
 			env.AUTH_TYPE(it->second);
@@ -317,7 +314,14 @@ void	HTTPResponder::setEnv(HTTPClient& client, CGIenv::env& envp, std::string& u
 	}
 }
 
-void	HTTPResponder::runCGI(HTTPClient& client, const std::string &f) {
+// TODO current working directory
+// TODO writing body -> wait for primoz
+// TODO parsing body
+// headers and body
+// 6 headers?
+// Add unknown headers
+
+void	HTTPResponder::runCGI(HTTPClient& client, const std::string &f, const std::string& cgi) {
 	FD				pipefd[2];
 	FD				bodyPipefd[2];
 	struct stat 	sb;
@@ -326,8 +330,7 @@ void	HTTPResponder::runCGI(HTTPClient& client, const std::string &f) {
 
 	setEnv(client, envp, client.data.request._uri, f);
 	char** args = new char *[2]();
-	//args[0] = utils::strdup(client.data.request._uri.c_str());
-	args[0] = utils::strdup("../resources/test-root/env.cgi");
+	args[0] = utils::strdup(cgi.c_str());
 
 	if (::stat(args[0], &sb) == -1)
 		ERROR_THROW(NotFound());
