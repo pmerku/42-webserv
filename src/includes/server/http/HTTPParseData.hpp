@@ -33,18 +33,21 @@ namespace NotApache {
 			REQUEST
 		};
 		utils::DataList						data;
+	    utils::DataList						chunkedData;
 
 	private:
 		utils::DataList::DataListIterator	_pos;
-		bool								_isChunked;
+		bool 								_isCGI;
 		HTTPParseType 						_type;
 		bool								_gotHeaders;
 		bool								_gotFirstLine;
 		bool 								_gotBody;
+	    bool 								_gotTrailHeaders;
 
 	public:
 		HTTPParseData(HTTPParseType type = REQUEST);
 
+		bool								isChunked;
 		e_method							method;
 		utils::Uri							uri;
 		std::map<std::string, std::string>	headers;

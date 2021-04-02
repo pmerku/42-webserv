@@ -8,17 +8,20 @@
 using namespace NotApache;
 
 HTTPParseData::HTTPParseData(HTTPParseData::HTTPParseType type):
-	data(),
-	_pos(data.beginList()),
-	_isChunked(false),
-	_type(type),
-	_gotHeaders(false),
-	_gotFirstLine(false),
-	_gotBody(false),
-	method(),
-	bodyLength(0),
-	statusCode(0),
-	parseStatusCode(200)
+		data(),
+		chunkedData(),
+		_pos(data.beginList()),
+		_isCGI(false),
+		_type(type),
+		_gotHeaders(false),
+		_gotFirstLine(false),
+		_gotBody(false),
+		_gotTrailHeaders(false),
+		isChunked(false),
+		method(),
+		bodyLength(0),
+		statusCode(0),
+		parseStatusCode(200)
 {
 	if (_type == CGI_RESPONSE)
 		_gotFirstLine = true;
@@ -36,10 +39,13 @@ std::ostream& operator<<(std::ostream& o, HTTPParseData& x) {
 	}
 	else
 		o	<< "-NO HEADERS-" 											<< std::endl;
-	if (!x.data.empty()) {
-		o	<< "Body length: " << x.data.size() 						<< std::endl << std::endl
-			 << "-BODY-" 												<< std::endl
-			 << x.data.substring(x.data.beginList(), x.data.endList()) 	<< std::endl;
+	utils::DataList &body = x.data;
+	if (x.isChunked)
+		body = x.chunkedData;
+	if (!body.empty()) {
+		o << "Body length: " << body.size() << std::endl << std::endl
+		  << "-BODY-" << std::endl
+		  << body.substring(body.beginList(), body.endList()) << std::endl;
 	}
 	else
 		o << std::endl << "-NO BODY-" 									<< std::endl;
