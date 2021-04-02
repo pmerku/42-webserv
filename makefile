@@ -205,7 +205,7 @@ exec:
 	./$(NAME)
 
 valgrind:
-	valgrind --undef-value-errors=no --leak-check=full ./$(NAME)
+	cd ./build; valgrind --undef-value-errors=no --leak-check=full ../$(NAME) -f ../tests/parser/parser.conf -c; cd ../
 
 debug:
 	$(MAKE) BUILD_DEBUG=1 all

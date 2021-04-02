@@ -7,6 +7,7 @@
 
 #include "utils/DataList.hpp"
 #include "utils/Uri.hpp"
+#include <iostream>
 #include <map>
 #include <string>
 
@@ -39,6 +40,7 @@ namespace NotApache {
 		HTTPParseType 						_type;
 		bool								_gotHeaders;
 		bool								_gotFirstLine;
+		bool 								_gotBody;
 
 	public:
 		HTTPParseData(HTTPParseType type = REQUEST);
@@ -46,13 +48,16 @@ namespace NotApache {
 		e_method							method;
 		utils::Uri							uri;
 		std::map<std::string, std::string>	headers;
-		utils::DataList						body;
+		int 								bodyLength;
 		int 								statusCode;
 
 		int									parseStatusCode;
 
 		friend class HTTPParser;
 	};
+
 }
+
+std::ostream& 	operator<<(std::ostream& o, NotApache::HTTPParseData& x);
 
 #endif //HTTPPARSEDATA_HPP

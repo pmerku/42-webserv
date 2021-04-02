@@ -21,8 +21,6 @@ DataList::size_type DataList::size(DataList::DataListIterator start) {
  * size with iterators, including start, excluding end
  */
 DataList::size_type DataList::size(DataList::DataListIterator start, DataList::DataListIterator last) {
-	if (start == beginList() && last == endList())
-		return size();
 	size_type s = 0;
 	if (start._it == last._it)
 		return last._index - start._index;
@@ -141,4 +139,9 @@ std::string DataList::substring(DataListIterator first, DataListIterator last) {
 
 std::string DataList::substring(DataListIterator first) {
 	return substring(first, endList());
+}
+
+void DataList::clear() {
+	_list.clear();
+	_size = 0;
 }

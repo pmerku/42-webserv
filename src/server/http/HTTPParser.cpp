@@ -7,31 +7,6 @@
 #include "server/global/GlobalLogger.hpp"
 #include "server/global/GlobalConfig.hpp"
 
-namespace NotApache
-{
-	std::ostream& operator<<(std::ostream& o, HTTPParseData& x) {
-		o	<< "==REQUEST=="													<< std::endl
-			<< "Method: "	<< HTTPParser::methodMap_EtoS.find(x.method)->second 	<< std::endl
-			<< "URI: "		<< x.uri.getFull()										<< std::endl;
-
-			if (!x.headers.empty()) {
-				o << std::endl << "-HEADERS-" << std::endl;
-				for (std::map<std::string, std::string>::iterator it = x.headers.begin(); it != x.headers.end(); ++it)
-					o << "Header: [" << it->first << ": " << it->second << "]" 	<< std::endl;
-			}
-			else
-				o	<< "-NO HEADERS-" 											<< std::endl;
-//			if (x._body.length()) {
-//				o	<< "Body length: " << x._body.length() 						<< std::endl << std::endl
-//					<< "-BODY-" 												<< std::endl
-//					<< x._body 													<< std::endl;
-//			}
-//			else
-			o << std::endl << "-NO BODY-" 									<< std::endl;
-		return o;
-	}
-}
-
 using namespace NotApache;
 
 const std::string HTTPParser::allowedURIChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_.~!#$&'()*+,/:;=?@[]";
@@ -169,7 +144,7 @@ HTTPParser::ParseReturn		HTTPParser::parseHeaders(HTTPParseData &data, const std
 		return ERROR;
 	}
 
-	// content-length and transfer encoding may not exist on same request (ignore on cgi
+	// content-length and transfer encoding may not exist on same request (ignore on cgi)
 	if (data._type != HTTPParseData::CGI_RESPONSE) {
 		std::map<std::string, std::string>::iterator transferIt = data.headers.find("TRANSFER-ENCODING");
 		std::map<std::string, std::string>::iterator contentIt = data.headers.find("CONTENT-LENGTH");
@@ -182,7 +157,6 @@ HTTPParser::ParseReturn		HTTPParser::parseHeaders(HTTPParseData &data, const std
 
 	// host header needs to exist on requests
 	if (data._type == HTTPParseData::REQUEST) {
-		int contentLength = 0;
 		std::map<std::string,std::string>::iterator hostIt = data.headers.find("HOST");
 		if (hostIt == data.headers.end()) {
 			globalLogger.logItem(logger::ERROR, "Missing Host header");
@@ -192,14 +166,14 @@ HTTPParser::ParseReturn		HTTPParser::parseHeaders(HTTPParseData &data, const std
 
 		std::map<std::string,std::string>::iterator contentLengthIt = data.headers.find("CONTENT-LENGTH");
 		if (contentLengthIt != data.headers.end())
-			contentLength = utils::stoi(contentLengthIt->second);
+			data.bodyLength = utils::stoi(contentLengthIt->second);
 		config::ServerBlock *server = NotApache::configuration->findServerBlock(hostIt->second, client->getPort(), client->getHost());
 		if (server == 0) {
 			globalLogger.logItem(logger::ERROR, "No matching server block");
 			data.parseStatusCode = 500;
 			return ERROR;
 		}
-		if (server->getBodyLimit() != -1 && ( contentLength == -1 || contentLength > server->getBodyLimit()) ) {
+		if (server->getBodyLimit() != -1 && ( data.bodyLength == -1 || data.bodyLength > server->getBodyLimit()) ) {
 			globalLogger.logItem(logger::ERROR, "Body too large");
 			data.parseStatusCode = 413;
 			return ERROR;
@@ -247,7 +221,6 @@ HTTPParser::ParseState		HTTPParser::parse(HTTPParseData &data, HTTPClient *clien
 		utils::DataList::DataListIterator beginOfHeaders = data._pos;
 
 		// max size check
-		std::cout << "Size: " << data.data.size(beginOfHeaders, endOfHeaders) << std::endl;
 		if (data.data.size(beginOfHeaders, endOfHeaders) > maxHeaderSize) {
 			globalLogger.logItem(logger::ERROR, "Header field is too large");
 			data.parseStatusCode = 431;
@@ -268,8 +241,21 @@ HTTPParser::ParseState		HTTPParser::parse(HTTPParseData &data, HTTPClient *clien
 	}
 
 	// TODO parse body + chunked body
-	if (data._gotHeaders) {
-		return READY_FOR_WRITE;
+	if (!data._gotBody) {
+		utils::DataList::DataListIterator beginOfData = data._pos;
+		std::advance(beginOfData, 2);
+
+		ParseReturn	ret;
+		if (data._isChunked)
+			ret = parseChunkedBody(data, beginOfData);
+		else
+			ret = parseBody(data, beginOfData);
+
+		if (ret == FINISHED)
+			data._gotBody = true;
+		if (ret == FINISHED || ret == ERROR)
+			return READY_FOR_WRITE;
+		return UNFINISHED;
 	}
-	return UNFINISHED;
+	return READY_FOR_WRITE;
 }

@@ -33,6 +33,7 @@ namespace NotApache {
 		static const int maxHeaderSize;
 		enum ParseReturn {
 			ERROR,
+			FINISHED,
 			OK
 		};
 

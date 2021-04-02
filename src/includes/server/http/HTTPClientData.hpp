@@ -36,8 +36,6 @@ namespace NotApache {
 		utils::DataList			&getAssociatedDataRaw();
 		void					appendAssociatedData(const char *data, utils::DataList::size_type size);
 		void 					appendRequestData(const char *data, utils::DataList::size_type size);
-
-		friend std::ostream& 	operator<<(std::ostream& o, HTTPClientRequest& x);
 	};
 
 	class HTTPClientResponse {
@@ -59,8 +57,6 @@ namespace NotApache {
 		utils::DataList			&getAssociatedDataRaw();
 		void					appendAssociatedData(const char *data, utils::DataList::size_type size);
 	};
-
-	std::ostream& operator<<(std::ostream& o, HTTPClientRequest& x);
 
 	class HTTPClientData {
 	public:
