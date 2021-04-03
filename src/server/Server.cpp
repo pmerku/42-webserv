@@ -9,9 +9,10 @@
 using namespace NotApache;
 
 Server::SelectReturn Server::_runSelect() {
-	// TODO oob tcp data?
-	// TODO do timeouts
-	int ret = ::select(_maxFd + 1, &_readFdSet, &_writeFdSet, 0, 0);
+	timeval	timeout = {};
+	timeout.tv_sec = 5; // check timeouts every 5 seconds
+
+	int ret = ::select(_maxFd + 1, &_readFdSet, &_writeFdSet, 0, &timeout);
 	if (ret == 0)
 		return TIMEOUT;
 	else if (ret == -1)
@@ -122,8 +123,13 @@ void Server::_handleSelect() {
 
 void Server::_clientCleanup() {
 	for (std::list<HTTPClient*>::iterator i = _clients.begin(); i != _clients.end(); ++i) {
-		// if closed & is not being handled. then set isHandled to true and close client
 		(*i)->isHandled.lock();
+		// if not handled, do a timeout check
+		if (!(*i)->isHandled.get()) {
+			(*i)->timeout(false);
+		}
+
+		// if closed & is not being handled. then set isHandled to true and close client
 		bool isClosed = (*i)->connectionState == CLOSED;
 		if (isClosed) {
 			if ((*i)->isHandled.get())
@@ -165,10 +171,8 @@ void Server::startServer(config::RootBlock *c) {
 		SelectReturn	ret = _runSelect();
 		if (ret == ERROR)
 			throw IoSelectingFailed();
-		else if (ret == TIMEOUT) {
-			// TODO handle timeouts
-			continue;
-		}
+		else if (ret == TIMEOUT)
+			continue; // go to next iteration (cleanup will act on timeouts)
 
 		// handle select output
 		_handleSelect();

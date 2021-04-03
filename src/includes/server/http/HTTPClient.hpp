@@ -37,6 +37,8 @@ namespace NotApache {
 		int				_port;
 		long 			_host;
 		std::vector<FD>	_associatedFds;
+		time_t 			_createdAt;
+		long 			_timeoutAfter;
 
 	public:
 		ClientWriteState		writeState;
@@ -57,6 +59,7 @@ namespace NotApache {
 		FD		getAssociatedFd(std::vector<FD>::size_type i) const;
 		std::vector<FD>::size_type	getAssociatedFdLength() const;
 
+		void 	timeout(bool useLocks = true);
 	};
 
 }
