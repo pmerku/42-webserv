@@ -30,7 +30,8 @@ void TCPListener::start() {
 	}
 
 	// set socket options
-	setsockopt(_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(int));
+	setsockopt(_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(int)); // reuse local addresses on bind
+	setsockopt(_fd, SOL_SOCKET, SO_OOBINLINE, &one, sizeof(int)); // receive urgent tcp data in normal queue (http doesnt work with urgent data)
 	svr_addr.sin_family = AF_INET;
 	svr_addr.sin_addr.s_addr = _host;
 	svr_addr.sin_port = htons(_port);
