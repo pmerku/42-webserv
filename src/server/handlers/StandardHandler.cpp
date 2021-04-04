@@ -69,15 +69,15 @@ void StandardHandler::read(HTTPClient &client) {
 			return;
 		default:
 			// packet found, reading
-			buf[ret] = 0; // make cstr out of it by setting 0 as last char
-			client.data.request.appendRequestData(buf);
+			client.data.request.appendRequestData(buf, ret);
 			break;
 	}
 
 	// parsing
 	client.isHandled.lock();
 	HTTPParser::ParseState parseRet = _parser->parse(client);
-	if (parseRet == HTTPParser::READY_FOR_WRITE || parseRet == HTTPParser::ERROR) {
+	std::cout << client.data.request.data << std::endl;
+	if (parseRet == HTTPParser::READY_FOR_WRITE) {
 		client.connectionState = WRITING;
 	}
 	stopHandle(client, false);

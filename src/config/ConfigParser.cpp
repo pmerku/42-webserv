@@ -88,6 +88,7 @@ RootBlock		*ConfigParser::parseFile(const std::string &path) const {
 					currentBlock->addBlock(newBlock);
 				} catch (std::exception &e) {
 					delete newBlock;
+					delete rootBlock;
 					throw;
 				}
 				currentBlock = newBlock;
@@ -106,6 +107,7 @@ RootBlock		*ConfigParser::parseFile(const std::string &path) const {
 		} catch (const ConfigLine::MissingKeyException &e) {}
 		catch (const ConfigException &e) {
 			logItem(e);
+			delete rootBlock;
 			throw;
 		}
 
@@ -123,6 +125,7 @@ RootBlock		*ConfigParser::parseFile(const std::string &path) const {
 		rootBlock->parseData();
 	} catch (const ConfigException &e) {
 		logItem(e);
+		delete rootBlock;
 		throw;
 	}
 	return rootBlock;
