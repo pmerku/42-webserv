@@ -8,6 +8,7 @@
 #include <config/blocks/ServerBlock.hpp>
 #include "server/http/HTTPClient.hpp"
 #include "env/env.hpp"
+#include "utils/base64.hpp"
 
 namespace NotApache {
 	class HTTPResponder {
@@ -25,8 +26,9 @@ namespace NotApache {
 		serveDirectory(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route,
 					   const std::string &dirPath);
 
-		static void			setEnv(HTTPClient& client, CGIenv::env& envp, std::string& uri, const std::string& f);
-		static void			runCGI(HTTPClient& client, const std::string &f, const std::string& cgi);
+		static void setEnv(HTTPClient& client, CGIenv::env& envp, std::string& uri, const std::string& f);
+		static void runCGI(HTTPClient& client, const std::string &f, const std::string& cgi);
+		static bool checkCredentials(const std::string& authFile, const std::string& credentials);
 
 		class NotFound : public std::exception {
 			public:
@@ -35,6 +37,14 @@ namespace NotApache {
 		class PipeFail : public std::exception {
 			public:
 				virtual const char *what() const throw() { return "Pipe fail"; }
+		};
+		class ReadFail : public std::exception {
+			public:
+				virtual const char *what() const throw() { return "Read fail"; }
+		};
+		class OpenFail : public std::exception {
+			public:
+				virtual const char *what() const throw() { return "Open fail"; }
 		};
 		class CloseFail : public std::exception {
 			public:

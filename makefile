@@ -73,6 +73,7 @@ SRC	=\
 	utils/DataList.cpp\
     utils/Uri.cpp\
     utils/ArgParser.cpp\
+    utils/base64.cpp\
 	server/handlers/AHandler.cpp\
 	server/handlers/StandardHandler.cpp\
 	server/handlers/HandlerHolder.cpp\
@@ -137,6 +138,7 @@ HEADERS	=\
 	utils/DataList.hpp\
 	utils/Uri.hpp\
 	utils/ArgParser.hpp\
+    utils/base64.hpp\
 	server/handlers/AHandler.hpp\
   server/handlers/StandardHandler.hpp\
   server/handlers/HandlerHolder.hpp\

@@ -61,7 +61,8 @@ const std::map<e_method, std::string> HTTPParser::methodMap_EtoS =
 		(TRACE, "TRACE");
 
 HTTPParser::ParseState		 HTTPParser::parse(HTTPClient& client) {
-	// TODO check later
+	std::cout << client.data.request._rawRequest << std::endl;
+
 	if (client.data.request._isChunked)
 		return (parseChunkedBody(client.data.request, client.data.request._rawRequest));
 	else

@@ -41,6 +41,16 @@ void HTTPResponder::handleError(HTTPClient &client, config::ServerBlock *server,
 }
 
 void HTTPResponder::handleError(HTTPClient &client, config::ServerBlock *server,  config::RouteBlock *route, int code, bool doErrorPage) {
+	if (code == 401) {
+		client.data.response.setResponse(
+			ResponseBuilder("HTTP/1.1")
+			.setStatus(401)
+			.setHeader("WWW-AUTHENTICATE", "Basic realm=\"Not-Apache\"")
+			.setHeader("Connection", "Close")
+			.build()
+		);
+		return ;
+	}
 	// allow header in 405
 	if (code == 405) {
 		std::string allowedMethods = "";
@@ -214,6 +224,28 @@ void HTTPResponder::serveFile(HTTPClient &client, config::ServerBlock &server, c
 	client.connectionState = ASSOCIATED_FD;
 }
 
+bool HTTPResponder::checkCredentials(const std::string& authFile, const std::string& credentials) {
+	FD fd;
+	char buf[LINE_MAX];
+
+	fd = ::open(authFile.c_str(), O_RDONLY); // TODO error handling
+	if (fd == -1)
+		ERROR_THROW(OpenFail());
+	int ret = ::read(fd, &buf, LINE_MAX);
+	if (ret == -1)
+		ERROR_THROW(ReadFail());	
+	buf[ret] = '\0';
+	std::string file(buf); // TODO parse file?
+	std::vector<std::string> users = utils::split(file, "\n");
+	if (credentials.find("Basic ", 0, 6) == std::string::npos)
+		return false;
+	for (size_t i = 0; i < users.size(); ++i) {
+		if (utils::base64_decode(credentials.substr(6)) == users[i])
+			return true;
+	}
+	return false;
+}
+
 void HTTPResponder::generateResponse(HTTPClient &client) {
 	if (client.data.request._statusCode != 200) {
 		// error responses if parsing failed
@@ -248,6 +280,19 @@ void HTTPResponder::generateResponse(HTTPClient &client) {
 	if (!route->isAllowedMethod(HTTPParser::methodMap_EtoS.find(client.data.request._method)->second)) {
 		handleError(client, server, route, 405);
 		return;
+	}
+
+	// check autorization
+	if (route->getAuthBasic().size()) {
+		std::map<std::string, std::string>::iterator it = client.data.request._headers.find("AUTHORIZATION");
+		if (it == client.data.request._headers.end()) {
+			handleError(client, server, route, 401);
+			return ;
+		}
+		else if (!checkCredentials(route->getAuthBasicUserFile(), it->second)) {
+			handleError(client, server, route, 400); // TODO 403 forbidden? is this right in all cases
+			return ;
+		}
 	}
 
 	if (route->shouldDoFile()) {
