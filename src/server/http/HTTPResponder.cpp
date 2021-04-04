@@ -148,7 +148,7 @@ void HTTPResponder::serveDirectory(HTTPClient &client, config::ServerBlock &serv
 			return;
 		}
 		dirent *dirEntry;
-		utils::Uri uri = client.data.request._uri;
+		utils::Uri uri = client.data.request.data.uri;
 		std::string str = "<h1>";
 		str += uri.path + "</h1><ul>";
 		while ((dirEntry = ::readdir(dir)) != 0) {
@@ -247,17 +247,12 @@ bool HTTPResponder::checkCredentials(const std::string& authFile, const std::str
 }
 
 void HTTPResponder::generateResponse(HTTPClient &client) {
-	if (client.data.request._statusCode != 200) {
+	if (client.data.request.data.parseStatusCode != 200) {
 		// error responses if parsing failed
-		handleError(client, 0, client.data.request._statusCode);
+		handleError(client, 0, client.data.request.data.parseStatusCode);
 		return;
 	}
-	std::map<std::string,std::string>::iterator hostIt = client.data.request._headers.find("HOST");
-	// no host header = invalid request
-	if (hostIt == client.data.request._headers.end()) {
-		handleError(client, 0, 400);
-		return;
-	}
+	std::map<std::string,std::string>::iterator hostIt = client.data.request.data.headers.find("HOST");
 	std::string	domain = (*hostIt).second;
 	domain = domain.substr(0, domain.find(':'));
 
@@ -269,7 +264,7 @@ void HTTPResponder::generateResponse(HTTPClient &client) {
 	}
 
 	// find which route block to use
-	utils::Uri uri = client.data.request._uri;
+	utils::Uri uri = client.data.request.data.uri;
 	config::RouteBlock	*route = server->findRoute(uri.path);
 	if (route == 0) {
 		handleError(client, server, 400);
@@ -277,15 +272,15 @@ void HTTPResponder::generateResponse(HTTPClient &client) {
 	}
 
 	// check allowed methods
-	if (!route->isAllowedMethod(HTTPParser::methodMap_EtoS.find(client.data.request._method)->second)) {
+	if (!route->isAllowedMethod(HTTPParser::methodMap_EtoS.find(client.data.request.data.method)->second)) {
 		handleError(client, server, route, 405);
 		return;
 	}
 
 	// check autorization
 	if (route->getAuthBasic().size()) {
-		std::map<std::string, std::string>::iterator it = client.data.request._headers.find("AUTHORIZATION");
-		if (it == client.data.request._headers.end()) {
+		std::map<std::string, std::string>::iterator it = client.data.request.data.headers.find("AUTHORIZATION");
+		if (it == client.data.request.data.headers.end()) {
 			handleError(client, server, route, 401);
 			return ;
 		}
@@ -320,18 +315,18 @@ void HTTPResponder::generateResponse(HTTPClient &client) {
 void	HTTPResponder::setEnv(HTTPClient& client, CGIenv::env& envp, std::string& uri, const std::string &f) {
 	try {
 		CGIenv::ENVBuilder env;
-		std::string	domain = (*client.data.request._headers.find("HOST")).second;
+		std::string	domain = (*client.data.request.data.headers.find("HOST")).second;
 		domain = domain.substr(0, domain.find(':'));
 
 		env.SERVER_NAME(domain)
-			.CONTENT_LENGTH(utils::intToString(client.data.request._body.size()))
+			.CONTENT_LENGTH(utils::intToString(client.data.request.data.bodyLength))
 			.GATEWAY_INTERFACE("CGI/1.1")
 			.PATH_INFO(uri) // TODO URL translating/encoding
 			.PATH_TRANSLATED(f)
 			.QUERY_STRING(uri.substr(uri.find('?')+1))
 			.REMOTE_ADDR(utils::intToString(client.getCliAddr().sin_addr.s_addr)) //TODO convert to valid IP
 			.REMOTE_IDENT("") // TODO what is this?
-			.REQUEST_METHOD(HTTPParser::methodMap_EtoS.find(client.data.request._method)->second)
+			.REQUEST_METHOD(HTTPParser::methodMap_EtoS.find(client.data.request.data.method)->second)
 			.REQUEST_URI(uri)
 			.SCRIPT_NAME(uri)
 			.SERVER_PORT(utils::intToString(client.getPort()))
@@ -339,14 +334,14 @@ void	HTTPResponder::setEnv(HTTPClient& client, CGIenv::env& envp, std::string& u
 			.SERVER_SOFTWARE("HTTP 1.1");
 			
 		std::map<std::string, std::string>::iterator it;
-		std::map<std::string, std::string>::iterator end = client.data.request._headers.end();
-		it = client.data.request._headers.find("AUTHORIZATION");
+		std::map<std::string, std::string>::iterator end = client.data.request.data.headers.end();
+		it = client.data.request.data.headers.find("AUTHORIZATION");
 		if (it != end)
 			env.AUTH_TYPE(it->second);
-		it = client.data.request._headers.find("CONTENT_TYPE");
+		it = client.data.request.data.headers.find("CONTENT_TYPE");
 		if (it != end)
 			env.CONTENT_TYPE(it->second);
-		it = client.data.request._headers.find("REMOTE_USER");
+		it = client.data.request.data.headers.find("REMOTE_USER");
 		if (it != end)
 			env.CONTENT_TYPE(it->second);
 			
@@ -373,7 +368,7 @@ void	HTTPResponder::runCGI(HTTPClient& client, const std::string &f, const std::
 	CGIenv::env 	envp;
 	bool 			body = false;
 
-	setEnv(client, envp, client.data.request._uri, f);
+	setEnv(client, envp, client.data.request.data.uri.path, f);
 	char** args = new char *[2]();
 	args[0] = utils::strdup(cgi.c_str());
 
@@ -384,7 +379,7 @@ void	HTTPResponder::runCGI(HTTPClient& client, const std::string &f, const std::
 		ERROR_THROW(PipeFail());
 	client.data.response._fd = pipefd[0];
 
-	if (client.data.request._body.size()) {
+	if (client.data.request.data.bodyLength) {
 		if (::pipe(bodyPipefd))
 			ERROR_THROW(PipeFail());
 		client.data.response._bodyfd = bodyPipefd[0];

@@ -39,6 +39,8 @@ namespace NotApache {
 		long 			_host;
 		sockaddr_in		_cli_addr;
 		std::vector<FD>	_associatedFds;
+		time_t 			_createdAt;
+		long 			_timeoutAfter;
 
 	public:
 		ClientWriteState		writeState;
@@ -47,7 +49,7 @@ namespace NotApache {
 		utils::Mutex<bool>		isHandled;
 		HTTPClientData			data;
 
-		HTTPClient(FD clientFd, int port, long host, sockaddr_in cli_addr);
+		HTTPClient(FD clientFd, int port, long host);
 		~HTTPClient();
 
 		FD	getFd() const;
@@ -60,6 +62,7 @@ namespace NotApache {
 		FD		getAssociatedFd(std::vector<FD>::size_type i) const;
 		std::vector<FD>::size_type	getAssociatedFdLength() const;
 
+		void 	timeout(bool useLocks = true);
 	};
 
 }

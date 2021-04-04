@@ -83,6 +83,7 @@ SRC	=\
 	server/http/HTTPClient.cpp\
 	server/http/HTTPClientData.cpp\
 	server/http/HTTPParser.cpp\
+	server/http/HTTPParseData.cpp\
 	server/http/HTTPResponder.cpp\
 	server/http/HTTPMimeTypes.cpp\
 	server/http/RequestBuilder.cpp\
@@ -148,6 +149,7 @@ HEADERS	=\
   server/http/HTTPClient.hpp\
   server/http/HTTPClientData.hpp\
   server/http/HTTPParser.hpp\
+  server/http/HTTPParseData.hpp\
   server/http/HTTPResponder.hpp\
   server/http/HTTPMimeTypes.hpp\
   server/http/RequestBuilder.hpp\
@@ -205,7 +207,7 @@ exec:
 	./$(NAME)
 
 valgrind:
-	valgrind --undef-value-errors=no --leak-check=full ./$(NAME)
+	cd ./build; valgrind --undef-value-errors=no --leak-check=full ../$(NAME) -f ../tests/parser/parser.conf -c; cd ../
 
 debug:
 	$(MAKE) BUILD_DEBUG=1 all
