@@ -41,6 +41,7 @@ void HTTPResponder::handleError(HTTPClient &client, config::ServerBlock *server,
 }
 
 void HTTPResponder::handleError(HTTPClient &client, config::ServerBlock *server,  config::RouteBlock *route, int code, bool doErrorPage) {
+	// Request authentication
 	if (code == 401) {
 		client.data.response.setResponse(
 			ResponseBuilder("HTTP/1.1")
@@ -228,17 +229,24 @@ bool HTTPResponder::checkCredentials(const std::string& authFile, const std::str
 	FD fd;
 	char buf[LINE_MAX];
 
-	fd = ::open(authFile.c_str(), O_RDONLY); // TODO error handling
+	// open and read from "password database"
+	fd = ::open(authFile.c_str(), O_RDONLY);
 	if (fd == -1)
 		ERROR_THROW(OpenFail());
 	int ret = ::read(fd, &buf, LINE_MAX);
 	if (ret == -1)
 		ERROR_THROW(ReadFail());	
 	buf[ret] = '\0';
+
+	// split per user
 	std::string file(buf); // TODO parse file?
 	std::vector<std::string> users = utils::split(file, "\n");
+	
+	// Check header
 	if (credentials.find("Basic ", 0, 6) == std::string::npos)
 		return false;
+	
+	// Find match
 	for (size_t i = 0; i < users.size(); ++i) {
 		if (utils::base64_decode(credentials.substr(6)) == users[i])
 			return true;

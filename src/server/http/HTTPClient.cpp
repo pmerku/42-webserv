@@ -8,7 +8,7 @@
 
 using namespace NotApache;
 
-HTTPClient::HTTPClient(FD clientFd, int port, long host) : _fd(clientFd), _port(port), _host(host), _associatedFds(), writeState(NO_RESPONSE), connectionState(READING), responseState(NONE), isHandled(false) {
+HTTPClient::HTTPClient(FD clientFd, int port, long host, sockaddr_in cli_addr) : _fd(clientFd), _port(port), _host(host), _cli_addr(cli_addr), _associatedFds(), writeState(NO_RESPONSE), connectionState(READING), responseState(NONE), isHandled(false) {
 	timeval timeData;
 	::gettimeofday(&timeData, 0);
 	_createdAt = timeData.tv_sec;

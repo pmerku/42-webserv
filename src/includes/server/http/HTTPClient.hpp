@@ -49,7 +49,7 @@ namespace NotApache {
 		utils::Mutex<bool>		isHandled;
 		HTTPClientData			data;
 
-		HTTPClient(FD clientFd, int port, long host);
+		HTTPClient(FD clientFd, int port, long host, sockaddr_in cli_addr);
 		~HTTPClient();
 
 		FD	getFd() const;
