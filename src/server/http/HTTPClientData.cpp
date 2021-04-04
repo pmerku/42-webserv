@@ -6,18 +6,32 @@
 
 using namespace NotApache;
 
-HTTPClientRequest::HTTPClientRequest(): _rawRequest(), _method(), _uri(), _headers(), _body(), _statusCode(200), _isChunked(false) {}
+HTTPClientRequest::HTTPClientRequest():
+		_associatedData(),
+		data(),
+		hasProgress(false),
+		packetProgress(0),
+		currentPacket(data.data.begin())
+{}
 
-const std::string &HTTPClientRequest::getRawRequest() const {
-	return _rawRequest;
+utils::DataList &HTTPClientRequest::getRequest() {
+	return data.data;
 }
 
-void HTTPClientRequest::appendRequestData(const std::string &newData) {
-	_rawRequest += newData;
+void HTTPClientRequest::setRequest(const utils::DataList &request) {
+	data.data = request;
 }
 
-void HTTPClientRequest::setRawRequest(const std::string &newData) {
-	_rawRequest = newData;
+utils::DataList &HTTPClientRequest::getAssociatedDataRaw() {
+	return _associatedData;
+}
+
+void HTTPClientRequest::appendAssociatedData(const char *d, utils::DataList::size_type size) {
+	_associatedData.add(d, size);
+}
+
+void HTTPClientRequest::appendRequestData(const char *d, utils::DataList::size_type size) {
+	data.data.add(d, size);
 }
 
 HTTPClientResponse::HTTPClientResponse(): _response(), hasProgress(false), packetProgress(0), currentPacket(_response.begin()) {}

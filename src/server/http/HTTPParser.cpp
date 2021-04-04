@@ -4,37 +4,14 @@
 
 #include "server/http/HTTPParser.hpp"
 #include "server/global/GlobalLogger.hpp"
-#include "utils/DataList.hpp"
-
-namespace NotApache
-{
-	std::ostream& operator<<(std::ostream& o, HTTPClientRequest& x) {
-		o	<< "==REQUEST=="													<< std::endl
-			<< "Method: "	<< HTTPParser::methodMap_EtoS.find(x._method)->second 	<< std::endl
-			<< "URI: "		<< x._uri											<< std::endl;
-
-			if (x._headers.size()) {
-				o << std::endl << "-HEADERS-" << std::endl;
-				for (std::map<std::string, std::string>::iterator it = x._headers.begin(); it != x._headers.end(); ++it)
-					o << "Header: [" << it->first << ": " << it->second << "]" 	<< std::endl;
-			}
-			else
-				o	<< "-NO HEADERS-" 											<< std::endl;
-			if (x._body.size()) {
-				o	<< "Body length: " << x._body.size() 						<< std::endl << std::endl
-					<< "-BODY-" 												<< std::endl;
-					for(std::list<utils::DataList::DataListSection>::iterator it = x._body.begin(); it != x._body.end(); ++it)
-						o	<< it->data << std::endl;
-			}
-			else
-				o << std::endl << "-NO BODY-" 									<< std::endl;
-		return o;
-	}
-}
+#include "server/global/GlobalConfig.hpp"
+#include <algorithm>
+#include "utils/intToString.hpp"
 
 using namespace NotApache;
 
 const std::string HTTPParser::allowedURIChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_.~!#$&'()*+,/:;=?@[]";
+const int HTTPParser::maxHeaderSize = 8000;
 
 const std::map<std::string, e_method> HTTPParser::methodMap_StoE =
 		utils::CreateMap<std::string, e_method>
@@ -60,198 +37,360 @@ const std::map<e_method, std::string> HTTPParser::methodMap_EtoS =
 		(OPTIONS, "OPTIONS")
 		(TRACE, "TRACE");
 
-HTTPParser::ParseState		 HTTPParser::parse(HTTPClient& client) {
-	// TODO check later
-	if (client.data.request._isChunked)
-		return (parseChunkedBody(client.data.request, client.data.request._rawRequest));
-	else
-		return (parseRequest(client.data.request));
-}
-
-HTTPParser::ParseState		HTTPParser::parseChunkedBody(HTTPClientRequest& req, std::string rawRequest) {
-	size_t SOB = 0; // Start Of Body
-	size_t EOB = 0; // End Of Body
-
-	// Check for terminating character
-	SOB = rawRequest.find_first_of("\r\n");
-	if (SOB == std::string::npos)
-	{
-		globalLogger.logItem(logger::DEBUG, "No terminating character in body");
-		req._statusCode = 400;
-		return ERROR;
-	}
-
-	// Get chunksize
-	std::string size = rawRequest.substr(0, SOB);
-	if (size[0] != '0' && size[1] != 'x')
-	{
-		globalLogger.logItem(logger::DEBUG, "Failed to parse chunksize");
-		req._statusCode = 400;
-		return ERROR;
-	}
-	size_t chunkSize = utils::stoh(size.substr(2));
-	if (req._body.size() + chunkSize > MAX_BODY) {
-		globalLogger.logItem(logger::DEBUG, "Content-length exceeds max body size");
-		req._statusCode = 413;
-		return ERROR;
-	}
-	SOB+=2;
-
-	EOB = rawRequest.rfind("\r\n0\r\n\r\n");
-	// Check if chunksize matches body
-	if (rawRequest.rfind("\r\n")-SOB != chunkSize && EOB-SOB != chunkSize) {
-		globalLogger.logItem(logger::DEBUG, "Chunk size invalid");
-		req._statusCode = 400;
-		return ERROR;
-	}
-
-	// Append body
-	req._body.add(rawRequest.substr(SOB, chunkSize).c_str());
-
-	// Check if body is complete
-	if (EOB != std::string::npos) // 0x0?
-	{
-		globalLogger.logItem(logger::DEBUG, "Succesfully parsed chunked body");
-		return READY_FOR_WRITE;
-	}
-	else
-	{
-		globalLogger.logItem(logger::DEBUG, "UNFINISHED");
-		req._rawRequest.clear();
-		return UNFINISHED;
-	}
-}
-
-HTTPParser::ParseState		HTTPParser::parseBody(HTTPClientRequest& req, std::string rawRequest) {
-	size_t contentLength = utils::stoi(req._headers["CONTENT-LENGTH"]);
-	if (rawRequest.length() < contentLength)
-		return UNFINISHED;
-	if (contentLength > MAX_BODY) {
-		req._statusCode = 413;
-		globalLogger.logItem(logger::ERROR, "Content-length exceeds max body size");
-		return ERROR;
-	}
-	req._body.add(rawRequest.substr(0, contentLength).c_str());
-	return READY_FOR_WRITE;
-}
-
-HTTPParser::ParseState		HTTPParser::parseHeaders(HTTPClientRequest& req, std::string rawRequest) {
-	if (rawRequest.length() > MAX_HEADER) {
-		req._statusCode = 431;
-		globalLogger.logItem(logger::ERROR, "Headers exceed max header size");
-		return ERROR;
-	}
-	
-	std::vector<std::string> headers = utils::split(rawRequest, "\r\n");
-	
-	for (size_t i = 0; i < headers.size(); ++i) {
-		//Check for colon
-		if (headers[i].find(":") == std::string::npos) {
-			req._statusCode = 400;
-			globalLogger.logItem(logger::ERROR, "no \":\" in header line");
-			return ERROR;
-		}
-		//Check for spaces in field-name
-		if (utils::countSpaces(headers[i].substr(0, headers[i].find_first_of(":")))) {
-			req._statusCode = 400;
-			globalLogger.logItem(logger::ERROR, "Spaces in field-name" );
-			return ERROR;
-		}
-
-		std::string fieldName = headers[i].substr(0, headers[i].find_first_of(":"));
-		for (size_t i = 0; fieldName[i]; ++i)
-			fieldName[i] = utils::toUpper(fieldName[i]);
-
-		req._headers[fieldName] = headers[i].substr(headers[i].find_first_not_of(" ", fieldName.length() + 1), headers[i].find_last_not_of(" "));
-		// ^ Set header ^
-	}
-
-	std::map<std::string, std::string>::iterator it = req._headers.find("TRANSFER-ENCODING");
-	if (it != req._headers.end() && it->second.find("chunked") != std::string::npos)
-		req._isChunked = true;
-
-	it = req._headers.find("CONTENT-LENGTH");
-	if (it != req._headers.end()) {
-		if (req._isChunked) {
-			req._statusCode = 400;
-			globalLogger.logItem(logger::ERROR, "Headers Transfer-encoding + Content-length not allowed");
-			return ERROR;
-		}
-	}
-	return OK;
-}
-
-HTTPParser::ParseState		HTTPParser::parseRequestLine(HTTPClientRequest& req, std::string rawRequest) {
-	// CHECKING GLOBAL FORMAT
-	size_t spaces = utils::countSpaces(rawRequest);
-	std::vector<std::string> parts = utils::split(rawRequest, " ");
-	if (spaces != 2 || parts.size() != 3) {
+HTTPParser::ParseReturn		HTTPParser::parseRequestLine(HTTPParseData &data, const std::string &line) {
+	// check if spaces count in line is correct
+	std::vector<std::string> parts = utils::split(line, " ");
+	if (utils::countSpaces(line) != 2 || parts.size() != 3) {
 		globalLogger.logItem(logger::ERROR, "Invalid request line");
-		req._statusCode = 400;
+		data.parseStatusCode = 400;
 		return ERROR;
 	}
 
-	// Check Method
+	// check if method is known
 	if (methodMap_StoE.find(parts[0]) == methodMap_StoE.end()) {
-		req._statusCode = 501; // 501 (Not Implemented)
-		globalLogger.logItem(logger::ERROR, "Invalid method");
+		globalLogger.logItem(logger::ERROR, "Unknown method");
+		data.parseStatusCode = 501;
 		return ERROR;
 	}
-	// Set Method
-	req._method = methodMap_StoE.find(parts[0])->second;
+	// set known method
+	data.method = methodMap_StoE.find(parts[0])->second;
 
-	// CHECK URI
+	// check if URI is valid
 	if (parts[1][0] != '/') {
-		req._statusCode = 400;
-		globalLogger.logItem(logger::ERROR, "Invalid URI");
+		globalLogger.logItem(logger::ERROR, "URI is malformed");
+		data.parseStatusCode = 400;
 		return ERROR;
 	}
 
-	for (size_t i = 0; i < parts[1].size(); ++i) {
-		if (allowedURIChars.find(parts[1][i]) == std::string::npos) {
-			req._statusCode = 400;
-			globalLogger.logItem(logger::ERROR, "Invalid char in URI");
-			return ERROR;
-		}
+	if (parts[1].find_first_not_of(allowedURIChars) != std::string::npos) {
+		globalLogger.logItem(logger::ERROR, "Invalid character in URI");
+		data.parseStatusCode = 400;
+		return ERROR;
 	}
+	// set URI
+	data.uri = parts[1];
 
-	// Set URI
-	req._uri = parts[1];
-
-	// CHECK PROTOCOL
 	if (parts[2] != "HTTP/1.1") {
-		globalLogger.logItem(logger::ERROR, "Invalid protocol");
-		req._statusCode = 505;
+		globalLogger.logItem(logger::ERROR, "HTTP protocol not supported");
+		data.parseStatusCode = 505;
 		return ERROR;
 	}
 	return OK;
 }
 
-HTTPParser::ParseState		HTTPParser::parseRequest(HTTPClientRequest& req) {
-	std::string request = req._rawRequest;
-	size_t EOR = 0; // End Of Requestline
-	size_t EOH = 0; // End Of Headerfield
-
-	EOH = request.find("\r\n\r\n");
-	if (EOH == std::string::npos) {
-		globalLogger.logItem(logger::DEBUG, "UNFINISHED: no EOF (\"\\r\\n\\r\\n\") in request");
-		return UNFINISHED;
-	}
-	EOR = request.find("\r\n");
-	if (parseRequestLine(req, request.substr(0, EOR)) == ERROR)
+HTTPParser::ParseReturn		HTTPParser::parseResponseLine(HTTPParseData &data, const std::string &line) {
+	// check if spaces count in line is correct
+	std::vector<std::string> parts = utils::split(line, " ");
+	if (utils::countSpaces(line) != 2 || parts.size() != 3) {
+		globalLogger.logItem(logger::ERROR, "Invalid request line");
+		data.parseStatusCode = 400;
 		return ERROR;
-
-	if (EOR == EOH) {
-		globalLogger.logItem(logger::DEBUG, "Request line only");
-		return READY_FOR_WRITE;
 	}
-	else if (parseHeaders(req, request.substr(EOR, EOH - EOR)) == ERROR)
-		return ERROR;
 
-	if (req._isChunked)
-		return (parseChunkedBody(req, request.substr(EOH + 4)));
-	else if (req._headers.find("CONTENT-LENGTH") != req._headers.end())
-		return (parseBody(req, request.substr(EOH + 4)));
-	else
-		return READY_FOR_WRITE;
+	if (parts[0] != "HTTP/1.1") {
+		globalLogger.logItem(logger::ERROR, "HTTP protocol not supported");
+		data.parseStatusCode = 505;
+		return ERROR;
+	}
+
+	// parse status code (ignore reason-phrase)
+	if (parts[1].length() != 3) {
+		globalLogger.logItem(logger::ERROR, "Invalid status code");
+		data.parseStatusCode = 400;
+		return ERROR;
+	}
+	for (std::string::size_type i = 0; i < 3; ++i) {
+		if (!utils::isDigit(parts[1][i])) {
+			globalLogger.logItem(logger::ERROR, "Invalid status code");
+			data.parseStatusCode = 400;
+			return ERROR;
+		}
+	}
+	data.statusCode = utils::stoi(parts[1]);
+	return OK;
+}
+
+HTTPParser::ParseReturn		HTTPParser::parseHeaders(HTTPParseData &data, const std::string &headers, HTTPClient *client) {
+	// TODO cgi headers (status must parse to status code)
+	// TODO cgi headers ignore X-GI-* headers
+	// check if header field name has correct format
+	std::vector<std::string> headersArray = utils::split(headers, "\r\n");
+	for (std::vector<std::string>::iterator it = headersArray.begin(); it != headersArray.end(); ++it) {
+		std::string::size_type colonPos = it->find(':');
+		if (colonPos == std::string::npos) {
+			globalLogger.logItem(logger::ERROR, "no \":\" in header field");
+			data.parseStatusCode = 400;
+			return ERROR;
+		}
+
+		// key parsing
+		std::string	key = it->substr(0, colonPos);
+		utils::toUpper(key);
+		if (key.find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.~!#$&'*+") != std::string::npos) {
+			globalLogger.logItem(logger::ERROR, "Invalid character in header field name");
+			data.parseStatusCode = 400;
+			return ERROR;
+		}
+
+		// add to map
+		std::string	value = it->substr(colonPos+1);
+		value = value.substr(value.find_first_not_of(' '), value.find_last_not_of(' '));
+		data.headers[key] = value;
+		// TODO parse stricter (transfer-encoding: gzip, chunked should fail)
+		if (!data._isCGI && key == "TRANSFER-ENCODING" && value.find("chunked") != std::string::npos)
+			data.isChunked = true;
+	}
+
+	// at least one header
+	if (data.headers.empty()) {
+		globalLogger.logItem(logger::ERROR, "No headers in parsed data");
+		data.parseStatusCode = 400;
+		return ERROR;
+	}
+
+	// content-length and transfer encoding may not exist on same request (ignore on cgi)
+	if (data._type != HTTPParseData::CGI_RESPONSE) {
+		std::map<std::string, std::string>::iterator transferIt = data.headers.find("TRANSFER-ENCODING");
+		std::map<std::string, std::string>::iterator contentIt = data.headers.find("CONTENT-LENGTH");
+		if (transferIt != data.headers.end() && data.isChunked && contentIt != data.headers.end()) {
+			globalLogger.logItem(logger::ERROR, "Headers Transfer-encoding + Content-length not allowed");
+			data.parseStatusCode = 400;
+			return ERROR;
+		}
+	}
+
+	// host header needs to exist on requests
+	if (data._type == HTTPParseData::REQUEST) {
+		std::map<std::string,std::string>::iterator hostIt = data.headers.find("HOST");
+		if (hostIt == data.headers.end()) {
+			globalLogger.logItem(logger::ERROR, "Missing Host header");
+			data.parseStatusCode = 400;
+			return ERROR;
+		}
+
+		std::map<std::string,std::string>::iterator contentLengthIt = data.headers.find("CONTENT-LENGTH");
+		if (contentLengthIt != data.headers.end())
+			data.bodyLength = utils::stoi(contentLengthIt->second);
+		config::ServerBlock *server = NotApache::configuration->findServerBlock(hostIt->second, client->getPort(), client->getHost());
+		if (server == 0) {
+			globalLogger.logItem(logger::ERROR, "No matching server block");
+			data.parseStatusCode = 500;
+			return ERROR;
+		}
+		if (server->getBodyLimit() != -1 && ( data.bodyLength == -1 || data.bodyLength > server->getBodyLimit()) ) {
+			globalLogger.logItem(logger::ERROR, "Body too large");
+			data.parseStatusCode = 413;
+			return ERROR;
+		}
+	}
+
+	return OK;
+}
+
+HTTPParser::ParseReturn HTTPParser::parseTrailHeaders(HTTPParseData &data, const std::string &headers) {
+	// check if header field name has correct format
+	std::vector<std::string> headersArray = utils::split(headers, "\r\n");
+	for (std::vector<std::string>::iterator it = headersArray.begin(); it != headersArray.end(); ++it) {
+		std::string::size_type colonPos = it->find(':');
+		if (colonPos == std::string::npos) {
+			globalLogger.logItem(logger::ERROR, "no \":\" in header field");
+			data.parseStatusCode = 400;
+			return ERROR;
+		}
+
+		// key parsing
+		std::string	key = it->substr(0, colonPos);
+		utils::toUpper(key);
+		if (key.find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.~!#$&'*+") != std::string::npos) {
+			globalLogger.logItem(logger::ERROR, "Invalid character in header field name");
+			data.parseStatusCode = 400;
+			return ERROR;
+		}
+
+		// add to map
+		std::string	value = it->substr(colonPos+1);
+		value = value.substr(value.find_first_not_of(' '), value.find_last_not_of(' '));
+		// ignore already present headers
+		data.headers.erase(data.headers.find("TRAILER"));
+		if (data.headers.find(key) == data.headers.end())
+			data.headers[key] = value;
+	}
+
+	return OK;
+}
+
+HTTPParser::ParseReturn		HTTPParser::parseBody(HTTPParseData &data, utils::DataList::DataListIterator it) {
+	if (data.data.size(it) < static_cast<utils::DataList::size_type>(data.bodyLength))
+		return OK; // unfinished
+	data.data.resize(it, data.data.endList());
+	return FINISHED;
+}
+
+HTTPParser::ParseReturn		HTTPParser::parseChunkedBody(HTTPParseData &data, utils::DataList::DataListIterator it) {
+	data._pos = it;
+
+	while (true) {
+		utils::DataList::DataListIterator sizeEnd = data.data.find("\r\n", data._pos);
+		// check if CRLF was transmitted
+		if (sizeEnd == data.data.endList()) {
+			return OK; // unfinished
+		}
+
+		// parse chunk size
+		std::string	tilEndl = data.data.substring(data._pos, sizeEnd);
+		tilEndl = tilEndl.substr(0, tilEndl.find(';'));
+		if (tilEndl.find_first_not_of("0123456789ABCDEFabcdef") != std::string::npos) {
+			globalLogger.logItem(logger::ERROR, "Invalid characters in chunk size");
+			data.parseStatusCode = 400;
+			return ERROR;
+		}
+		size_t chunkSize = utils::stoh(tilEndl);
+		std::advance(sizeEnd, 2);
+		if (data.data.size(sizeEnd) < chunkSize + 2) {
+			return OK; // unfinished
+		} else if (chunkSize == 0) {
+			if (data.data.find("\r\n", sizeEnd) != data.data.endList())
+				data._gotTrailHeaders = true;
+			data._pos = sizeEnd;
+			return FINISHED;
+		}
+
+		utils::DataList::DataListIterator chunkEnd = sizeEnd;
+
+		// move chunkEnd by amount of characters
+		std::advance(chunkEnd, chunkSize);
+
+		if (chunkEnd == data.data.endList()) {
+			return OK; // unfinished
+		}
+
+		// check for CRLF at end of chunk data
+		if (data.data.find("\r\n", chunkEnd) != chunkEnd) {
+			globalLogger.logItem(logger::ERROR, "No CRLF characters after chunk data");
+			data.parseStatusCode = 400; // TODO which code?
+			return ERROR;
+		}
+
+		// extract chunk data
+		data.chunkedData.add(data.data.substring(sizeEnd, chunkEnd).c_str(), chunkSize); // TODO test if this removes \0 chars
+		std::advance(chunkEnd, 2); // now past \r\n at end of chunk
+		data.data.resize(chunkEnd, data.data.endList());
+
+		data._pos = data.data.beginList(); // set last position of chunk
+	}
+}
+
+HTTPParser::ParseState		 HTTPParser::parse(HTTPClient& client) {
+	return parse(client.data.request.data, &client);
+}
+
+HTTPParser::ParseState		HTTPParser::parse(HTTPParseData &data, HTTPClient *client) {
+	if (!data._gotFirstLine) {
+		// find status line, ends with CRLF
+		utils::DataList::DataListIterator endOfStatus = data.data.find("\r\n");
+		// no status line found, unfinished
+		if (endOfStatus == data.data.endList())
+			return UNFINISHED;
+
+		// max size check
+		if (data.data.size(data.data.beginList(), endOfStatus) > maxHeaderSize) {
+			globalLogger.logItem(logger::ERROR, "Header field is too large");
+			data.parseStatusCode = 431;
+			return READY_FOR_WRITE;
+		}
+
+		ParseReturn	ret = ERROR;
+		if (data._type == HTTPParseData::REQUEST)
+			ret = parseRequestLine(data, data.data.substring(data.data.beginList(), endOfStatus));
+		else if (data._type == HTTPParseData::RESPONSE)
+			ret = parseResponseLine(data, data.data.substring(data.data.beginList(), endOfStatus));
+
+		// if error occurred, start writing error response
+		if (ret == ERROR)
+			return READY_FOR_WRITE;
+		data._pos = endOfStatus; // points to \r\n of statusline
+		data._gotFirstLine = true;
+	}
+
+	if (!data._gotHeaders) {
+		// find header terminator, ends with CRLFCRLF
+		utils::DataList::DataListIterator endOfHeaders = data.data.find("\r\n\r\n", data._pos);
+		utils::DataList::DataListIterator beginOfHeaders = data._pos;
+
+		// max size check
+		if (data.data.size(beginOfHeaders, endOfHeaders) > maxHeaderSize) {
+			globalLogger.logItem(logger::ERROR, "Header field is too large");
+			data.parseStatusCode = 431;
+			return READY_FOR_WRITE;
+		}
+
+		// no header terminator found, unfinished
+		if (endOfHeaders == data.data.endList())
+			return UNFINISHED;
+
+		// parse! if error occurred, start writing error response
+		ParseReturn	ret = parseHeaders(data, data.data.substring(beginOfHeaders, endOfHeaders), client);
+		if (ret == ERROR)
+			return READY_FOR_WRITE;
+		std::advance(endOfHeaders, 2);
+		data._pos = endOfHeaders; // points to /r/n of empty line
+		data._gotHeaders = true;
+	}
+
+	if (!data._gotBody) {
+		utils::DataList::DataListIterator beginOfData = data._pos; // 4. move it var to start of new chunk
+		std::advance(beginOfData, 2);
+
+		ParseReturn	ret;
+		if (data.isChunked)
+			ret = parseChunkedBody(data, beginOfData);
+		else
+			ret = parseBody(data, beginOfData);
+
+		if (ret == FINISHED) {
+			data._gotBody = true;
+			std::map<std::string, std::string>::iterator it = data.headers.find("TRANSFER-ENCODING");
+			if (it != data.headers.end()) {
+				std::string arr = "chunked"; // remove chunked from transfer-encoding header
+				for (std::string::size_type i = 0; i < arr.length(); ++i) {
+					it->second.erase(std::remove(it->second.begin(), it->second.end(), arr.at(i)), it->second.end());
+				}
+				data.headers["CONTENT-LENGTH"] = utils::intToString(data.chunkedData.size()); // set content-length header
+			}
+		}
+		else if (ret == ERROR)
+			return READY_FOR_WRITE;
+		else
+			return UNFINISHED;
+	}
+
+	if (data.isChunked && !data._gotTrailHeaders) {
+		// find header terminator, ends with CRLFCRLF
+		utils::DataList::DataListIterator endOfHeaders = data.data.find("\r\n\r\n", data._pos);
+		utils::DataList::DataListIterator beginOfHeaders = data._pos;
+
+		// no header terminator found, unfinished
+		if (endOfHeaders == data.data.endList())
+			return UNFINISHED;
+		else if (endOfHeaders == beginOfHeaders) { // no trail headers
+			data._gotTrailHeaders = true;
+			return READY_FOR_WRITE;
+		}
+
+		// max size check
+		if (data.data.size(beginOfHeaders, endOfHeaders) > maxHeaderSize - data.headers.size()) {
+			globalLogger.logItem(logger::ERROR, "Header field is too large");
+			data.parseStatusCode = 431;
+			return READY_FOR_WRITE;
+		}
+
+		ParseReturn ret = parseTrailHeaders(data, data.data.substring(beginOfHeaders, endOfHeaders));
+		if (ret == ERROR)
+			return READY_FOR_WRITE;
+		data.data.resize(data.data.beginList(), beginOfHeaders);
+		data._gotTrailHeaders = true;
+	}
+	if (data.isChunked)
+		data.data.clear();
+	return READY_FOR_WRITE;
 }

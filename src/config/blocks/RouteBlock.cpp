@@ -61,6 +61,15 @@ const AConfigBlock::validatorsMapType	RouteBlock::_validators =
 		  .add(new ArgumentLength(1))
 		  .add(new Unique())
 		  .build())
+		.addKey("auth_basic", ConfigValidatorListBuilder()
+		  .add(new ArgumentLength(1))
+		  .add(new Unique())
+		  .build())
+		.addKey("auth_basic_user_file", ConfigValidatorListBuilder()
+		  .add(new ArgumentLength(1))
+		  .add(new Unique())
+		  .add(new IsFile(0))
+		  .build())
 		.build();
 
 const AConfigBlock::validatorListType 	RouteBlock::_blockValidators =
@@ -110,6 +119,8 @@ void RouteBlock::parseData() {
 	_proxyUrl = "";
 	_cgiExt = "";
 	_cgi = "";
+	_authBasic = "";
+	_authBasicUserFile = "";
 	_allowedMethods.clear();
 	_allowedMethods.push_back("GET");_allowedMethods.push_back("POST");
 	_allowedMethods.push_back("PUT");_allowedMethods.push_back("PATCH");
@@ -135,6 +146,10 @@ void RouteBlock::parseData() {
 		for (ConfigLine::arg_size i = 0; i < getKey("allowed_methods")->getArgLength(); i++)
 			_allowedMethods.push_back(getKey("allowed_methods")->getArg(i));
 	}
+	if (hasKey("auth_basic"))
+		_authBasic = getKey("auth_basic")->getArg(0);
+	if (hasKey("auth_basic_user_file"))
+		_authBasicUserFile = getKey("auth_basic_user_file")->getArg(0);
 	_isParsed = true;
 }
 
@@ -181,6 +196,16 @@ const std::string &RouteBlock::getSaveUploads() const {
 const std::string &RouteBlock::getProxyUrl() const {
 	throwNotParsed();
 	return _proxyUrl;
+}
+
+const std::string &RouteBlock::getAuthBasic() const {
+	throwNotParsed();
+	return _authBasic;
+}
+
+const std::string &RouteBlock::getAuthBasicUserFile() const {
+	throwNotParsed();
+	return _authBasicUserFile;
 }
 
 bool RouteBlock::isAllowedMethod(const std::string &method) const {

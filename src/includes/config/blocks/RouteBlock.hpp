@@ -37,6 +37,8 @@ namespace config {
 		std::string					_cgiExt;
 		std::string					_saveUploads;
 		std::string					_proxyUrl;
+		std::string					_authBasic;
+		std::string					_authBasicUserFile;
 
 	public:
 		regex::Regex &getLocation();
@@ -54,6 +56,9 @@ namespace config {
 		bool shouldDoCgi() const;
 
 		bool isAllowedMethod(const std::string &method) const;
+
+		const std::string &getAuthBasic() const;
+		const std::string &getAuthBasicUserFile() const;
 	};
 
 }

@@ -5,6 +5,7 @@
 #ifndef HTTPPARSER_HPP
 #define HTTPPARSER_HPP
 
+#include "server/http/HTTPParseData.hpp"
 #include "server/http/HTTPClient.hpp"
 #include "utils/atoi.hpp"
 #include "utils/stoi.hpp"
@@ -13,30 +14,42 @@
 #include "utils/toUpper.hpp"
 #include "utils/countSpaces.hpp"
 #include "utils/CreateMap.hpp"
+#include "utils/DataList.hpp"
+#include "utils/Uri.hpp"
 
 #include <iostream>
 
 namespace NotApache {
+
 	class HTTPParser {
 	public:
 		enum ParseState {
 			READY_FOR_WRITE,
+			UNFINISHED
+		};
+
+
+	private:
+		static const int maxHeaderSize;
+		enum ParseReturn {
 			ERROR,
-			UNFINISHED,
+			FINISHED,
 			OK
 		};
 
-		enum MaxSize {
-			MAX_HEADER = 8000,
-			MAX_BODY = 8000 // TODO get from config
-		};
+		static ParseReturn		parseRequestLine(HTTPParseData &data, const std::string &line);
+		static ParseReturn		parseResponseLine(HTTPParseData &data, const std::string &line);
+
+		static ParseReturn		parseHeaders(HTTPParseData &data, const std::string &headers, HTTPClient *client);
+	    static ParseReturn		parseTrailHeaders(HTTPParseData &data, const std::string &headers);
+
+		static ParseReturn		parseBody(HTTPParseData &data, utils::DataList::DataListIterator it);
+		static ParseReturn		parseChunkedBody(HTTPParseData &data, utils::DataList::DataListIterator it);
+
+	public:
 
 		static ParseState		parse(HTTPClient &client);
-		static ParseState		parseRequest(HTTPClientRequest& req);
-		static ParseState		parseHeaders(HTTPClientRequest& req, std::string rawRequest);
-		static ParseState		parseRequestLine(HTTPClientRequest& req, std::string rawRequest);
-		static ParseState		parseBody(HTTPClientRequest& req, std::string rawRequest);
-		static ParseState		parseChunkedBody(HTTPClientRequest& req, std::string rawRequest);
+		static ParseState		parse(HTTPParseData &data, HTTPClient *client = 0);
 	
 		static const std::map<std::string, e_method>			methodMap_StoE;
 		static const std::map<e_method, std::string>			methodMap_EtoS;
