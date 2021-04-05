@@ -22,7 +22,7 @@ namespace config {
 
 		class IpValidatorException: public ConfigException {
 		protected:
-			const char *getTemplate() const throw() {
+			std::string getTemplate() const throw() {
 				return "key '{KEY}' in block '{BLOCK_NAME}' must be a valid ipv4 address";
 			}
 

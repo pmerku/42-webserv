@@ -18,7 +18,7 @@ namespace config {
 
 		class UniqueException: public ConfigException {
 		protected:
-			const char * getTemplate() const throw() {
+			std::string getTemplate() const throw() {
 				return "You can only have one '{KEY}' in '{BLOCK_NAME}' block";
 			}
 
