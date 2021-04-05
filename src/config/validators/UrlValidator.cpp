@@ -54,9 +54,11 @@ UrlValidator::urlParsed UrlValidator::parseUrl(const std::string &str) {
 		std::string	portStr = str.substr(endIpPos, endPortPos);
 		endIpPos = endPortPos;
 
-		if (portStr.empty())
+		if (portStr.empty() || portStr.size() > 5)
 			ERROR_THROW(UrlParseError());
 		out.port = utils::stoi(portStr);
+		if (out.port > 65535 || out.port < 0)
+			ERROR_THROW(UrlParseError());
 	}
 
 	if (endIpPos != std::string::npos)
