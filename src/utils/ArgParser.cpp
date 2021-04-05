@@ -6,9 +6,9 @@
 
 using namespace utils;
 
-ArgParser::ArgParser(): _isVerbose(false), _isColor(false), _configPath() {}
+ArgParser::ArgParser(): _isVerbose(false), _doValidation(false), _isColor(false), _configPath() {}
 
-ArgParser::ArgParser(int argc, char *argv[]): _isVerbose(false), _isColor(false), _configPath() {
+ArgParser::ArgParser(int argc, char *argv[]): _isVerbose(false), _doValidation(false), _isColor(false), _configPath() {
 	bool readConfig = false;
 	for (int i = 1; i < argc; i++) {
 		std::string arg(argv[i]);
@@ -21,6 +21,8 @@ ArgParser::ArgParser(int argc, char *argv[]): _isVerbose(false), _isColor(false)
 			_isVerbose = true;
 		else if (arg == "-c" || arg == "--color")
 			_isColor = true;
+		else if (arg == "--validate")
+			_doValidation = true;
 		else if (arg == "-f" || arg == "--file")
 			readConfig = true;
 		else
@@ -39,6 +41,10 @@ bool ArgParser::colorPrint() const {
 	return _isColor;
 }
 
+bool ArgParser::onlyValidate() const {
+	return _doValidation;
+}
+
 const std::string &ArgParser::configFile() const {
 	return _configPath;
 }
@@ -51,5 +57,6 @@ std::string ArgParser::printUsage() {
   		"  -f,  --file\t\tSpecify Configuration file to use (REQUIRED)\n"
   		"  -v,  --verbose\tTurn on verbose/debug logging\n"
   		"  -c,  --color\t\tTurn on color logging\n"
+  		"  --validate\t\tTo run only the configuration validator. Don't start the actual application\n"
 	);
 }
