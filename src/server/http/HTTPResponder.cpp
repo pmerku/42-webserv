@@ -134,7 +134,7 @@ void HTTPResponder::serveDirectory(HTTPClient &client, config::ServerBlock &serv
 			return;
 		}
 		dirent *dirEntry;
-		utils::Uri uri = client.data.request._uri;
+		utils::Uri uri = client.data.request.data.uri;
 		std::string str = "<h1>";
 		str += uri.path + "</h1><ul>";
 		while ((dirEntry = ::readdir(dir)) != 0) {
@@ -209,17 +209,12 @@ void HTTPResponder::serveFile(HTTPClient &client, config::ServerBlock &server, c
 }
 
 void HTTPResponder::generateResponse(HTTPClient &client) {
-	if (client.data.request._statusCode != 200) {
+	if (client.data.request.data.parseStatusCode != 200) {
 		// error responses if parsing failed
-		handleError(client, 0, client.data.request._statusCode);
+		handleError(client, 0, client.data.request.data.parseStatusCode);
 		return;
 	}
-	std::map<std::string,std::string>::iterator hostIt = client.data.request._headers.find("HOST");
-	// no host header = invalid request
-	if (hostIt == client.data.request._headers.end()) {
-		handleError(client, 0, 400);
-		return;
-	}
+	std::map<std::string,std::string>::iterator hostIt = client.data.request.data.headers.find("HOST");
 	std::string	domain = (*hostIt).second;
 	domain = domain.substr(0, domain.find(':'));
 
@@ -231,7 +226,7 @@ void HTTPResponder::generateResponse(HTTPClient &client) {
 	}
 
 	// find which route block to use
-	utils::Uri uri = client.data.request._uri;
+	utils::Uri uri = client.data.request.data.uri;
 	config::RouteBlock	*route = server->findRoute(uri.path);
 	if (route == 0) {
 		handleError(client, server, 400);
@@ -239,7 +234,7 @@ void HTTPResponder::generateResponse(HTTPClient &client) {
 	}
 
 	// check allowed methods
-	if (!route->isAllowedMethod(HTTPParser::methodMap_EtoS.find(client.data.request._method)->second)) {
+	if (!route->isAllowedMethod(HTTPParser::methodMap_EtoS.find(client.data.request.data.method)->second)) {
 		handleError(client, server, route, 405);
 		return;
 	}
