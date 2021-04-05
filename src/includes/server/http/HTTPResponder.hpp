@@ -9,6 +9,8 @@
 #include "server/http/HTTPClient.hpp"
 #include "env/env.hpp"
 #include "utils/base64.hpp"
+#include <climits>
+#include <cstdlib>
 
 namespace NotApache {
 	class HTTPResponder {

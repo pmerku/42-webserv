@@ -354,9 +354,6 @@ void	HTTPResponder::setEnv(HTTPClient& client, CGIenv::env& envp, std::string& u
 			env.CONTENT_TYPE(it->second);
 			
 		envp.setEnv(env.build());
-
-		for (int i = 0; envp.getEnv()[i]; i++)
-			std::cout << envp.getEnv()[i] << std::endl;
 	} catch (std::exception &e) {
 		globalLogger.logItem(logger::ERROR, std::string("ENV could not be built: ") + e.what());
 	}
