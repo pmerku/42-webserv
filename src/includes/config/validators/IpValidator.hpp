@@ -18,6 +18,7 @@ namespace config {
 		IpValidator(int arg);
 
 		void test(const ConfigLine &line, const AConfigBlock &block) const;
+		static bool	isValidIp(const std::string &str);
 
 		class IpValidatorException: public ConfigException {
 		protected:
