@@ -58,10 +58,12 @@ namespace utils {
 					continue;
 				}
 
-				T *task = _queue.front();
-				_queue.pop();
-				_queueMut.unlock();
-				runQueue(task);
+				if (!_queue.empty()) {
+					T *task = _queue.front();
+					_queue.pop();
+					_queueMut.unlock();
+					runQueue(task);
+				}
 			}
 		}
 
@@ -72,13 +74,15 @@ namespace utils {
 
 		virtual ~AThreadQueue() {
 			_shouldStop = true;
+			addTask(0);
 			join();
 			_queueMut.lock();
 		}
 
 		void 			addTask(T *task) {
 			_queueMut.lock();
-			_queue.push(task);
+			if (task)
+				_queue.push(task);
 
 			// start queue if not running
 			_isQueueRunning.lock();

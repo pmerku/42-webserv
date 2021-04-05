@@ -5,6 +5,7 @@
 #include "server/Server.hpp"
 #include "server/global/GlobalConfig.hpp"
 #include <unistd.h>
+#include <errno.h>
 
 using namespace NotApache;
 
@@ -16,7 +17,7 @@ Server::SelectReturn Server::_runSelect() {
 	if (ret == 0)
 		return TIMEOUT;
 	else if (ret == -1)
-		return ERROR;
+		return errno == EINTR ? TIMEOUT : ERROR; // treat EINTR as TIMEOUT
 	return SUCCESS;
 }
 
@@ -131,6 +132,7 @@ void Server::_clientCleanup() {
 
 		// if closed & is not being handled. then set isHandled to true and close client
 		bool isClosed = (*i)->connectionState == CLOSED;
+		if (_shouldShutdown) isClosed = true; // always treat client as closed if it should shutdown
 		if (isClosed) {
 			if ((*i)->isHandled.get())
 				isClosed = false;
@@ -163,6 +165,10 @@ void Server::startServer(config::RootBlock *c) {
 	while (true) {
 		// cleanup old clients (if any)
 		_clientCleanup();
+
+		// shutdown if no more clients are active
+		if (_shouldShutdown && _clients.empty())
+			return;
 
 		// create fd sets for select
 		_createFdSets();
@@ -205,6 +211,11 @@ Server::~Server() {
 	delete configuration;
 }
 
-Server::Server(): _readFdSet(), _writeFdSet(), _maxFd(), _termClient(STDIN_FILENO) {
+Server::Server(): _readFdSet(), _writeFdSet(), _maxFd(), _shouldShutdown(false), _termClient(STDIN_FILENO) {}
 
+void Server::shutdownServer() {
+	globalLogger.logItem(logger::INFO, "Received shutdown signal, gracefully shutting down");
+	_shouldShutdown = true;
+	// trigger a select iteration so it doesnt wait for a timeout
+	_eventBus.postEvent(ServerEventBus::CLIENT_STATE_UPDATED);
 }
