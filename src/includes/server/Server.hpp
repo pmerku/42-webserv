@@ -35,6 +35,7 @@ namespace NotApache {
 		fd_set	_readFdSet;
 		fd_set	_writeFdSet;
 		FD		_maxFd;
+		bool 	_shouldShutdown;
 
 		// parts
 		std::vector<TCPListener *>	_listeners;
@@ -61,6 +62,8 @@ namespace NotApache {
 		void 			addHandler(AHandler *handler);
 		void 			setLogger(logger::Logger &logger);
 		void			startServer(config::RootBlock *config);
+
+		void			shutdownServer();
 
 		class IoSelectingFailed: public std::exception {
 		public:
