@@ -5,7 +5,6 @@
 #include <csignal>
 #include "utils/ArgParser.hpp"
 #include "server/handlers/ThreadHandler.hpp"
-#include <cstdlib>
 
 using namespace NotApache;
 
@@ -16,20 +15,32 @@ public:
 	Server					server;
 	utils::ArgParser		args;
 	config::RootBlock		*config;
+	static Server			*globalServerInstance;
+	static int 				exitCode;
 
 	static void	kill(int signo) {
-		// TODO graceful exit + cleanup
-		::exit(signo);
+		exitCode = signo;
+		if (!globalServerInstance) return;
+		globalServerInstance->shutdownServer();
 	}
 
 	static void handleSignals() {
+		// pipe errors need to ignored, can happen with connections that get closed
 		std::signal(SIGPIPE, SIG_IGN);
+
+		// graceful exit of kill signals
 		std::signal(SIGINT, MainProcess::kill);
+		std::signal(SIGHUP, MainProcess::kill);
+		std::signal(SIGQUIT, MainProcess::kill);
+		std::signal(SIGTERM, MainProcess::kill);
 	}
 
-	MainProcess(): logger(std::cout), config(0) {};
+	MainProcess(): logger(std::cout), config(0) {
+		globalServerInstance = &server;
+	};
 
 	int	run(int argc, char *argv[]) {
+		exitCode = 0;
 		try {
 			args = utils::ArgParser(argc, argv);
 		} catch (const utils::ArgParser::ArgParserException &e) {
@@ -99,16 +110,19 @@ public:
 			logger.log(logger::LogItem(logger::ERROR, e.what()));
 			return 1;
 		}
-		return 0;
+		return exitCode;
 	}
 
 	~MainProcess() {
-		delete config;
+		globalServerInstance = 0;
 		config::RootBlock::cleanup();
 		config::RouteBlock::cleanup();
 		config::ServerBlock::cleanup();
 	}
 };
+
+Server			*MainProcess::globalServerInstance = 0;
+int 			MainProcess::exitCode = 0;
 
 int main(int argc, char *argv[]) {
 	MainProcess	process;
