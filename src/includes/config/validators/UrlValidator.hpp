@@ -29,7 +29,7 @@ namespace config {
 
 		class UrlValidatorProtocolException: public ConfigException {
 		protected:
-			const char *getTemplate() const throw() {
+			std::string	getTemplate() const throw() {
 				return "url of '{KEY}' in block '{BLOCK_NAME}' has an unsupported protocol";
 			}
 
@@ -39,8 +39,8 @@ namespace config {
 
 		class UrlValidatorInvalidException: public ConfigException {
 		protected:
-			const char *getTemplate() const throw() {
-				return "url of '{KEY}' in block '{BLOCK_NAME}' is invalid";
+			std::string	getTemplate() const throw() {
+				return "url of '{KEY}' in block '{BLOCK_NAME}' is invalid. url must be ip and may not contain a path!";
 			}
 
 		public:

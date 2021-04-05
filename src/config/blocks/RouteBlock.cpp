@@ -16,6 +16,7 @@
 #include "config/validators/StartsWithValidator.hpp"
 #include "config/validators/RegexCompiler.hpp"
 #include "config/validators/PluginValidator.hpp"
+#include "config/validators/UrlValidator.hpp"
 
 using namespace config;
 
@@ -69,8 +70,9 @@ const AConfigBlock::validatorsMapType	RouteBlock::_validators =
 		  .add(new ArgumentLength(1))
 		  .add(new PluginValidator(0))
 		  .build())
-		.addKey("proxy_url", ConfigValidatorListBuilder() // TODO url validator
+		.addKey("proxy_url", ConfigValidatorListBuilder()
 		  .add(new ArgumentLength(1))
+		  .add(new UrlValidator(0))
 		  .add(new Unique())
 		  .build())
 		.build();

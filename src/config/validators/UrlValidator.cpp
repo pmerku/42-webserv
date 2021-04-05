@@ -40,8 +40,8 @@ UrlValidator::urlParsed UrlValidator::parseUrl(const std::string &str) {
 	}
 
 	// check ip address
-	std::string::size_type endIpPos = str.find_first_of(':', ipPos);
-	out.ip = str.substr(ipPos, endIpPos);
+	std::string::size_type endIpPos = str.find(':', ipPos);
+	out.ip = str.substr(ipPos, endIpPos - ipPos);
 	if (out.ip.empty())
 		ERROR_THROW(UrlParseError());
 	if (!IpValidator::isValidIp(out.ip))
@@ -52,10 +52,11 @@ UrlValidator::urlParsed UrlValidator::parseUrl(const std::string &str) {
 		endIpPos++;
 		std::string::size_type endPortPos = str.find_first_not_of("0123456789", endIpPos);
 		std::string	portStr = str.substr(endIpPos, endPortPos);
+		endIpPos = endPortPos;
 
 		if (portStr.empty())
 			ERROR_THROW(UrlParseError());
-		out.port = utils::stoi(str.substr(endIpPos, endPortPos));
+		out.port = utils::stoi(portStr);
 	}
 
 	if (endIpPos != std::string::npos)
