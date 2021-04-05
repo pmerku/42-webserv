@@ -71,7 +71,7 @@ public:
 
 		// validate only mode
 		if (args.onlyValidate()) {
-			logger.log(logger::LogItem(logger::INFO, "Configuration is valid!"));
+			logger.log(logger::LogItem(logger::INFO, "Configuration is valid, exiting!"));
 			return 0;
 		}
 
