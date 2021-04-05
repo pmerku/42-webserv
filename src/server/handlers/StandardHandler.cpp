@@ -14,7 +14,6 @@ const int	StandardHandler::_bufferSize = 1024;
 
 void StandardHandler::stopHandle(HTTPClient &client, bool shouldLock) {
 	if (shouldLock) client.isHandled.lock();
-	client.timeout(false);
 	_eventBus->postEvent(ServerEventBus::CLIENT_STATE_UPDATED);
 	client.isHandled.setNoLock(false);
 	client.isHandled.unlock();
@@ -24,7 +23,7 @@ void StandardHandler::handleAssociatedRead(HTTPClient &client) {
 	globalLogger.logItem(logger::DEBUG, "Handling associated file descriptors");
 	if (client.responseState == FILE) {
 		char	buf[_bufferSize+1];
-		FD fileFd = client.getAssociatedFd(0);
+		FD fileFd = client.getAssociatedFd(0).fd;
 		ssize_t	ret = ::read(fileFd, buf, _bufferSize);
 		switch (ret) {
 			case 0:
@@ -35,12 +34,35 @@ void StandardHandler::handleAssociatedRead(HTTPClient &client) {
 				stopHandle(client, false);
 				return;
 			case -1:
-				globalLogger.logItem(logger::DEBUG, "Failed to read from associated file FD");
-				std::cout << "Failed to read: " << std::strerror(errno) << std::endl;
+				globalLogger.logItem(logger::ERROR, "Failed to read from associated file FD");
+				globalLogger.logItem(logger::ERROR, std::string("Failed to read: ") + std::strerror(errno));
 				stopHandle(client);
 				return;
 			default:
 				client.data.response.appendAssociatedData(buf, ret);
+				stopHandle(client);
+				return;
+		}
+	} else if (client.responseState == PROXY) {
+		char	buf[_bufferSize+1];
+		FD fileFd = client.getAssociatedFd(0).fd;
+		ssize_t	ret = ::read(fileFd, buf, _bufferSize);
+		switch (ret) {
+			case 0:
+				// has read everything
+				client.isHandled.lock();
+				client.connectionState = WRITING;
+				client.writeState = GOT_ASSOCIATED;
+				client.setAssociatedFdMode(fileFd, associatedFD::WRITE);
+				stopHandle(client, false);
+				return;
+			case -1:
+				globalLogger.logItem(logger::ERROR, "Failed to read from associated file FD");
+				globalLogger.logItem(logger::ERROR, std::string("Failed to read: ") + std::strerror(errno));
+				stopHandle(client);
+				return;
+			default:
+				client.proxy->response.appendAssociatedData(buf, ret);
 				stopHandle(client);
 				return;
 		}
@@ -64,8 +86,8 @@ void StandardHandler::read(HTTPClient &client) {
 			stopHandle(client, false);
 			return;
 		case -1:
-			globalLogger.logItem(logger::DEBUG, "Failed to read from client");
-			std::cout << "Failed to read: " << std::strerror(errno) << std::endl;
+			globalLogger.logItem(logger::ERROR, "Failed to read from client");
+			globalLogger.logItem(logger::ERROR, std::string("Failed to read: ") + std::strerror(errno));
 			stopHandle(client);
 			return;
 		default:
@@ -84,7 +106,52 @@ void StandardHandler::read(HTTPClient &client) {
 	stopHandle(client, false);
 }
 
+void StandardHandler::handleAssociatedWrite(HTTPClient &client) {
+	globalLogger.logItem(logger::DEBUG, "Handling associated file descriptors");
+	if (client.responseState == PROXY) {
+		if (!client.proxy->request.hasProgress) {
+			client.proxy->request.currentPacket = client.proxy->request.getRequest().begin();
+			client.proxy->request.packetProgress = 0;
+			client.proxy->request.hasProgress = true;
+		}
+		std::string::size_type	pos = client.proxy->request.packetProgress;
+		std::string::size_type	len = client.proxy->request.currentPacket->size - pos;
+		FD fileFd = client.getAssociatedFd(0).fd;
+		ssize_t ret = ::write(fileFd, client.proxy->request.currentPacket->data + pos, len);
+		switch (ret) {
+			case -1:
+				globalLogger.logItem(logger::ERROR, "Failed to write to server");
+				globalLogger.logItem(logger::ERROR, std::string("Failed to write: ") + std::strerror(errno));
+				client.isHandled = false;
+				return;
+			case 0:
+				// zero bytes is unlikely to happen, dont do anything if it does happen
+				break;
+			default:
+				client.proxy->request.packetProgress += ret;
+				if (client.proxy->request.packetProgress == client.proxy->request.currentPacket->size) {
+					++client.proxy->request.currentPacket;
+					client.proxy->request.packetProgress = 0;
+				}
+				if (client.proxy->request.currentPacket == client.proxy->request.getRequest().end()) {
+					// wrote entire request, closing
+					client.isHandled.lock();
+					client.connectionState = ASSOCIATED_FD;
+					client.setAssociatedFdMode(fileFd, associatedFD::READ);
+					stopHandle(client, false);
+					return;
+				}
+				break;
+		}
+	}
+}
+
 void StandardHandler::write(HTTPClient &client) {
+	if (client.connectionState == ASSOCIATED_FD) {
+		handleAssociatedWrite(client);
+		stopHandle(client);
+		return;
+	}
 	if (client.writeState == NO_RESPONSE) {
 		_responder->generateResponse(client);
 		if (client.connectionState == ASSOCIATED_FD) {
@@ -109,7 +176,8 @@ void StandardHandler::write(HTTPClient &client) {
 		ssize_t ret = ::write(client.getFd(), client.data.response.currentPacket->data + pos, len);
 		switch (ret) {
 			case -1:
-				globalLogger.logItem(logger::DEBUG, "Failed to write to client");
+				globalLogger.logItem(logger::ERROR, "Failed to write to client");
+				globalLogger.logItem(logger::ERROR, std::string("Failed to write: ") + std::strerror(errno));
 				client.isHandled = false;
 				return;
 			case 0:

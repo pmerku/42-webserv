@@ -5,8 +5,6 @@
 #include <stdexcept>
 #include "server/http/ResponseBuilder.hpp"
 #include "utils/intToString.hpp"
-#include "utils/localTime.hpp"
-#include "utils/ErrorThrow.hpp"
 #include "utils/CreateMap.hpp"
 #include "utils/DataList.hpp"
 

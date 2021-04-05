@@ -24,6 +24,8 @@ namespace NotApache {
 		static void
 		serveDirectory(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route,
 					   const std::string &dirPath);
+
+		static void handleProxy(HTTPClient &client, const std::string &url);
 	};
 
 }

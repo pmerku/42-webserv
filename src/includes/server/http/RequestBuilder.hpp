@@ -8,6 +8,9 @@
 #include <string>
 #include <map>
 #include <vector>
+#include "utils/DataList.hpp"
+#include <ctime>
+#include <sys/time.h> // have to use C header for gettimeofday()
 
 namespace NotApache {
 
@@ -17,9 +20,12 @@ namespace NotApache {
 		std::string								_uri;
 		std::string								_protocol;
 		std::map<std::string, std::string>		_headerMap;
-		std::string 							_body;
+		utils::DataList							_body;
 
 		static const std::string				_endLine;
+
+		static std::string	convertTime(time_t currentTime);
+		RequestBuilder		&setDefaults();
 
 	public:
 		static const std::vector<std::string>	methodArray;
@@ -30,28 +36,11 @@ namespace NotApache {
 		RequestBuilder		&setURI(const std::string &path);
 		RequestBuilder		&setHeader(const std::string &key, const std::string &value);
 		RequestBuilder		&setBody(const std::string &data, size_t length);
-		std::string			build();
-
-		class RequestBuilderException : public std::exception {
-		public:
-			virtual const char *what() const throw() {
-				return "Failed to build request";
-			}
-		};
-
-		class MethodError : public RequestBuilderException {
-		public:
-			const char *what() const throw() {
-				return "Unhandled method";
-			}
-		};
-
-		class URIError : public RequestBuilderException {
-		public:
-			const char *what() const throw() {
-				return "Missing / in front of URI";
-			}
-		};
+		RequestBuilder		&setBody(const std::string &data);
+		RequestBuilder		&setBody(const utils::DataList &data);
+		RequestBuilder		&removeHeader(const std::string &header);
+		RequestBuilder		&setDate();
+		utils::DataList		build();
 	};
 
 } // namespace NotApache

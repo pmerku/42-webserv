@@ -58,14 +58,17 @@ void Server::_createFdSets() {
 		}
 		else if ((*i)->connectionState == ASSOCIATED_FD) {
 			if ((*i)->responseState == FILE || (*i)->responseState == PROXY) {
-				if ((*i)->getAssociatedFd(0) > _maxFd) _maxFd = (*i)->getAssociatedFd(0);
-				FD_SET((*i)->getAssociatedFd(0), &_readFdSet);
+				if ((*i)->getAssociatedFd(0).fd > _maxFd) _maxFd = (*i)->getAssociatedFd(0).fd;
+				if ((*i)->getAssociatedFd(0).mode == associatedFD::READ)
+					FD_SET((*i)->getAssociatedFd(0).fd, &_readFdSet);
+				else
+					FD_SET((*i)->getAssociatedFd(0).fd, &_writeFdSet);
 			}
 			else if ((*i)->responseState == CGI) {
-				if ((*i)->getAssociatedFd(0) > _maxFd) _maxFd = (*i)->getAssociatedFd(0);
-				FD_SET((*i)->getAssociatedFd(0), &_readFdSet);
-				if ((*i)->getAssociatedFd(1) > _maxFd) _maxFd = (*i)->getAssociatedFd(1);
-				FD_SET((*i)->getAssociatedFd(0), &_writeFdSet);
+				if ((*i)->getAssociatedFd(0).fd > _maxFd) _maxFd = (*i)->getAssociatedFd(0).fd;
+				FD_SET((*i)->getAssociatedFd(0).fd, &_readFdSet);
+				if ((*i)->getAssociatedFd(1).fd > _maxFd) _maxFd = (*i)->getAssociatedFd(1).fd;
+				FD_SET((*i)->getAssociatedFd(0).fd, &_writeFdSet);
 			}
 		}
 	}
@@ -102,10 +105,10 @@ void Server::_handleSelect() {
 		}
 		else {
 			for (std::vector<FD>::size_type j = 0; j < (*i)->getAssociatedFdLength(); j++) {
-				if (FD_ISSET((*i)->getAssociatedFd(j), &_readFdSet)) {
+				if (FD_ISSET((*i)->getAssociatedFd(j).fd, &_readFdSet)) {
 					_handlers.handleClient(**i, HandlerHolder::READ);
 				}
-				else if (FD_ISSET((*i)->getAssociatedFd(j), &_writeFdSet)) {
+				else if (FD_ISSET((*i)->getAssociatedFd(j).fd, &_writeFdSet)) {
 					_handlers.handleClient(**i, HandlerHolder::WRITE);
 				}
 			}

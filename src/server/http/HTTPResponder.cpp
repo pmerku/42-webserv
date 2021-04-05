@@ -21,15 +21,20 @@ void HTTPResponder::generateAssociatedResponse(HTTPClient &client) {
 	if (client.responseState == FILE) {
 		client.data.response.setResponse(
 			client.data.response.builder
-			.setHeader("Server", "Not-Apache")
-			.setDate()
-			.setHeader("Connection", "Close")
+			.setHeader("Server", "Not-Apache") // TODO remove
+			.setDate() // TODO remove
+			.setHeader("Connection", "Close") // TODO remove
 			.setBody(client.data.response.getAssociatedDataRaw())
 			.build()
 		);
 		return;
+	} else if (client.responseState == PROXY) {
+		client.data.response.setResponse(
+				client.proxy->response.getAssociatedDataRaw()
+		);
+		return;
 	}
-	// TODO proxy & cgi
+	// TODO cgi
 }
 
 void HTTPResponder::handleError(HTTPClient &client, config::ServerBlock *server, int code, bool doErrorPage) {
@@ -76,9 +81,9 @@ void HTTPResponder::handleError(HTTPClient &client, config::ServerBlock *server,
 	// generate error page
 	client.data.response.builder
 		.setStatus(code)
-		.setHeader("Server", "Not-Apache")
-		.setDate()
-		.setHeader("Connection", "Close")
+		.setHeader("Server", "Not-Apache") // TODO remove
+		.setDate() // TODO remove
+		.setHeader("Connection", "Close") // TODO remove
 		.setHeader("Content-Type", "text/html");
 
 	std::map<int,std::string>::const_iterator statusIt = ResponseBuilder::statusMap.find(code);
@@ -152,11 +157,11 @@ void HTTPResponder::serveDirectory(HTTPClient &client, config::ServerBlock &serv
 		str += "</ul>";
 		::closedir(dir);
 		client.data.response.setResponse(
-	ResponseBuilder("HTTP/1.1")
-			.setStatus(200)
-			.setHeader("Server", "Not-Apache")
-			.setDate()
-			.setHeader("Connection", "Close")
+			ResponseBuilder()
+			.setStatus(200) // TODO remove
+			.setHeader("Server", "Not-Apache") // TODO remove
+			.setDate() // TODO remove
+			.setHeader("Connection", "Close") // TODO remove
 			.setHeader("Content-Type", "text/html")
 			.setBody(str)
 			.build()
@@ -246,17 +251,37 @@ void HTTPResponder::generateResponse(HTTPClient &client) {
 		return;
 	}
 	else {
-		// TODO do proxy
-		route->getProxyUrl();
-		client.data.response.setResponse(
-			ResponseBuilder()
-			.setStatus(200)
-			.setHeader("Server", "Not-Apache")
-			.setDate()
+		handleProxy(client, route->getProxyUrl());
+
+		client.proxy->request.setRequest(
+			RequestBuilder()
+			.setURI("/")
+			.setHeader("Host", "designcourse.com")
 			.setHeader("Connection", "Close")
-			.setBody("Proxy not yet implemented")
+			.setHeader("X-Forwarded-For", "192.168.0.1") // TODO get ip address from client
+			.setHeader("X-Forwarded-Host", client.data.request.data.headers.find("HOST")->second)
+			.setHeader("X-Forwarded-Proto", "http")
 			.build()
 		);
 		return;
 	}
+}
+
+void HTTPResponder::handleProxy(HTTPClient &client, const std::string &url) {
+	globalLogger.logItem(logger::DEBUG, "PROXY handler");
+//	std::string::size_type start = url.find("//");
+//	std::string::size_type end = url.find('/', start);
+//	std::string host = url.substr(start, end);
+//	utils::Uri uri(url.substr(end));
+	(void)url;
+	// parse url
+	// get port (if no port, constructor will default to 80)
+	client.proxy = new Proxy("66.228.62.75", 80);
+//	client.proxy = new Proxy("127.0.0.1", 1337);
+//	client.proxy = new Proxy("127.0.0.1", 8081);
+	client.proxy->createConnection();
+
+	client.addAssociatedFd(client.proxy->getSocket(), associatedFD::WRITE);
+	client.responseState = PROXY;
+	client.connectionState = ASSOCIATED_FD;
 }
