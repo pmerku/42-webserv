@@ -9,6 +9,7 @@
 #include "utils/mutex.hpp"
 #include "server/http/HTTPClientData.hpp"
 #include "server/http/Proxy.hpp"
+#include "netinet/in.h"
 #include <vector>
 
 namespace NotApache {
@@ -49,6 +50,7 @@ namespace NotApache {
 		std::vector<associatedFD>	_associatedFds;
 		time_t 						_createdAt;
 		long 						_timeoutAfter;
+		sockaddr_in					_cli_addr;
 
 	public:
 		ClientWriteState		writeState;
@@ -58,12 +60,13 @@ namespace NotApache {
 		HTTPClientData			data;
 		Proxy					*proxy;
 
-		HTTPClient(FD clientFd, int port, long host);
+		HTTPClient(FD clientFd, int port, long host, sockaddr_in cli_addr);
 		~HTTPClient();
 
 		FD	getFd() const;
 		int getPort() const;
 		long getHost() const;
+		std::string getIp() const;
 
 		void	addAssociatedFd(FD fd, associatedFD::type mode = associatedFD::READ);
 		void	removeAssociatedFd(FD fd);

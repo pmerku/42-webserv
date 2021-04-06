@@ -62,6 +62,6 @@ HTTPClient *TCPListener::acceptClient() {
 	}
 
 	fcntl(client_fd, F_SETFL, O_NONBLOCK);
-	HTTPClient	*out = new HTTPClient(client_fd, _port, _host);
+	HTTPClient	*out = new HTTPClient(client_fd, _port, _host, cli_addr);
 	return out;
 }

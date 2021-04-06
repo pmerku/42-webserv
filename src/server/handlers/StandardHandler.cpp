@@ -14,6 +14,7 @@ const int	StandardHandler::_bufferSize = 1024;
 
 void StandardHandler::stopHandle(HTTPClient &client, bool shouldLock) {
 	if (shouldLock) client.isHandled.lock();
+	client.timeout(false);
 	_eventBus->postEvent(ServerEventBus::CLIENT_STATE_UPDATED);
 	client.isHandled.setNoLock(false);
 	client.isHandled.unlock();

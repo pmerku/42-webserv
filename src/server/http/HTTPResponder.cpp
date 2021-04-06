@@ -251,33 +251,35 @@ void HTTPResponder::generateResponse(HTTPClient &client) {
 		return;
 	}
 	else {
-		handleProxy(client, server, route, route->getProxyUrl());
+		handleProxy(client, server, route);
 		return;
 	}
 }
 
-void HTTPResponder::handleProxy(HTTPClient &client, config::ServerBlock *server, config::RouteBlock *route, const std::string &url) {
+void HTTPResponder::handleProxy(HTTPClient &client, config::ServerBlock *server, config::RouteBlock *route) {
 	globalLogger.logItem(logger::DEBUG, "Handling the proxy connection");
-	(void)url;
 
 	try {
-//		client.proxy = new Proxy("66.228.62.75", 80); // get url and port from config
-//		client.proxy = new Proxy("127.0.0.1", 1337);
-		client.proxy = new Proxy("127.0.0.1", 80);
+
+		client.proxy = new Proxy(route->getProxyUrl().ip, route->getProxyUrl().port);
 		client.proxy->createConnection();
 
 		client.addAssociatedFd(client.proxy->getSocket(), associatedFD::WRITE);
 		client.responseState = PROXY;
 		client.connectionState = ASSOCIATED_FD;
 
+		std::string host = route->getProxyUrl().ip + ":" + utils::intToString(route->getProxyUrl().port);
+		std::string x_client = client.getIp();
+		std::string x_host = client.data.request.data.headers.find("HOST")->second;
+		std::string x_proto = route->getProxyUrl().protocol;
+
 		client.proxy->request.setRequest(
 			RequestBuilder(client.data.request.data)
-			.setHeader("HOST", "designcourse.com") // get ip or domain from config
-			.setHeader("CONNECTION", "Close") // always set so it doesn't hang ?
-			.setHeader("X-FORWARDED-FOR", "192.168.0.1") // get ip from client
-			.setHeader("X-FORWARDED-HOST", client.data.request.data.headers.find("HOST")->second)
-			.setHeader("X-FORWARDED-PROTO", "http") // get protocol from config
-			.setHeader("Forwarded", "for, host, proto") // stitch together all x- headers
+			.setHeader("HOST", host)
+			.setHeader("CONNECTION", "Close") // always set so it doesn't hang
+			.setHeader("X-FORWARDED-FOR", x_client)
+			.setHeader("X-FORWARDED-HOST", x_host)
+			.setHeader("X-FORWARDED-PROTO", x_proto)
 			.build()
 		);
 

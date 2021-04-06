@@ -82,7 +82,7 @@ HTTPParser::ParseReturn		HTTPParser::parseResponseLine(HTTPParseData &data, cons
 	// check if spaces count in line is correct
 	std::vector<std::string> parts = utils::split(line, " ");
 	int spaces = utils::countSpaces(line);
-	if ((spaces != 2 && spaces != 3) || (parts.size() != 3 && parts.size() != 4)) {
+	if ((spaces != 2 && spaces != 3) || (parts.size() != 3 && parts.size() != 4)) { // TODO fix this jank
 		globalLogger.logItem(logger::ERROR, "Invalid response line");
 		data.parseStatusCode = 400;
 		return ERROR;

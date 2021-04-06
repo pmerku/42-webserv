@@ -3,11 +3,12 @@
 //
 
 #include "server/http/HTTPClient.hpp"
+#include "utils/intToString.hpp"
 #include <unistd.h>
 
 using namespace NotApache;
 
-HTTPClient::HTTPClient(FD clientFd, int port, long host): _fd(clientFd), _port(port), _host(host), _associatedFds(), writeState(NO_RESPONSE), connectionState(READING), responseState(NONE), isHandled(false), proxy() {
+HTTPClient::HTTPClient(FD clientFd, int port, long host, sockaddr_in cli_addr): _fd(clientFd), _port(port), _host(host), _associatedFds(), _cli_addr(cli_addr), writeState(NO_RESPONSE), connectionState(READING), responseState(NONE), isHandled(false), proxy() {
 	timeval timeData;
 	::gettimeofday(&timeData, 0);
 	_createdAt = timeData.tv_sec;
@@ -80,4 +81,16 @@ void HTTPClient::timeout(bool useLocks) {
 	connectionState = CLOSED;
 	if (useLocks)
 		isHandled.unlock();
+}
+
+std::string HTTPClient::getIp() const {
+	const char *ip = reinterpret_cast<const char *>(&_cli_addr.sin_addr.s_addr);
+
+	std::string out;
+	for (int i = 0; i < 4; ++i) {
+		if (!out.empty())
+			out += ".";
+		out += utils::intToString(ip[i]);
+	}
+	return out;
 }
