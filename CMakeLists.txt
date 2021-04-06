@@ -4,12 +4,18 @@ project(42-webserv)
 
 # set compiler flags and standard
 set(CMAKE_CXX_STANDARD 98)
-set(CMAKE_CXX_FLAGS "-O3 -Wall -Wextra -Werror -pedantic-errors")
+set(FLAGS "-O3 -Wall -Wextra -Werror -pedantic-errors")
 set(CMAKE_LINK_F)
 
 # set cmake output directory
 set(dir ${CMAKE_CURRENT_SOURCE_DIR})
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${dir}/build)
+
+if (APPLE)
+	set(CMAKE_CXX_FLAGS "${FLAGS} -DBUILD_APPLE=1")
+elseif(UNIX)
+	set(CMAKE_CXX_FLAGS "${FLAGS} -DBUILD_LINUX=1")
+endif ()
 
 # library files
 file(GLOB_RECURSE SOURCE_FILES

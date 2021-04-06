@@ -5,6 +5,7 @@
 #include "server/http/RequestBuilder.hpp"
 #include "utils/intToString.hpp"
 #include "utils/CreateVector.hpp"
+#include "utils/toUpper.hpp"
 #include "server/http/HTTPParser.hpp"
 #include <algorithm>
 
@@ -19,9 +20,7 @@ const std::vector<std::string> RequestBuilder::methodArray =
 			("POST")
 			("PUT")
 			("DELETE")
-			("PATCH")
-			("OPTIONS")
-			("TRACE");
+			("OPTIONS");
 
 RequestBuilder::RequestBuilder() {
 	_method = "GET";
@@ -56,7 +55,7 @@ RequestBuilder::RequestBuilder(const HTTPParseData &data) {
 }
 
 RequestBuilder &RequestBuilder::setURI(const std::string &path) {
-	_uri += path;
+	_uri = path;
 	return *this;
 }
 

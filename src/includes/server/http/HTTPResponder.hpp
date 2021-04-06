@@ -7,6 +7,14 @@
 
 #include <config/blocks/ServerBlock.hpp>
 #include "server/http/HTTPClient.hpp"
+#include <sys/stat.h>
+
+#ifdef BUILD_APPLE
+	#define STAT_TIME_FIELD st_mtimespec
+#endif
+#ifndef STAT_TIME_FIELD
+	#define STAT_TIME_FIELD st_mtim
+#endif
 
 namespace NotApache {
 
@@ -21,7 +29,10 @@ namespace NotApache {
 		static void handleError(HTTPClient &client, config::ServerBlock *server, int code, bool doErrorPage = true);
 		static void handleError(HTTPClient &client, config::ServerBlock *server, config::RouteBlock *route, int code, bool doErrorPage = true);
 
-		static void serveDirectory(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const std::string &dirPath);
+		static void
+		serveDirectory(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const struct ::stat &directoryStat, const std::string &dirPath);
+		static void	prepareFile(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const utils::Uri &file, int code = 200);
+		static void	prepareFile(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const struct ::stat &buf, const utils::Uri &file, int code = 200);
 
 		static void handleProxy(HTTPClient &client, config::ServerBlock *server, config::RouteBlock *route);
 	};

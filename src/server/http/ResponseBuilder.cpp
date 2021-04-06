@@ -144,6 +144,22 @@ ResponseBuilder &ResponseBuilder::setDate() {
 	return *this;
 }
 
+ResponseBuilder &ResponseBuilder::setModifiedDate(timespec tv) {
+	setHeader("LAST-MODIFIED", convertTime(tv.tv_sec));
+	return *this;
+}
+
+ResponseBuilder &ResponseBuilder::setAllowedMethods(const std::vector<std::string> &allowed) {
+	std::string allowedMethods = "";
+	for (std::vector<std::string>::const_iterator it = allowed.begin(); it != allowed.end(); ++it) {
+		if (!allowedMethods.empty())
+			allowedMethods += ", ";
+		allowedMethods += *it;
+	}
+	setHeader("ALLOW", allowedMethods);
+	return *this;
+}
+
 std::string ResponseBuilder::convertTime(time_t time) {
 	char date[128];
 	tm	*currentTime;

@@ -56,7 +56,7 @@ HTTPParser::ParseReturn		HTTPParser::parseRequestLine(HTTPParseData &data, const
 	data.method = methodMap_StoE.find(parts[0])->second;
 
 	// check if URI is valid
-	if (parts[1][0] != '/') {
+	if (parts[1][0] != '/' && parts[1] != "*") {
 		globalLogger.logItem(logger::ERROR, "URI is malformed");
 		data.parseStatusCode = 400;
 		return ERROR;

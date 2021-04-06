@@ -14,6 +14,9 @@ ifeq ($(UNAME_S),Linux)
 	ifeq ($(CXX),g++)
 		CXX_FLAGS += -fPIE
 	endif
+	CXX_FLAGS += -DBUILD_LINUX=1
+else ifeq ($(UNAME_S),Darwin)
+    CXX_FLAGS += -DBUILD_APPLE=1
 endif
 
 ifdef BUILD_DEBUG

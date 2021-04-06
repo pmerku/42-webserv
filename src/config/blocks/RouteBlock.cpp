@@ -124,10 +124,10 @@ void RouteBlock::parseData() {
 	_cgi = "";
 	_plugins.clear();
 	_allowedMethods.clear();
-	_allowedMethods.push_back("GET");_allowedMethods.push_back("POST");
-	_allowedMethods.push_back("PUT");_allowedMethods.push_back("PATCH");
-	_allowedMethods.push_back("DELETE");_allowedMethods.push_back("OPTIONS");
-	_allowedMethods.push_back("HEAD");_allowedMethods.push_back("TRACE");
+	_allowedMethods.push_back("GET");
+	_allowedMethods.push_back("POST");
+	_allowedMethods.push_back("OPTIONS");
+	_allowedMethods.push_back("HEAD");
 
 	if (hasKey("root"))
 		_root = getKey("root")->getArg(0);

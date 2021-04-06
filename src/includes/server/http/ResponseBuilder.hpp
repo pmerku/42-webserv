@@ -12,6 +12,7 @@
 
 #include <map>
 #include <string>
+#include <vector>
 
 namespace NotApache {
 
@@ -43,6 +44,8 @@ namespace NotApache {
 		ResponseBuilder		&setConnection();
 		ResponseBuilder		&removeHeader(const std::string &header);
 		ResponseBuilder		&setDate();
+		ResponseBuilder		&setModifiedDate(timespec tv);
+		ResponseBuilder		&setAllowedMethods(const std::vector<std::string> &allowed);
 		utils::DataList		build();
 	};
 
