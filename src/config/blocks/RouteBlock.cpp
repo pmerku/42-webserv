@@ -16,6 +16,7 @@
 #include "config/validators/StartsWithValidator.hpp"
 #include "config/validators/RegexCompiler.hpp"
 #include "config/validators/PluginValidator.hpp"
+#include "config/validators/UrlValidator.hpp"
 
 using namespace config;
 
@@ -69,8 +70,9 @@ const AConfigBlock::validatorsMapType	RouteBlock::_validators =
 		  .add(new ArgumentLength(1))
 		  .add(new PluginValidator(0))
 		  .build())
-		.addKey("proxy_url", ConfigValidatorListBuilder() // TODO url validator
+		.addKey("proxy_url", ConfigValidatorListBuilder()
 		  .add(new ArgumentLength(1))
+		  .add(new UrlValidator(0))
 		  .add(new Unique())
 		  .build())
 		.addKey("auth_basic", ConfigValidatorListBuilder()
@@ -127,17 +129,16 @@ void RouteBlock::parseData() {
 	_directoryListing = false;
 	_index = "";
 	_saveUploads = "";
-	_proxyUrl = "";
 	_cgiExt = "";
 	_cgi = "";
 	_authBasic = "";
 	_authBasicUserFile = "";
 	_plugins.clear();
 	_allowedMethods.clear();
-	_allowedMethods.push_back("GET");_allowedMethods.push_back("POST");
-	_allowedMethods.push_back("PUT");_allowedMethods.push_back("PATCH");
-	_allowedMethods.push_back("DELETE");_allowedMethods.push_back("OPTIONS");
-	_allowedMethods.push_back("HEAD");_allowedMethods.push_back("TRACE");
+	_allowedMethods.push_back("GET");
+	_allowedMethods.push_back("POST");
+	_allowedMethods.push_back("OPTIONS");
+	_allowedMethods.push_back("HEAD");
 
 	if (hasKey("root"))
 		_root = getKey("root")->getArg(0);
@@ -148,7 +149,7 @@ void RouteBlock::parseData() {
 	if (hasKey("save_uploads"))
 		_saveUploads = getKey("save_uploads")->getArg(0);
 	if (hasKey("proxy_url"))
-		_proxyUrl = getKey("proxy_url")->getArg(0);
+		_proxyUrl = UrlValidator::parseUrl(getKey("proxy_url")->getArg(0));
 	if (hasKey("cgi"))
 		_cgi = getKey("cgi")->getArg(0);
 	if (hasKey("cgi_ext"))
@@ -209,7 +210,7 @@ const std::string &RouteBlock::getSaveUploads() const {
 	return _saveUploads;
 }
 
-const std::string &RouteBlock::getProxyUrl() const {
+const UrlValidator::urlParsed &RouteBlock::getProxyUrl() const {
 	throwNotParsed();
 	return _proxyUrl;
 }
@@ -235,7 +236,7 @@ bool RouteBlock::isAllowedMethod(const std::string &method) const {
 
 bool RouteBlock::shouldDoFile() const {
 	throwNotParsed();
-	return _proxyUrl.empty();
+	return _proxyUrl.protocol.empty();
 }
 
 bool RouteBlock::shouldDoCgi() const {

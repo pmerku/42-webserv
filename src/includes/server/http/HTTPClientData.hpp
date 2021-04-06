@@ -24,7 +24,7 @@ namespace NotApache {
 		bool 						hasProgress;
 		utils::DataList::size_type	packetProgress;
 		utils::DataList::iterator 	currentPacket;
-		ResponseBuilder				builder;
+		RequestBuilder				builder;
 
 		HTTPClientRequest();
 
@@ -46,12 +46,13 @@ namespace NotApache {
 		};
 
 	private:
-		utils::DataList 			_response;
-		utils::DataList 			_associatedData;
+		utils::DataList 		_associatedData;
 
 	public:
 		HTTPClientResponse();
+		explicit HTTPClientResponse(HTTPParseData::HTTPParseType type);
 
+		HTTPParseData				data;
 		bool 						hasProgress;
 		utils::DataList::size_type	packetProgress;
 		utils::DataList::iterator 	currentPacket;
@@ -65,6 +66,7 @@ namespace NotApache {
 		void					setResponse(const utils::DataList &response);
 		utils::DataList			&getAssociatedDataRaw();
 		void					appendAssociatedData(const char *data, utils::DataList::size_type size);
+		void 					appendResponseData(const char *data, utils::DataList::size_type size);
 	};
 
 	class HTTPClientData {
