@@ -7,6 +7,7 @@
 #include "utils/intToString.hpp"
 #include "utils/CreateMap.hpp"
 #include "utils/DataList.hpp"
+#include "utils/toUpper.hpp"
 
 using namespace NotApache;
 
@@ -80,10 +81,14 @@ const std::map<int, std::string> ResponseBuilder::statusMap =
 
 ResponseBuilder::ResponseBuilder() {
 	_protocol = "HTTP/1.1";
+	// set defaults
+	setDefaults();
 }
 
 ResponseBuilder::ResponseBuilder(const std::string &protocol) {
 	_protocol = protocol;
+	// set defaults
+	setDefaults();
 }
 
 ResponseBuilder::ResponseBuilder(const HTTPParseData &data) {
@@ -96,6 +101,8 @@ ResponseBuilder::ResponseBuilder(const HTTPParseData &data) {
 		setBody(data.chunkedData);
 	else
 		setBody(data.data);
+	// set defaults
+	setDefaults();
 }
 
 ResponseBuilder &ResponseBuilder::setStatus(int code) {
@@ -109,6 +116,7 @@ ResponseBuilder &ResponseBuilder::setStatus(int code) {
 }
 
 ResponseBuilder &ResponseBuilder::setHeader(const std::string &key, const std::string &value) {
+	utils::toUpper(const_cast<std::string&>(key));
 	_headerMap[key] = value;
 	return *this;
 }
@@ -156,6 +164,7 @@ ResponseBuilder &ResponseBuilder::setConnection() {
 }
 
 ResponseBuilder &ResponseBuilder::removeHeader(const std::string &header) {
+	utils::toUpper(const_cast<std::string&>(header));
 	for (std::map<std::string, std::string>::iterator it = _headerMap.begin(); it != _headerMap.end(); it++) {
 		if (it->first == header) {
 			_headerMap.erase(it);
@@ -187,7 +196,7 @@ ResponseBuilder &ResponseBuilder::setDefaults() {
 
 	// if body is empty set content-length to 0
 	if (_body.empty())
-		setBody("");
+		setHeader("CONTENT-LENGTH", "0");
 
 	return *this;
 }
@@ -196,9 +205,6 @@ utils::DataList	ResponseBuilder::build() {
 	// HTTP/1.1 {code} {string value} \r\n
 	utils::DataList	output;
 	std::string response = _protocol;
-
-	// set defaults
-	setDefaults();
 
 	response += " " + _statusLine.first;
 	response += " " + _statusLine.second;

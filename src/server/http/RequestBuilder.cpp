@@ -25,6 +25,8 @@ const std::vector<std::string> RequestBuilder::methodArray =
 
 RequestBuilder::RequestBuilder() {
 	_method = "GET";
+	// set defaults
+	setDefaults();
 }
 
 RequestBuilder::RequestBuilder(const std::string &method) {
@@ -32,6 +34,8 @@ RequestBuilder::RequestBuilder(const std::string &method) {
 	if (it == methodArray.end())
 		_method = "GET";
 	_method = method;
+	// set defaults
+	setDefaults();
 }
 
 RequestBuilder::RequestBuilder(const HTTPParseData &data) {
@@ -47,16 +51,17 @@ RequestBuilder::RequestBuilder(const HTTPParseData &data) {
 		setBody(data.chunkedData);
 	else
 		setBody(data.data);
+	// set defaults
+	setDefaults();
 }
 
 RequestBuilder &RequestBuilder::setURI(const std::string &path) {
-	if (path.at(0) != '/')
-		_uri = "/";
 	_uri += path;
 	return *this;
 }
 
 RequestBuilder &RequestBuilder::setHeader(const std::string &key, const std::string &value) {
+	utils::toUpper(const_cast<std::string&>(key));
 	_headerMap[key] = value;
 	return *this;
 }
@@ -94,6 +99,7 @@ std::string RequestBuilder::convertTime(time_t time) {
 }
 
 RequestBuilder &RequestBuilder::removeHeader(const std::string &header) {
+	utils::toUpper(const_cast<std::string&>(header));
 	for (std::map<std::string, std::string>::iterator it = _headerMap.begin(); it != _headerMap.end(); it++) {
 		if (it->first == header) {
 			_headerMap.erase(it);
@@ -129,7 +135,7 @@ RequestBuilder &RequestBuilder::setDefaults() {
 
 	// if body is empty set content-length to 0
 	if (_body.empty())
-		setBody("");
+		setHeader("CONTENT-LENGTH", "0");
 
 	return *this;
 }
@@ -138,9 +144,6 @@ utils::DataList	RequestBuilder::build() {
 	utils::DataList output;
 	// {method} {uri} HTTP/1.1 \r\n
 	std::string request = _method;
-
-	// set defaults
-	setDefaults();
 
 	request += " " + _uri;
 	request += " " + _protocol;
