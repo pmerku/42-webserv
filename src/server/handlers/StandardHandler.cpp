@@ -53,7 +53,6 @@ void StandardHandler::handleAssociatedRead(HTTPClient &client) {
 				client.isHandled.lock();
 				client.connectionState = WRITING;
 				client.writeState = GOT_ASSOCIATED;
-				client.setAssociatedFdMode(fileFd, associatedFD::WRITE);
 				stopHandle(client, false);
 				return;
 			case -1:
@@ -62,8 +61,14 @@ void StandardHandler::handleAssociatedRead(HTTPClient &client) {
 				stopHandle(client);
 				return;
 			default:
-				client.proxy->response.appendAssociatedData(buf, ret);
-				stopHandle(client);
+				client.proxy->response.appendResponseData(buf, ret);
+				client.isHandled.lock();
+				if (_parser->parse(client.proxy->response.data, &client) == HTTPParser::READY_FOR_WRITE) {
+					client.connectionState = WRITING;
+					client.writeState = GOT_ASSOCIATED;
+				}
+				std::cout << client.proxy->response.data << std::endl;
+				stopHandle(client, false);
 				return;
 		}
 	}

@@ -12,7 +12,6 @@
 #include <fcntl.h>
 #include <cerrno>
 #include <dirent.h>
-#include "utils/Uri.hpp"
 #include "server/http/HTTPMimeTypes.hpp"
 
 using namespace NotApache;
@@ -30,7 +29,8 @@ void HTTPResponder::generateAssociatedResponse(HTTPClient &client) {
 		return;
 	} else if (client.responseState == PROXY) {
 		client.data.response.setResponse(
-				client.proxy->response.getAssociatedDataRaw()
+			ResponseBuilder(client.proxy->response.data)
+			.build()
 		);
 		return;
 	}
@@ -251,37 +251,44 @@ void HTTPResponder::generateResponse(HTTPClient &client) {
 		return;
 	}
 	else {
-		handleProxy(client, route->getProxyUrl());
-
-		client.proxy->request.setRequest(
-			RequestBuilder()
-			.setURI("/")
-			.setHeader("Host", "designcourse.com")
-			.setHeader("Connection", "Close")
-			.setHeader("X-Forwarded-For", "192.168.0.1") // TODO get ip address from client
-			.setHeader("X-Forwarded-Host", client.data.request.data.headers.find("HOST")->second)
-			.setHeader("X-Forwarded-Proto", "http")
-			.build()
-		);
+		handleProxy(client, server, route, route->getProxyUrl());
 		return;
 	}
 }
 
-void HTTPResponder::handleProxy(HTTPClient &client, const std::string &url) {
-	globalLogger.logItem(logger::DEBUG, "PROXY handler");
-//	std::string::size_type start = url.find("//");
-//	std::string::size_type end = url.find('/', start);
-//	std::string host = url.substr(start, end);
-//	utils::Uri uri(url.substr(end));
+void HTTPResponder::handleProxy(HTTPClient &client, config::ServerBlock *server, config::RouteBlock *route, const std::string &url) {
+	globalLogger.logItem(logger::DEBUG, "Handling the proxy connection");
 	(void)url;
-	// parse url
-	// get port (if no port, constructor will default to 80)
-	client.proxy = new Proxy("66.228.62.75", 80);
-//	client.proxy = new Proxy("127.0.0.1", 1337);
-//	client.proxy = new Proxy("127.0.0.1", 8081);
-	client.proxy->createConnection();
 
-	client.addAssociatedFd(client.proxy->getSocket(), associatedFD::WRITE);
-	client.responseState = PROXY;
-	client.connectionState = ASSOCIATED_FD;
+	try {
+//		client.proxy = new Proxy("66.228.62.75", 80); // get url and port from config
+//		client.proxy = new Proxy("127.0.0.1", 1337);
+		client.proxy = new Proxy("127.0.0.1", 80);
+		client.proxy->createConnection();
+
+		client.addAssociatedFd(client.proxy->getSocket(), associatedFD::WRITE);
+		client.responseState = PROXY;
+		client.connectionState = ASSOCIATED_FD;
+
+		client.proxy->request.setRequest(
+			RequestBuilder(client.data.request.data)
+			.setHeader("HOST", "designcourse.com") // get ip or domain from config
+			.setHeader("CONNECTION", "Close") // always set so it doesn't hang ?
+			.setHeader("X-FORWARDED-FOR", "192.168.0.1") // get ip from client
+			.setHeader("X-FORWARDED-HOST", client.data.request.data.headers.find("HOST")->second)
+			.setHeader("X-FORWARDED-PROTO", "http") // get protocol from config
+			.setHeader("Forwarded", "for, host, proto") // stitch together all x- headers
+			.build()
+		);
+
+	} catch (Proxy::SocketException &e) {
+		globalLogger.logItem(logger::ERROR, std::string("Proxy error: ") + e.what());
+		handleError(client, server, route, 500);
+	} catch (Proxy::ConnectionException &e) {
+		globalLogger.logItem(logger::ERROR, std::string("Proxy error: ") + e.what());
+		handleError(client, server, route, 502);
+	} catch (std::exception &e) {
+		globalLogger.logItem(logger::ERROR, std::string("Proxy error: ") + e.what());
+		handleError(client, server, route, 500);
+	}
 }

@@ -44,6 +44,7 @@ namespace NotApache {
 
 	public:
 		HTTPClientResponse();
+		explicit HTTPClientResponse(HTTPParseData::HTTPParseType type);
 
 		HTTPParseData				data;
 		bool 						hasProgress;

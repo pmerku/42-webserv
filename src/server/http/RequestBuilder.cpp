@@ -5,6 +5,7 @@
 #include "server/http/RequestBuilder.hpp"
 #include "utils/intToString.hpp"
 #include "utils/CreateVector.hpp"
+#include "server/http/HTTPParser.hpp"
 #include <algorithm>
 
 using namespace NotApache;
@@ -24,7 +25,6 @@ const std::vector<std::string> RequestBuilder::methodArray =
 
 RequestBuilder::RequestBuilder() {
 	_method = "GET";
-	_protocol = "HTTP/1.1";
 }
 
 RequestBuilder::RequestBuilder(const std::string &method) {
@@ -32,6 +32,21 @@ RequestBuilder::RequestBuilder(const std::string &method) {
 	if (it == methodArray.end())
 		_method = "GET";
 	_method = method;
+}
+
+RequestBuilder::RequestBuilder(const HTTPParseData &data) {
+	_method = HTTPParser::methodMap_EtoS.find(data.method)->second;
+	setURI(data.uri.getFull());
+	setProtocol();
+
+	for (std::map<std::string, std::string>::const_iterator it = data.headers.begin(); it != data.headers.end(); ++it) {
+		setHeader(it->first, it->second);
+	}
+
+	if (data.isChunked)
+		setBody(data.chunkedData);
+	else
+		setBody(data.data);
 }
 
 RequestBuilder &RequestBuilder::setURI(const std::string &path) {
@@ -47,13 +62,13 @@ RequestBuilder &RequestBuilder::setHeader(const std::string &key, const std::str
 }
 
 RequestBuilder &RequestBuilder::setBody(const std::string &data, size_t length) {
-	setHeader("Content-Length", utils::intToString(length));
+	setHeader("CONTENT-LENGTH", utils::intToString(length));
 	_body.add(data.c_str());
 	return *this;
 }
 
 RequestBuilder &RequestBuilder::setBody(const utils::DataList &data) {
-	setHeader("Content-Length", utils::intToString(data.size()));
+	setHeader("CONTENT-LENGTH", utils::intToString(data.size()));
 	_body = data;
 	return *this;
 }
@@ -65,7 +80,7 @@ RequestBuilder &RequestBuilder::setBody(const std::string &data) {
 RequestBuilder &RequestBuilder::setDate() {
 	struct timeval tv = {};
 	gettimeofday(&tv, NULL);
-	setHeader("Date", convertTime(tv.tv_sec));
+	setHeader("DATE", convertTime(tv.tv_sec));
 	return *this;
 }
 
@@ -88,9 +103,27 @@ RequestBuilder &RequestBuilder::removeHeader(const std::string &header) {
 	return *this;
 }
 
+RequestBuilder &RequestBuilder::setProtocol() {
+	_protocol = "HTTP/1.1";
+	return *this;
+}
+
+RequestBuilder &RequestBuilder::setProtocol(const std::string &protocol) {
+	_protocol = protocol;
+	return *this;
+}
+
 RequestBuilder &RequestBuilder::setDefaults() {
+	// if no request URI
+	if (_uri.empty())
+		setURI("/");
+
+	// if no protocol
+	if (_protocol.empty())
+		setProtocol();
+
 	// if no date header set it
-	std::map<std::string, std::string>::iterator it = _headerMap.find("Date");
+	std::map<std::string, std::string>::iterator it = _headerMap.find("DATE");
 	if (it == _headerMap.end())
 		setDate();
 

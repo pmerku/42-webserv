@@ -30,6 +30,27 @@ namespace NotApache {
 		FD		getSocket() const;
 		void 		setURI(const utils::Uri &uri);
 		utils::Uri	getURI() const;
+
+		class ProxyException : public std::exception {
+		public:
+			const char *what() const throw() {
+				return "Failed to create proxy";
+			}
+		};
+
+		class SocketException : public ProxyException {
+		public:
+			const char *what() const throw() {
+				return "Cannot create socket";
+			}
+		};
+
+		class ConnectionException : public ProxyException {
+		public:
+			const char *what() const throw() {
+				return "Cannot connect to socket";
+			}
+		};
 	};
 
 } // namespace NotApache

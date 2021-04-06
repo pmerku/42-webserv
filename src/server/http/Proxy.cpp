@@ -12,11 +12,11 @@
 
 using namespace NotApache;
 
-Proxy::Proxy(const std::string &url, int port) : _url(url), _port(port) {
+Proxy::Proxy(const std::string &url, int port) : _url(url), _port(port), response(HTTPParseData::RESPONSE) {
 	_socket = ::socket(AF_INET, SOCK_STREAM, 0);
 	if (_socket < 0)
-		// TODO error handling
-		::fcntl(_socket, O_NONBLOCK);
+		ERROR_THROW(SocketException());
+	::fcntl(_socket, O_NONBLOCK);
 }
 
 Proxy::~Proxy() {
@@ -29,16 +29,8 @@ void Proxy::createConnection() const {
 	_proxyAddress.sin_addr.s_addr = ::inet_addr(_url.c_str());
 	_proxyAddress.sin_port = htons(_port);
 
-	if (::connect(_socket, reinterpret_cast<struct sockaddr*>(&_proxyAddress), sizeof(_proxyAddress)) < 0) {
-		// TODO error page
-	}
-	// generate request
-
-	// write to _socket the request
-
-	// read from _socket for response
-
-	// write _socket response to client
+	if (::connect(_socket, reinterpret_cast<struct sockaddr*>(&_proxyAddress), sizeof(_proxyAddress)) < 0)
+		ERROR_THROW(ConnectionException());
 }
 
 FD Proxy::getSocket() const {

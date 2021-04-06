@@ -7,11 +7,18 @@
 using namespace NotApache;
 
 HTTPClientRequest::HTTPClientRequest():
-		_associatedData(),
-		data(),
-		hasProgress(false),
-		packetProgress(0),
-		currentPacket(data.data.begin()) {}
+	_associatedData(),
+	data(),
+	hasProgress(false),
+	packetProgress(0),
+	currentPacket(data.data.begin()) {}
+
+HTTPClientResponse::HTTPClientResponse(HTTPParseData::HTTPParseType type) :
+	_associatedData(),
+	data(type),
+	hasProgress(false),
+	packetProgress(0),
+	currentPacket(data.data.begin()) {}
 
 utils::DataList &HTTPClientRequest::getRequest() {
 	return data.data;
