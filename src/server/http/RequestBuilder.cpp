@@ -6,6 +6,7 @@
 #include "utils/ErrorThrow.hpp"
 #include "utils/intToString.hpp"
 #include "utils/CreateVector.hpp"
+#include "utils/toUpper.hpp"
 #include <algorithm>
 
 using namespace NotApache;
@@ -19,9 +20,7 @@ const std::vector<std::string> RequestBuilder::methodArray =
 			("POST")
 			("PUT")
 			("DELETE")
-			("PATCH")
-			("OPTIONS")
-			("TRACE");
+			("OPTIONS");
 
 RequestBuilder::RequestBuilder() {
 	_method = "GET";
@@ -35,13 +34,12 @@ RequestBuilder::RequestBuilder(const std::string &method) {
 }
 
 RequestBuilder &RequestBuilder::setURI(const std::string &path) {
-	if (path.at(0) != '/')
-		ERROR_THROW(URIError());
 	_uri = path;
 	return *this;
 }
 
 RequestBuilder &RequestBuilder::setHeader(const std::string &key, const std::string &value) {
+	utils::toUpper(const_cast<std::string&>(key));
 	_headerMap[key] = value;
 	return *this;
 }
