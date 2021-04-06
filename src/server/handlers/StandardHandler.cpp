@@ -25,7 +25,7 @@ StandardHandler::IOReturn StandardHandler::doRead(FD fd, utils::DataList &readab
 	ssize_t	ret = ::read(fd, buf, _bufferSize);
 	switch (ret) {
 		case 0:
-			return EOF;
+			return IO_EOF;
 		case -1:
 			globalLogger.logItem(logger::ERROR, "Failed to read from file FD");
 			return IO_ERROR;
@@ -46,7 +46,7 @@ StandardHandler::IOReturn StandardHandler::doWrite(FD fd, HTTPClientRequest &wri
 		writable.hasProgress = true;
 	}
 	if (writable.currentPacket == data.end())
-		return EOF;
+		return IO_EOF;
 	std::string::size_type	pos = writable.packetProgress;
 	std::string::size_type	len = writable.currentPacket->size - pos;
 	ssize_t ret = ::write(fd, writable.currentPacket->data + pos, len);
@@ -65,7 +65,7 @@ StandardHandler::IOReturn StandardHandler::doWrite(FD fd, HTTPClientRequest &wri
 			}
 			if (writable.currentPacket == data.end()) {
 				// wrote entire thing, closing
-				return EOF;
+				return IO_EOF;
 			}
 			break;
 	}
@@ -76,7 +76,7 @@ void StandardHandler::handleAssociatedRead(HTTPClient &client) {
 	globalLogger.logItem(logger::DEBUG, "Handling associated file descriptors");
 	if (client.responseState == FILE) {
 		IOReturn ret = doRead(client.getAssociatedFd(0).fd, client.data.response.getAssociatedDataRaw());
-		if (ret == EOF) {
+		if (ret == IO_EOF) {
 			client.isHandled.lock();
 			client.connectionState = WRITING;
 			client.writeState = GOT_ASSOCIATED;
@@ -89,7 +89,7 @@ void StandardHandler::handleAssociatedRead(HTTPClient &client) {
 	// handle proxy
 	else if (client.responseState == PROXY) {
 		IOReturn ret = doRead(client.getAssociatedFd(0).fd, client.data.response.getAssociatedDataRaw());
-		if (ret == EOF) {
+		if (ret == IO_EOF) {
 			client.isHandled.lock();
 			client.connectionState = WRITING;
 			client.writeState = GOT_ASSOCIATED;
@@ -118,7 +118,7 @@ void StandardHandler::read(HTTPClient &client) {
 	}
 
 	IOReturn ret = doRead(client.getFd(), client.data.request.getRequest());
-	if (ret == EOF) {
+	if (ret == IO_EOF) {
 		client.isHandled.lock();
 		client.connectionState = CLOSED;
 		stopHandle(client, false);

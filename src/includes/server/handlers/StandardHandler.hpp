@@ -12,7 +12,7 @@ namespace NotApache {
 	private:
 		static const int	_bufferSize;
 		enum IOReturn {
-			EOF,
+			IO_EOF,
 			IO_ERROR,
 			SUCCESS
 		};
