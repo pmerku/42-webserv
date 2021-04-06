@@ -5,6 +5,7 @@
 #include "server/Server.hpp"
 #include "server/global/GlobalConfig.hpp"
 #include <unistd.h>
+#include <errno.h>
 
 using namespace NotApache;
 
@@ -16,7 +17,7 @@ Server::SelectReturn Server::_runSelect() {
 	if (ret == 0)
 		return TIMEOUT;
 	else if (ret == -1)
-		return ERROR;
+		return errno == EINTR ? TIMEOUT : ERROR; // treat EINTR as TIMEOUT
 	return SUCCESS;
 }
 
@@ -57,14 +58,17 @@ void Server::_createFdSets() {
 		}
 		else if ((*i)->connectionState == ASSOCIATED_FD) {
 			if ((*i)->responseState == FILE || (*i)->responseState == PROXY) {
-				if ((*i)->getAssociatedFd(0) > _maxFd) _maxFd = (*i)->getAssociatedFd(0);
-				FD_SET((*i)->getAssociatedFd(0), &_readFdSet);
+				if ((*i)->getAssociatedFd(0).fd > _maxFd) _maxFd = (*i)->getAssociatedFd(0).fd;
+				if ((*i)->getAssociatedFd(0).mode == associatedFD::READ)
+					FD_SET((*i)->getAssociatedFd(0).fd, &_readFdSet);
+				else
+					FD_SET((*i)->getAssociatedFd(0).fd, &_writeFdSet);
 			}
 			else if ((*i)->responseState == CGI) {
-				if ((*i)->getAssociatedFd(0) > _maxFd) _maxFd = (*i)->getAssociatedFd(0);
-				FD_SET((*i)->getAssociatedFd(0), &_readFdSet);
-				if ((*i)->getAssociatedFd(1) > _maxFd) _maxFd = (*i)->getAssociatedFd(1);
-				FD_SET((*i)->getAssociatedFd(0), &_writeFdSet);
+				if ((*i)->getAssociatedFd(0).fd > _maxFd) _maxFd = (*i)->getAssociatedFd(0).fd;
+				FD_SET((*i)->getAssociatedFd(0).fd, &_readFdSet);
+				if ((*i)->getAssociatedFd(1).fd > _maxFd) _maxFd = (*i)->getAssociatedFd(1).fd;
+				FD_SET((*i)->getAssociatedFd(0).fd, &_writeFdSet);
 			}
 		}
 	}
@@ -101,10 +105,10 @@ void Server::_handleSelect() {
 		}
 		else {
 			for (std::vector<FD>::size_type j = 0; j < (*i)->getAssociatedFdLength(); j++) {
-				if (FD_ISSET((*i)->getAssociatedFd(j), &_readFdSet)) {
+				if (FD_ISSET((*i)->getAssociatedFd(j).fd, &_readFdSet)) {
 					_handlers.handleClient(**i, HandlerHolder::READ);
 				}
-				else if (FD_ISSET((*i)->getAssociatedFd(j), &_writeFdSet)) {
+				else if (FD_ISSET((*i)->getAssociatedFd(j).fd, &_writeFdSet)) {
 					_handlers.handleClient(**i, HandlerHolder::WRITE);
 				}
 			}
@@ -131,6 +135,7 @@ void Server::_clientCleanup() {
 
 		// if closed & is not being handled. then set isHandled to true and close client
 		bool isClosed = (*i)->connectionState == CLOSED;
+		if (_shouldShutdown) isClosed = true; // always treat client as closed if it should shutdown
 		if (isClosed) {
 			if ((*i)->isHandled.get())
 				isClosed = false;
@@ -163,6 +168,10 @@ void Server::startServer(config::RootBlock *c) {
 	while (true) {
 		// cleanup old clients (if any)
 		_clientCleanup();
+
+		// shutdown if no more clients are active
+		if (_shouldShutdown && _clients.empty())
+			return;
 
 		// create fd sets for select
 		_createFdSets();
@@ -205,6 +214,11 @@ Server::~Server() {
 	delete configuration;
 }
 
-Server::Server(): _readFdSet(), _writeFdSet(), _maxFd(), _termClient(STDIN_FILENO) {
+Server::Server(): _readFdSet(), _writeFdSet(), _maxFd(), _shouldShutdown(false), _termClient(STDIN_FILENO) {}
 
+void Server::shutdownServer() {
+	globalLogger.logItem(logger::INFO, "Received shutdown signal, gracefully shutting down");
+	_shouldShutdown = true;
+	// trigger a select iteration so it doesnt wait for a timeout
+	_eventBus.postEvent(ServerEventBus::CLIENT_STATE_UPDATED);
 }

@@ -18,7 +18,7 @@ namespace config {
 
 		class HTTPMethodValidatorException : public ConfigException {
 		protected:
-			const char *getTemplate() const throw() {
+			std::string getTemplate() const throw() {
 				return "Invalid HTTP method as argument";
 			}
 

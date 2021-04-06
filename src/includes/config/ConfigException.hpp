@@ -19,7 +19,7 @@ namespace config {
 		const ConfigLine	_line;
 		const AConfigBlock	*_block;
 
-		virtual const char	*getTemplate() const throw() {
+		virtual std::string getTemplate() const throw() {
 			return "{KEY} is invalid inside of {BLOCK_NAME}";
 		}
 

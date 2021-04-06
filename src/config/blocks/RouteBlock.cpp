@@ -12,13 +12,20 @@
 #include "config/validators/HTTPMethodValidator.hpp"
 #include "config/validators/IsDirectory.hpp"
 #include "config/validators/IsFile.hpp"
+#include "config/validators/FileNameValidator.hpp"
+#include "config/validators/StartsWithValidator.hpp"
+#include "config/validators/RegexCompiler.hpp"
+#include "config/validators/PluginValidator.hpp"
+#include "config/validators/UrlValidator.hpp"
 
 using namespace config;
 
 const AConfigBlock::validatorsMapType	RouteBlock::_validators =
 		ConfigValidatorBuilder()
-		.addKey("location", ConfigValidatorListBuilder() // TODO location validator (start with slash) + regex validator
+		.addKey("location", ConfigValidatorListBuilder()
 		  .add(new ArgumentLength(1))
+		  .add(new StartsWithValidator(0, '/'))
+		  .add(new RegexCompiler(0))
 		  .add(new Unique())
 		  .build())
 		.addKey("allowed_methods", ConfigValidatorListBuilder()
@@ -36,17 +43,22 @@ const AConfigBlock::validatorsMapType	RouteBlock::_validators =
 		  .add(new BooleanValidator(0))
 		  .add(new Unique())
 		  .build())
-		.addKey("index", ConfigValidatorListBuilder() // TODO filename validator
+		.addKey("index", ConfigValidatorListBuilder()
 		  .add(new ArgumentLength(1))
+		  .add(new FileNameValidator(0))
 		  .add(new Unique())
 		  .build())
-		.addKey("cgi", ConfigValidatorListBuilder() // TODO requires cgi_ext validator
+		.addKey("cgi", ConfigValidatorListBuilder()
 		  .add(new ArgumentLength(1))
 		  .add(new Unique())
+		  .add(new RequiredKey("cgi_ext", true))
 		  .add(new IsFile(0))
 		  .build())
-	  	.addKey("cgi_ext", ConfigValidatorListBuilder() // TODO file extension validator
+	  	.addKey("cgi_ext", ConfigValidatorListBuilder()
 		  .add(new ArgumentLength(1))
+		  .add(new FileNameValidator(0))
+		  .add(new StartsWithValidator(0, '.', true))
+		  .add(new RequiredKey("cgi", true))
 		  .add(new Unique())
 		  .build())
 		.addKey("save_uploads", ConfigValidatorListBuilder()
@@ -54,11 +66,13 @@ const AConfigBlock::validatorsMapType	RouteBlock::_validators =
 		  .add(new Unique())
 		  .add(new IsDirectory(0))
 		  .build())
-		.addKey("use_plugin", ConfigValidatorListBuilder() // TODO plugin validator
+		.addKey("use_plugin", ConfigValidatorListBuilder()
 		  .add(new ArgumentLength(1))
+		  .add(new PluginValidator(0))
 		  .build())
-		.addKey("proxy_url", ConfigValidatorListBuilder() // TODO url validator
+		.addKey("proxy_url", ConfigValidatorListBuilder()
 		  .add(new ArgumentLength(1))
+		  .add(new UrlValidator(0))
 		  .add(new Unique())
 		  .build())
 		.build();
@@ -100,21 +114,20 @@ void	RouteBlock::cleanup() {
 	}
 }
 
-// TODO plugin parsing
 void RouteBlock::parseData() {
 	_location = regex::Regex(getKey("location")->getArg(0));
 	_root = "";
 	_directoryListing = false;
 	_index = "";
 	_saveUploads = "";
-	_proxyUrl = "";
 	_cgiExt = "";
 	_cgi = "";
+	_plugins.clear();
 	_allowedMethods.clear();
-	_allowedMethods.push_back("GET");_allowedMethods.push_back("POST");
-	_allowedMethods.push_back("PUT");_allowedMethods.push_back("PATCH");
-	_allowedMethods.push_back("DELETE");_allowedMethods.push_back("OPTIONS");
-	_allowedMethods.push_back("HEAD");_allowedMethods.push_back("TRACE");
+	_allowedMethods.push_back("GET");
+	_allowedMethods.push_back("POST");
+	_allowedMethods.push_back("OPTIONS");
+	_allowedMethods.push_back("HEAD");
 
 	if (hasKey("root"))
 		_root = getKey("root")->getArg(0);
@@ -125,7 +138,7 @@ void RouteBlock::parseData() {
 	if (hasKey("save_uploads"))
 		_saveUploads = getKey("save_uploads")->getArg(0);
 	if (hasKey("proxy_url"))
-		_proxyUrl = getKey("proxy_url")->getArg(0);
+		_proxyUrl = UrlValidator::parseUrl(getKey("proxy_url")->getArg(0));
 	if (hasKey("cgi"))
 		_cgi = getKey("cgi")->getArg(0);
 	if (hasKey("cgi_ext"))
@@ -134,6 +147,10 @@ void RouteBlock::parseData() {
 		_allowedMethods.clear();
 		for (ConfigLine::arg_size i = 0; i < getKey("allowed_methods")->getArgLength(); i++)
 			_allowedMethods.push_back(getKey("allowed_methods")->getArg(i));
+	}
+	for (std::vector<ConfigLine>::const_iterator i = _lines.begin(); i != _lines.end(); ++i) {
+		if (i->getKey() != "use_plugin") continue;
+		_plugins.push_back(i->getArg(0));
 	}
 	_isParsed = true;
 }
@@ -178,7 +195,7 @@ const std::string &RouteBlock::getSaveUploads() const {
 	return _saveUploads;
 }
 
-const std::string &RouteBlock::getProxyUrl() const {
+const UrlValidator::urlParsed &RouteBlock::getProxyUrl() const {
 	throwNotParsed();
 	return _proxyUrl;
 }
@@ -194,7 +211,7 @@ bool RouteBlock::isAllowedMethod(const std::string &method) const {
 
 bool RouteBlock::shouldDoFile() const {
 	throwNotParsed();
-	return _proxyUrl.empty();
+	return _proxyUrl.protocol.empty();
 }
 
 bool RouteBlock::shouldDoCgi() const {

@@ -7,6 +7,7 @@
 
 #include "config/AConfigBlock.hpp"
 #include "regex/Regex.hpp"
+#include "config/validators/UrlValidator.hpp"
 
 namespace config {
 
@@ -30,13 +31,14 @@ namespace config {
 	private:
 		regex::Regex				_location;
 		std::vector<std::string>	_allowedMethods;
+		std::vector<std::string>	_plugins;
 		std::string					_root;
 		bool						_directoryListing;
 		std::string					_index;
 		std::string					_cgi;
 		std::string					_cgiExt;
 		std::string					_saveUploads;
-		std::string					_proxyUrl;
+		UrlValidator::urlParsed		_proxyUrl;
 
 	public:
 		regex::Regex &getLocation();
@@ -47,7 +49,7 @@ namespace config {
 		const std::string &getCgi() const;
 		const std::string &getCgiExt() const;
 		const std::string &getSaveUploads() const;
-		const std::string &getProxyUrl() const;
+		const UrlValidator::urlParsed &getProxyUrl() const;
 		/// return if it should serve files (if false -> proxy)
 		bool shouldDoFile() const;
 		/// return if it cgi is enabled
