@@ -15,10 +15,6 @@
 #include <unistd.h>
 #include "server/http/HTTPMimeTypes.hpp"
 
-
-
-#include <string.h>
-
 using namespace NotApache;
 
 void HTTPResponder::generateAssociatedResponse(HTTPClient &client) {
@@ -220,7 +216,7 @@ void HTTPResponder::serveFile(HTTPClient &client, config::ServerBlock &server, c
 
 void HTTPResponder::uploadFile(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const std::string &f) {
 	struct ::stat buf = {};
-	std::string message = "Successfully created file!";
+	std::string message = "Successfully updated file!";
 
 	// get file data
 	utils::Uri file = f;
@@ -232,21 +228,22 @@ void HTTPResponder::uploadFile(HTTPClient &client, config::ServerBlock &server, 
 				handleError(client, &server, &route, 500);
 			return;
 		}
-		message = "Successfully updated file!";
+		message = "Successfully created file!";
 	}
 
 	// create the file
-	// TODO no 777 permissions
 	// TODO empty body breaks everything
-	// TODO use config for upload directory
-	FD uploadFd = ::open(file.path.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0777);
+	FD uploadFd = ::open(file.path.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
 	if (uploadFd == -1) {
-		std::cout << strerror(errno) << std::endl;
-		handleError(client, &server, 500);
+		if (errno == ENOENT)
+			handleError(client, &server, 404);
+		else
+			handleError(client, &server, 500);
 		return;
 	}
 
 	// setup client for uploading
+	client.data.response.builder.setHeader("Content-Type", "text/html");
 	client.data.response.builder.setBody(std::string("<h1>") + message + "</h1>");
 	client.addAssociatedFd(uploadFd, associatedFD::WRITE);
 	client.responseState = NotApache::UPLOAD;
@@ -320,6 +317,10 @@ void HTTPResponder::generateResponse(HTTPClient &client) {
 
 	if (route->shouldDoFile()) {
 		utils::Uri file = route->getRoot();
+
+		// use upload directory instead for upload modifications
+		if (client.data.request.data.method == DELETE || client.data.request.data.method == PUT)
+			file = utils::Uri(route->getSaveUploads());
 		file.appendPath(uri.path);
 		if (client.data.request.data.method == DELETE)
 			deleteFile(client, *server, *route, file.path);
