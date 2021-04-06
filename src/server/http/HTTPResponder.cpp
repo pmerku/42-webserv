@@ -198,6 +198,7 @@ void HTTPResponder::serveFile(HTTPClient &client, config::ServerBlock &server, c
 
 	// check autorization
 	if (route.getAuthBasic().empty()) {
+		std::cout << "TEST\n";
 		std::map<std::string, std::string>::iterator it = client.data.request.data.headers.find("AUTHORIZATION");
 		if (it == client.data.request.data.headers.end()) {
 			handleError(client, &server, &route, 401);
@@ -258,7 +259,7 @@ bool HTTPResponder::checkCredentials(const std::string& authFile, const std::str
 	fd = ::open(authFile.c_str(), O_RDONLY);
 	if (fd == -1)
 		ERROR_THROW(OpenFail());
-	while (ret = ::read(fd, &buf, LINE_MAX) > 0) {
+	while ((ret = ::read(fd, &buf, LINE_MAX) > 0)) {
 		buf[ret] = '\0';
 		fileContent += buf;
 		if (fileContent.size() > 10000)

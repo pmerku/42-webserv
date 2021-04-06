@@ -30,6 +30,7 @@ namespace config {
 	private:
 		regex::Regex				_location;
 		std::vector<std::string>	_allowedMethods;
+		std::vector<std::string>	_plugins;
 		std::string					_root;
 		bool						_directoryListing;
 		std::string					_index;

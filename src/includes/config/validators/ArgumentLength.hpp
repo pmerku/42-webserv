@@ -23,7 +23,7 @@ namespace config {
 
 		class ArgumentLengthException: public ConfigException {
 		protected:
-			const char * getTemplate() const throw() {
+			std::string getTemplate() const throw() {
 				return "Argument length for {BLOCK_NAME}/{KEY} is invalid";
 			}
 

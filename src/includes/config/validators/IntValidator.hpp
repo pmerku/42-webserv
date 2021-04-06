@@ -24,7 +24,7 @@ namespace config {
 
 		class IntValidatorException : public ConfigException {
 		protected:
-			const char *getTemplate() const throw() {
+			std::string getTemplate() const throw() {
 				return "Key {KEY} must be a number";
 			}
 
@@ -34,7 +34,7 @@ namespace config {
 
 		class IntValidatorRangeException : public ConfigException {
 		protected:
-			const char *getTemplate() const throw() {
+			std::string getTemplate() const throw() {
 				return "Key {KEY} is outside of range";
 			}
 
