@@ -14,7 +14,7 @@ namespace utils {
 	public:
 		typedef unsigned long	size_type;
 
-	//private:
+	private:
 		class DataListSection {
 		private:
 			static void	copyData(const char *in, size_type size, char **out) {
