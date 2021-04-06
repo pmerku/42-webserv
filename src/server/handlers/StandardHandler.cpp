@@ -36,7 +36,7 @@ void StandardHandler::handleAssociatedRead(HTTPClient &client) {
 				return;
 			case -1:
 				globalLogger.logItem(logger::ERROR, "Failed to read from associated file FD");
-				globalLogger.logItem(logger::ERROR, std::string("Failed to read: ") + std::strerror(errno));
+				globalLogger.logItem(logger::ERROR, std::string("Failed to read: ") + std::strerror(errno)); // TODO remove
 				stopHandle(client);
 				return;
 			default:
@@ -58,7 +58,7 @@ void StandardHandler::handleAssociatedRead(HTTPClient &client) {
 				return;
 			case -1:
 				globalLogger.logItem(logger::ERROR, "Failed to read from associated file FD");
-				globalLogger.logItem(logger::ERROR, std::string("Failed to read: ") + std::strerror(errno));
+				globalLogger.logItem(logger::ERROR, std::string("Failed to read: ") + std::strerror(errno)); // TODO remove
 				stopHandle(client);
 				return;
 			default:
@@ -93,7 +93,7 @@ void StandardHandler::read(HTTPClient &client) {
 			return;
 		case -1:
 			globalLogger.logItem(logger::ERROR, "Failed to read from client");
-			globalLogger.logItem(logger::ERROR, std::string("Failed to read: ") + std::strerror(errno));
+			globalLogger.logItem(logger::ERROR, std::string("Failed to read: ") + std::strerror(errno)); // TODO remove
 			stopHandle(client);
 			return;
 		default:
@@ -127,7 +127,7 @@ void StandardHandler::handleAssociatedWrite(HTTPClient &client) {
 		switch (ret) {
 			case -1:
 				globalLogger.logItem(logger::ERROR, "Failed to write to server");
-				globalLogger.logItem(logger::ERROR, std::string("Failed to write: ") + std::strerror(errno));
+				globalLogger.logItem(logger::ERROR, std::string("Failed to write: ") + std::strerror(errno)); // TODO remove
 				client.isHandled = false;
 				return;
 			case 0:
@@ -183,7 +183,7 @@ void StandardHandler::write(HTTPClient &client) {
 		switch (ret) {
 			case -1:
 				globalLogger.logItem(logger::ERROR, "Failed to write to client");
-				globalLogger.logItem(logger::ERROR, std::string("Failed to write: ") + std::strerror(errno));
+				globalLogger.logItem(logger::ERROR, std::string("Failed to write: ") + std::strerror(errno)); // TODO remove
 				client.isHandled = false;
 				return;
 			case 0:
