@@ -34,6 +34,14 @@ void HTTPResponder::generateAssociatedResponse(HTTPClient &client) {
 		return;
 	}
 	// TODO proxy & cgi
+	//else if (client.responseState == CGI) { //CHECK
+	//	HTTPParser.client...
+	//	client.data.response.setResponse(
+
+	//	.build()
+	//	);
+	//	return;
+	//}	
 }
 
 void HTTPResponder::handleError(HTTPClient &client, config::ServerBlock *server, int code, bool doErrorPage) {
@@ -42,15 +50,17 @@ void HTTPResponder::handleError(HTTPClient &client, config::ServerBlock *server,
 
 void HTTPResponder::handleError(HTTPClient &client, config::ServerBlock *server,  config::RouteBlock *route, int code, bool doErrorPage) {
 	// Request authentication
-	if (code == 401) {
-		client.data.response.setResponse(
-			ResponseBuilder("HTTP/1.1")
-			.setStatus(401)
-			.setHeader("WWW-AUTHENTICATE", "Basic realm=\"Not-Apache\"")
-			.setHeader("Connection", "Close")
-			.build()
-		);
-		return ;
+	if (code == 401 && route) {
+		client.data.response.builder.setHeader("WWW-AUTHENTICATE", "Basic realm=\"Not-Apache\"");
+
+		//client.data.response.setResponse(
+		//	ResponseBuilder("HTTP/1.1")
+		//	.setStatus(401)
+		//	.setHeader("WWW-AUTHENTICATE", "Basic realm=\"Not-Apache\"")
+			//.setHeader("Connection", "Close")
+			//.build()
+		//);
+		//return ;
 	}
 	// allow header in 405
 	if (code == 405) {
@@ -186,6 +196,19 @@ void HTTPResponder::serveDirectory(HTTPClient &client, config::ServerBlock &serv
 void HTTPResponder::serveFile(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const std::string &f) {
 	struct stat buf = {};
 
+	// check autorization
+	if (route.getAuthBasic().empty()) {
+		std::map<std::string, std::string>::iterator it = client.data.request.data.headers.find("AUTHORIZATION");
+		if (it == client.data.request.data.headers.end()) {
+			handleError(client, &server, &route, 401);
+			return ;
+		}
+		else if (!checkCredentials(route.getAuthBasicUserFile(), it->second)) { // try/catch?
+			handleError(client, &server, &route, 403); // is 403 this right in all cases
+			return ;
+		}
+	}
+
 	// get file data
 	utils::Uri file = f;
 	if (::stat(file.path.c_str(), &buf) == -1) {
@@ -227,28 +250,33 @@ void HTTPResponder::serveFile(HTTPClient &client, config::ServerBlock &server, c
 
 bool HTTPResponder::checkCredentials(const std::string& authFile, const std::string& credentials) {
 	FD fd;
-	char buf[LINE_MAX];
+	int ret = 1;
+	char buf[255];
+	std::string fileContent; // TODO parse file?
 
 	// open and read from "password database"
 	fd = ::open(authFile.c_str(), O_RDONLY);
 	if (fd == -1)
 		ERROR_THROW(OpenFail());
-	int ret = ::read(fd, &buf, LINE_MAX);
+	while (ret = ::read(fd, &buf, LINE_MAX) > 0) {
+		buf[ret] = '\0';
+		fileContent += buf;
+		if (fileContent.size() > 10000)
+			return false; // TODO throw something
+	}
 	if (ret == -1)
 		ERROR_THROW(ReadFail());	
-	buf[ret] = '\0';
 
 	// split per user
-	std::string file(buf); // TODO parse file?
-	std::vector<std::string> users = utils::split(file, "\n");
+	std::vector<std::string> userPasswordPair = utils::split(fileContent, "\n");
 	
 	// Check header
-	if (credentials.find("Basic ", 0, 6) == std::string::npos)
-		return false;
+	if (credentials.find("Basic ", 0, 6) != 0)
+		return false; // TODO throw something
 	
 	// Find match
-	for (size_t i = 0; i < users.size(); ++i) {
-		if (utils::base64_decode(credentials.substr(6)) == users[i])
+	for (size_t i = 0; i < userPasswordPair.size(); ++i) {
+		if (utils::base64_decode(credentials.substr(6)) == userPasswordPair[i])
 			return true;
 	}
 	return false;
@@ -283,19 +311,6 @@ void HTTPResponder::generateResponse(HTTPClient &client) {
 	if (!route->isAllowedMethod(HTTPParser::methodMap_EtoS.find(client.data.request.data.method)->second)) {
 		handleError(client, server, route, 405);
 		return;
-	}
-
-	// check autorization
-	if (route->getAuthBasic().size()) {
-		std::map<std::string, std::string>::iterator it = client.data.request.data.headers.find("AUTHORIZATION");
-		if (it == client.data.request.data.headers.end()) {
-			handleError(client, server, route, 401);
-			return ;
-		}
-		else if (!checkCredentials(route->getAuthBasicUserFile(), it->second)) {
-			handleError(client, server, route, 400); // TODO 403 forbidden? is this right in all cases
-			return ;
-		}
 	}
 
 	if (route->shouldDoFile()) {
@@ -363,7 +378,7 @@ void	HTTPResponder::setEnv(HTTPClient& client, CGIenv::env& envp, std::string& u
 // TODO writing body -> wait for primoz
 // TODO parsing body
 // headers and body
-// 6 headers?
+// 2 headers?
 // Add unknown headers
 
 void	HTTPResponder::runCGI(HTTPClient& client, const std::string &f, const std::string& cgi) {
@@ -426,8 +441,8 @@ void	HTTPResponder::runCGI(HTTPClient& client, const std::string &f, const std::
 		ERROR_THROW(CloseFail());
 
 	client.addAssociatedFd(pipefd[0]); //
-	client.data.response.builder.setHeader("Content-Type", "text/html"); //
-	client.data.response.builder.setStatus(200); //
-	client.responseState = FILE; // 
+	//client.data.response.builder.setHeader("Content-Type", "text/html"); //
+	//client.data.response.builder.setStatus(200); //
+	client.responseState = CGI; // 
 	client.connectionState = ASSOCIATED_FD; //
 }
