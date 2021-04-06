@@ -12,7 +12,12 @@
 #include <fcntl.h>
 #include <cerrno>
 #include <dirent.h>
+#include <unistd.h>
 #include "server/http/HTTPMimeTypes.hpp"
+
+
+
+#include <string.h>
 
 using namespace NotApache;
 
@@ -20,19 +25,18 @@ void HTTPResponder::generateAssociatedResponse(HTTPClient &client) {
 	if (client.responseState == FILE) {
 		client.data.response.setResponse(
 			client.data.response.builder
-			.setHeader("Server", "Not-Apache") // TODO remove
-			.setDate() // TODO remove
-			.setHeader("Connection", "Close") // TODO remove
 			.setBody(client.data.response.getAssociatedDataRaw())
 			.build()
 		);
-		return;
+	} else if (client.responseState == UPLOAD) {
+		client.data.response.setResponse(
+			client.data.response.builder.build()
+		);
 	} else if (client.responseState == PROXY) {
 		client.data.response.setResponse(
 			ResponseBuilder(client.proxy->response.data)
 			.build()
 		);
-		return;
 	}
 	// TODO cgi
 }
@@ -58,7 +62,7 @@ void HTTPResponder::handleError(HTTPClient &client, config::ServerBlock *server,
 			}
 		}
 		if (S_ISREG(errorPageData.st_mode)) {
-			prepareFile(client, *server, *route, errorPageFile, code);
+			prepareFile(client, *server, *route, errorPageFile, code, false);
 			return;
 		}
 	}
@@ -66,9 +70,6 @@ void HTTPResponder::handleError(HTTPClient &client, config::ServerBlock *server,
 	// generate error page
 	client.data.response.builder
 		.setStatus(code)
-		.setHeader("Server", "Not-Apache") // TODO remove
-		.setDate() // TODO remove
-		.setHeader("Connection", "Close") // TODO remove
 		.setHeader("Content-Type", "text/html");
 
 	std::map<int,std::string>::const_iterator statusIt = ResponseBuilder::statusMap.find(code);
@@ -152,10 +153,10 @@ void HTTPResponder::serveDirectory(HTTPClient &client, config::ServerBlock &serv
 	handleError(client, &server, 403);
 }
 
-void HTTPResponder::prepareFile(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const utils::Uri &file, int code) {
+void HTTPResponder::prepareFile(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const utils::Uri &file, int code, bool shouldErrorFile) {
 	FD fileFd = ::open(file.path.c_str(), O_RDONLY);
 	if (fileFd == -1) {
-		HTTPResponder::handleError(client, &server, 500);
+		handleError(client, &server, 500, shouldErrorFile);
 		return;
 	}
 
@@ -176,12 +177,9 @@ void HTTPResponder::prepareFile(HTTPClient &client, config::ServerBlock &server,
 	}
 
 	// send file
-	if (client.data.request.data.method == GET || client.data.request.data.method == POST) {
-		client.addAssociatedFd(fileFd);
-		client.responseState = NotApache::FILE;
-		client.connectionState = ASSOCIATED_FD;
-		return;
-	}
+	client.addAssociatedFd(fileFd);
+	client.responseState = NotApache::FILE;
+	client.connectionState = ASSOCIATED_FD;
 }
 
 void HTTPResponder::prepareFile(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const struct ::stat &buf, const utils::Uri &file, int code) {
@@ -220,6 +218,75 @@ void HTTPResponder::serveFile(HTTPClient &client, config::ServerBlock &server, c
 	prepareFile(client, server, route, buf, file);
 }
 
+void HTTPResponder::uploadFile(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const std::string &f) {
+	struct ::stat buf = {};
+	std::string message = "Successfully created file!";
+
+	// get file data
+	utils::Uri file = f;
+	if (::stat(file.path.c_str(), &buf) == -1) {
+		if (errno != ENOENT) {
+			if (errno == ENOTDIR)
+				handleError(client, &server, &route, 404);
+			else
+				handleError(client, &server, &route, 500);
+			return;
+		}
+		message = "Successfully updated file!";
+	}
+
+	// create the file
+	// TODO no 777 permissions
+	// TODO empty body breaks everything
+	// TODO use config for upload directory
+	FD uploadFd = ::open(file.path.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0777);
+	if (uploadFd == -1) {
+		std::cout << strerror(errno) << std::endl;
+		handleError(client, &server, 500);
+		return;
+	}
+
+	// setup client for uploading
+	client.data.response.builder.setBody(std::string("<h1>") + message + "</h1>");
+	client.addAssociatedFd(uploadFd, associatedFD::WRITE);
+	client.responseState = NotApache::UPLOAD;
+	client.connectionState = ASSOCIATED_FD;
+}
+
+void HTTPResponder::deleteFile(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const std::string &f) {
+	struct ::stat buf = {};
+
+	// get file data
+	utils::Uri file = f;
+	if (::stat(file.path.c_str(), &buf) == -1) {
+		if (errno == ENOENT || errno == ENOTDIR)
+			handleError(client, &server, &route, 404);
+		else
+			handleError(client, &server, &route, 500);
+		return;
+	}
+
+	// only allow removing of normal files
+	if (!S_ISREG(buf.st_mode)) {
+		handleError(client, &server, &route, 403);
+		return;
+	}
+
+	// remove the file
+	int result = ::unlink(file.path.c_str());
+	if (result == -1) {
+		handleError(client, &server, &route, 500);
+		return;
+	}
+
+	client.data.response.setResponse(
+		ResponseBuilder()
+		.setHeader("Content-Type", "text/html")
+		.setBody("<h1>Successfully deleted file!</h1>")
+		.build()
+	);
+}
+
 void HTTPResponder::generateResponse(HTTPClient &client) {
 	if (client.data.request.data.parseStatusCode != 200) {
 		// error responses if parsing failed
@@ -254,7 +321,12 @@ void HTTPResponder::generateResponse(HTTPClient &client) {
 	if (route->shouldDoFile()) {
 		utils::Uri file = route->getRoot();
 		file.appendPath(uri.path);
-		serveFile(client, *server, *route, file.path);
+		if (client.data.request.data.method == DELETE)
+			deleteFile(client, *server, *route, file.path);
+		else if (client.data.request.data.method == PUT)
+			uploadFile(client, *server, *route, file.path);
+		else
+			serveFile(client, *server, *route, file.path);
 		return;
 	}
 	else {

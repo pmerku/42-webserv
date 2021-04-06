@@ -113,7 +113,7 @@ void StandardHandler::read(HTTPClient &client) {
 }
 
 void StandardHandler::handleAssociatedWrite(HTTPClient &client) {
-	globalLogger.logItem(logger::DEBUG, "Handling associated file descriptors");
+	globalLogger.logItem(logger::DEBUG, "Handling associated file descriptors (WRITE)");
 	if (client.responseState == PROXY) {
 		if (!client.proxy->request.hasProgress) {
 			client.proxy->request.currentPacket = client.proxy->request.getRequest().begin();
@@ -144,6 +144,48 @@ void StandardHandler::handleAssociatedWrite(HTTPClient &client) {
 					client.isHandled.lock();
 					client.connectionState = ASSOCIATED_FD;
 					client.setAssociatedFdMode(fileFd, associatedFD::READ);
+					stopHandle(client, false);
+					return;
+				}
+				break;
+		}
+	}
+	else if (client.responseState == UPLOAD) {
+		utils::DataList *body = NULL;
+		if (client.data.request.data.isChunked)
+			body = &client.data.request.data.chunkedData;
+		else
+			body = &client.data.request.data.data;
+		if (!client.data.request.hasProgress) {
+			client.data.request.currentPacket = body->begin();
+			client.data.request.packetProgress = 0;
+			client.data.request.hasProgress = true;
+		}
+		std::string::size_type	pos = client.data.request.packetProgress;
+		std::string::size_type	len = client.data.request.currentPacket->size - pos;
+		FD fileFd = client.getAssociatedFd(0).fd;
+		ssize_t ret = ::write(fileFd, client.data.request.currentPacket->data + pos, len);
+		switch (ret) {
+			case -1:
+				globalLogger.logItem(logger::ERROR, "Failed to write to server");
+				globalLogger.logItem(logger::ERROR, std::string("Failed to write: ") + std::strerror(errno)); // TODO remove
+				client.isHandled = false;
+				return;
+			case 0:
+				// zero bytes is unlikely to happen, dont do anything if it does happen
+				break;
+			default:
+				client.data.request.packetProgress += ret;
+				if (client.data.request.packetProgress == client.data.request.currentPacket->size) {
+					++client.data.request.currentPacket;
+					client.data.request.packetProgress = 0;
+				}
+				if (client.data.request.currentPacket == body->end()) {
+					// wrote entire request, closing
+					client.isHandled.lock();
+					client.connectionState = WRITING;
+					client.writeState = GOT_ASSOCIATED;
+					client.removeAssociatedFd(fileFd);
 					stopHandle(client, false);
 					return;
 				}
