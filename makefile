@@ -47,6 +47,12 @@ SRC	=\
 	config/blocks/RouteBlock.cpp\
 	config/blocks/ServerBlock.cpp\
 	config/validators/ArgumentLength.cpp\
+	config/validators/RegexCompiler.cpp\
+	config/validators/PluginValidator.cpp\
+	config/validators/FileNameValidator.cpp\
+	config/validators/ErrorCodeValidator.cpp\
+	config/validators/DomainNameValidator.cpp\
+	config/validators/StartsWithValidator.cpp\
 	config/validators/RequiredKey.cpp\
 	config/validators/IntValidator.cpp\
 	config/validators/IsDirectory.cpp\
@@ -108,6 +114,11 @@ HEADERS	=\
   config/blocks/RouteBlock.hpp\
   config/blocks/ServerBlock.hpp\
   config/validators/ArgumentLength.hpp\
+  config/validators/PluginValidator.hpp\
+  config/validators/FileNameValidator.hpp\
+  config/validators/ErrorCodeValidator.hpp\
+  config/validators/DomainNameValidator.hpp\
+  config/validators/StartsWithValidator.hpp\
   config/validators/RequiredKey.hpp\
   config/validators/IntValidator.hpp\
   config/validators/MutuallyExclusive.hpp\
@@ -207,7 +218,7 @@ exec:
 	./$(NAME)
 
 valgrind:
-	cd ./build; valgrind --undef-value-errors=no --leak-check=full ../$(NAME) -f ../tests/parser/parser.conf -c; cd ../
+	valgrind --undef-value-errors=no --leak-check=full ./$(NAME)
 
 debug:
 	$(MAKE) BUILD_DEBUG=1 all

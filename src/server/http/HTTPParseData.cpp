@@ -27,7 +27,7 @@ HTTPParseData::HTTPParseData(HTTPParseData::HTTPParseType type):
 		_gotFirstLine = true;
 }
 
-std::ostream& operator<<(std::ostream& o, HTTPParseData& x) {
+std::ostream& operator<<(std::ostream& o, NotApache::HTTPParseData& x) {
 	o	<< "==REQUEST=="					<< std::endl
 		 << "Method: "	<< x.method 		<< std::endl
 		 << "URI: "		<< x.uri.getFull()	<< std::endl;

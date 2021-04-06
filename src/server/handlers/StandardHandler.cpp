@@ -22,7 +22,7 @@ void StandardHandler::stopHandle(HTTPClient &client, bool shouldLock) {
 
 void StandardHandler::handleAssociatedRead(HTTPClient &client) {
 	globalLogger.logItem(logger::DEBUG, "Handling associated file descriptors");
-	if (client.responseState == FILE || client.responseState == CGI) { //CHECK
+	if (client.responseState == FILE || client.responseState == CGI) {
 		char	buf[_bufferSize+1];
 		FD fileFd = client.getAssociatedFd(0);
 		ssize_t	ret = ::read(fileFd, buf, _bufferSize);

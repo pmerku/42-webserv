@@ -34,14 +34,20 @@ void HTTPResponder::generateAssociatedResponse(HTTPClient &client) {
 		return;
 	}
 	// TODO proxy & cgi
-	//else if (client.responseState == CGI) { //CHECK
-	//	HTTPParser.client...
-	//	client.data.response.setResponse(
+	else if (client.responseState == CGI) {
+		client.data.request.setRequest(client.data.response.getAssociatedDataRaw());
+		HTTPParser::parse(client);
 
-	//	.build()
-	//	);
-	//	return;
-	//}	
+		client.data.response.setResponse(
+			client.data.response.builder
+			.setHeader("Server", "Not-Apache")
+			.setDate()
+			.setHeader("Connection", "Close")
+			.setBody(client.data.response.getAssociatedDataRaw())
+			.build()
+		);
+		return;
+	}	
 }
 
 void HTTPResponder::handleError(HTTPClient &client, config::ServerBlock *server, int code, bool doErrorPage) {
@@ -50,18 +56,9 @@ void HTTPResponder::handleError(HTTPClient &client, config::ServerBlock *server,
 
 void HTTPResponder::handleError(HTTPClient &client, config::ServerBlock *server,  config::RouteBlock *route, int code, bool doErrorPage) {
 	// Request authentication
-	if (code == 401 && route) {
+	if (code == 401 && route)
 		client.data.response.builder.setHeader("WWW-AUTHENTICATE", "Basic realm=\"Not-Apache\"");
 
-		//client.data.response.setResponse(
-		//	ResponseBuilder("HTTP/1.1")
-		//	.setStatus(401)
-		//	.setHeader("WWW-AUTHENTICATE", "Basic realm=\"Not-Apache\"")
-			//.setHeader("Connection", "Close")
-			//.build()
-		//);
-		//return ;
-	}
 	// allow header in 405
 	if (code == 405) {
 		std::string allowedMethods = "";
@@ -197,8 +194,7 @@ void HTTPResponder::serveFile(HTTPClient &client, config::ServerBlock &server, c
 	struct stat buf = {};
 
 	// check autorization
-	if (route.getAuthBasic().empty()) {
-		std::cout << "TEST\n";
+	if (!route.getAuthBasic().empty()) {
 		std::map<std::string, std::string>::iterator it = client.data.request.data.headers.find("AUTHORIZATION");
 		if (it == client.data.request.data.headers.end()) {
 			handleError(client, &server, &route, 401);
@@ -233,7 +229,7 @@ void HTTPResponder::serveFile(HTTPClient &client, config::ServerBlock &server, c
 	// serve the file
 	if (route.shouldDoCgi() && !route.getCgiExt().empty() && file.getExt() == route.getCgiExt()) {
 		globalLogger.logItem(logger::DEBUG, "Handling cgi request");
-		// TODO handle cgi
+		// handle cgi
 		runCGI(client, f, route.getCgi());
 		return ;
 	}
@@ -259,7 +255,7 @@ bool HTTPResponder::checkCredentials(const std::string& authFile, const std::str
 	fd = ::open(authFile.c_str(), O_RDONLY);
 	if (fd == -1)
 		ERROR_THROW(OpenFail());
-	while ((ret = ::read(fd, &buf, LINE_MAX) > 0)) {
+	while ((ret = ::read(fd, &buf, sizeof(buf))) > 0) {
 		buf[ret] = '\0';
 		fileContent += buf;
 		if (fileContent.size() > 10000)
@@ -274,7 +270,6 @@ bool HTTPResponder::checkCredentials(const std::string& authFile, const std::str
 	// Check header
 	if (credentials.find("Basic ", 0, 6) != 0)
 		return false; // TODO throw something
-	
 	// Find match
 	for (size_t i = 0; i < userPasswordPair.size(); ++i) {
 		if (utils::base64_decode(credentials.substr(6)) == userPasswordPair[i])
@@ -440,10 +435,7 @@ void	HTTPResponder::runCGI(HTTPClient& client, const std::string &f, const std::
 	}
 	if (::close(pipefd[1]) == -1)
 		ERROR_THROW(CloseFail());
-
 	client.addAssociatedFd(pipefd[0]); //
-	//client.data.response.builder.setHeader("Content-Type", "text/html"); //
-	//client.data.response.builder.setStatus(200); //
 	client.responseState = CGI; // 
 	client.connectionState = ASSOCIATED_FD; //
 }
