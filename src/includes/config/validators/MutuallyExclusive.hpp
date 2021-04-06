@@ -22,7 +22,7 @@ namespace config {
 
 		class MutuallyExclusiveException : public ConfigException {
 		protected:
-			const char *getTemplate() const throw() {
+			std::string getTemplate() const throw() {
 				return "Key {KEY} in block {BLOCK_NAME} is mutually exclusive with another key. Only one of them must exist";
 			}
 
@@ -32,7 +32,7 @@ namespace config {
 
 		class MutuallyExclusiveMissingException : public ConfigException {
 		protected:
-			const char *getTemplate() const throw() {
+			std::string getTemplate() const throw() {
 				return "Key {KEY} in block {BLOCK_NAME} is mutually exclusive with another key. One of them is missing";
 			}
 

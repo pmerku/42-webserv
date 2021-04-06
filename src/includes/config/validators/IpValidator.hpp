@@ -18,10 +18,11 @@ namespace config {
 		IpValidator(int arg);
 
 		void test(const ConfigLine &line, const AConfigBlock &block) const;
+		static bool	isValidIp(const std::string &str);
 
 		class IpValidatorException: public ConfigException {
 		protected:
-			const char *getTemplate() const throw() {
+			std::string getTemplate() const throw() {
 				return "key '{KEY}' in block '{BLOCK_NAME}' must be a valid ipv4 address";
 			}
 

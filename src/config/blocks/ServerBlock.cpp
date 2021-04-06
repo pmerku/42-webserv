@@ -10,6 +10,8 @@
 #include "config/validators/IntValidator.hpp"
 #include "config/validators/IsFile.hpp"
 #include "config/validators/IpValidator.hpp"
+#include "config/validators/ErrorCodeValidator.hpp"
+#include "config/validators/DomainNameValidator.hpp"
 #include "utils/stoi.hpp"
 #include <arpa/inet.h>
 
@@ -27,14 +29,16 @@ const AConfigBlock::validatorsMapType	ServerBlock::_validators =
 			  .add(new Unique())
 			  .add(new IntValidator(0, 1, 65535))
 			  .build())
-		.addKey("server_name", ConfigValidatorListBuilder() // TODO default to something & [a-Z0-9\-\.]+ validator
+		.addKey("server_name", ConfigValidatorListBuilder()
 			.add(new ArgumentLength(1))
+			.add(new DomainNameValidator(0))
 			.add(new Unique())
 			.build())
-		.addKey("error_page", ConfigValidatorListBuilder() // TODO status code validator
+		.addKey("error_page", ConfigValidatorListBuilder()
 			.add(new ArgumentLength(2))
-			.add(new IsFile(1))
 			.add(new IntValidator(0, 400, 600))
+			.add(new ErrorCodeValidator(0))
+			.add(new IsFile(1))
 			.build())
 		.addKey("body_limit", ConfigValidatorListBuilder()
 				.add(new ArgumentLength(1))
@@ -44,7 +48,6 @@ const AConfigBlock::validatorsMapType	ServerBlock::_validators =
 
 const AConfigBlock::validatorListType 	ServerBlock::_blockValidators =
 		ConfigValidatorListBuilder()
-		.add(new RequiredKey("host"))
 		.add(new RequiredKey("port"))
 		.build();
 
@@ -85,7 +88,10 @@ void ServerBlock::parseData() {
 	_errorPages.clear();
 
 	_port = utils::stoi(getKey("port")->getArg(0));
-	_host = inet_addr(getKey("host")->getArg(0).c_str());
+	_host = 0;
+
+	if (hasKey("host"))
+		_host = inet_addr(getKey("host")->getArg(0).c_str());
 
 	if (hasKey("server_name"))
 		_serverName = getKey("server_name")->getArg(0);

@@ -65,7 +65,6 @@ AConfigBlock	*ConfigParser::_makeBlockFromLine(const ConfigLine &line, int lineC
 	}
 }
 
-// TODO make all validators
 RootBlock		*ConfigParser::parseFile(const std::string &path) const {
 	std::string file = _readFile(path);
 

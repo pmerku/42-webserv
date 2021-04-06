@@ -12,9 +12,10 @@ namespace utils {
 
 	class ArgParser {
 	private:
-		bool		 _isVerbose;
-		bool 		_isColor;
-		std::string _configPath;
+		bool		_isVerbose;
+		bool		_doValidation;
+		bool		_isColor;
+		std::string	_configPath;
 
 	public:
 		ArgParser();
@@ -24,6 +25,7 @@ namespace utils {
 
 		bool				verbosePrint() const;
 		bool 				colorPrint() const;
+		bool 				onlyValidate() const;
 		const std::string 	&configFile() const;
 
 		class ArgParserException: public std::exception {
