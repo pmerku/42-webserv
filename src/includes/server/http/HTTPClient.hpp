@@ -8,6 +8,8 @@
 #include "server/ServerTypes.hpp"
 #include "utils/mutex.hpp"
 #include "server/http/HTTPClientData.hpp"
+#include "server/http/Proxy.hpp"
+#include "netinet/in.h"
 #include <vector>
 
 namespace NotApache {
@@ -31,14 +33,24 @@ namespace NotApache {
 		NONE
 	};
 
+	struct associatedFD {
+		FD	fd;
+		typedef enum {
+			READ,
+			WRITE
+		} type;
+		type mode;
+	};
+
 	class HTTPClient {
 	private:
-		FD				_fd;
-		int				_port;
-		long 			_host;
-		std::vector<FD>	_associatedFds;
-		time_t 			_createdAt;
-		long 			_timeoutAfter;
+		FD							_fd;
+		int							_port;
+		long 						_host;
+		std::vector<associatedFD>	_associatedFds;
+		time_t 						_createdAt;
+		long 						_timeoutAfter;
+		sockaddr_in					_cli_addr;
 
 	public:
 		ClientWriteState		writeState;
@@ -46,18 +58,21 @@ namespace NotApache {
 		ClientResponseState		responseState;
 		utils::Mutex<bool>		isHandled;
 		HTTPClientData			data;
+		Proxy					*proxy;
 
-		HTTPClient(FD clientFd, int port, long host);
+		HTTPClient(FD clientFd, int port, long host, sockaddr_in cli_addr);
 		~HTTPClient();
 
 		FD	getFd() const;
 		int getPort() const;
 		long getHost() const;
+		std::string getIp() const;
 
-		void	addAssociatedFd(FD fd);
+		void	addAssociatedFd(FD fd, associatedFD::type mode = associatedFD::READ);
 		void	removeAssociatedFd(FD fd);
-		FD		getAssociatedFd(std::vector<FD>::size_type i) const;
-		std::vector<FD>::size_type	getAssociatedFdLength() const;
+		void 	setAssociatedFdMode(FD fd, associatedFD::type mode);
+		associatedFD	getAssociatedFd(std::vector<associatedFD>::size_type i) const;
+		std::vector<associatedFD>::size_type	getAssociatedFdLength() const;
 
 		void 	timeout(bool useLocks = true);
 	};

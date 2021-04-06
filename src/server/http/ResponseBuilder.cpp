@@ -5,8 +5,6 @@
 #include <stdexcept>
 #include "server/http/ResponseBuilder.hpp"
 #include "utils/intToString.hpp"
-#include "utils/localTime.hpp"
-#include "utils/ErrorThrow.hpp"
 #include "utils/CreateMap.hpp"
 #include "utils/DataList.hpp"
 #include "utils/toUpper.hpp"
@@ -89,6 +87,20 @@ ResponseBuilder::ResponseBuilder() {
 
 ResponseBuilder::ResponseBuilder(const std::string &protocol) {
 	_protocol = protocol;
+	// set defaults
+	setDefaults();
+}
+
+ResponseBuilder::ResponseBuilder(const HTTPParseData &data) {
+	_protocol = "HTTP/1.1";
+	setStatus(data.statusCode);
+	for (std::map<std::string, std::string>::const_iterator it = data.headers.begin(); it != data.headers.end(); ++it) {
+		setHeader(it->first, it->second);
+	}
+	if (data.isChunked)
+		setBody(data.chunkedData);
+	else
+		setBody(data.data);
 	// set defaults
 	setDefaults();
 }

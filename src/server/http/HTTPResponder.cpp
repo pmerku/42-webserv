@@ -12,7 +12,6 @@
 #include <fcntl.h>
 #include <cerrno>
 #include <dirent.h>
-#include "utils/Uri.hpp"
 #include "server/http/HTTPMimeTypes.hpp"
 
 using namespace NotApache;
@@ -21,15 +20,21 @@ void HTTPResponder::generateAssociatedResponse(HTTPClient &client) {
 	if (client.responseState == FILE) {
 		client.data.response.setResponse(
 			client.data.response.builder
-			.setHeader("Server", "Not-Apache")
-			.setDate()
-			.setHeader("Connection", "Close")
+			.setHeader("Server", "Not-Apache") // TODO remove
+			.setDate() // TODO remove
+			.setHeader("Connection", "Close") // TODO remove
 			.setBody(client.data.response.getAssociatedDataRaw())
 			.build()
 		);
 		return;
+	} else if (client.responseState == PROXY) {
+		client.data.response.setResponse(
+			ResponseBuilder(client.proxy->response.data)
+			.build()
+		);
+		return;
 	}
-	// TODO proxy & cgi
+	// TODO cgi
 }
 
 void HTTPResponder::handleError(HTTPClient &client, config::ServerBlock *server, int code, bool doErrorPage) {
@@ -61,9 +66,9 @@ void HTTPResponder::handleError(HTTPClient &client, config::ServerBlock *server,
 	// generate error page
 	client.data.response.builder
 		.setStatus(code)
-		.setHeader("Server", "Not-Apache")
-		.setDate()
-		.setHeader("Connection", "Close")
+		.setHeader("Server", "Not-Apache") // TODO remove
+		.setDate() // TODO remove
+		.setHeader("Connection", "Close") // TODO remove
 		.setHeader("Content-Type", "text/html");
 
 	std::map<int,std::string>::const_iterator statusIt = ResponseBuilder::statusMap.find(code);
@@ -253,17 +258,46 @@ void HTTPResponder::generateResponse(HTTPClient &client) {
 		return;
 	}
 	else {
-		// TODO do proxy
-		route->getProxyUrl();
-		client.data.response.setResponse(
-			ResponseBuilder()
-			.setStatus(200)
-			.setHeader("Server", "Not-Apache")
-			.setDate()
-			.setHeader("Connection", "Close")
-			.setBody("Proxy not yet implemented")
+		handleProxy(client, server, route);
+		return;
+	}
+}
+
+void HTTPResponder::handleProxy(HTTPClient &client, config::ServerBlock *server, config::RouteBlock *route) {
+	globalLogger.logItem(logger::DEBUG, "Handling the proxy connection");
+
+	try {
+
+		client.proxy = new Proxy(route->getProxyUrl().ip, route->getProxyUrl().port);
+		client.proxy->createConnection();
+
+		client.addAssociatedFd(client.proxy->getSocket(), associatedFD::WRITE);
+		client.responseState = PROXY;
+		client.connectionState = ASSOCIATED_FD;
+
+		std::string host = route->getProxyUrl().ip + ":" + utils::intToString(route->getProxyUrl().port);
+		std::string x_client = client.getIp();
+		std::string x_host = client.data.request.data.headers.find("HOST")->second;
+		std::string x_proto = route->getProxyUrl().protocol;
+
+		client.proxy->request.setRequest(
+			RequestBuilder(client.data.request.data)
+			.setHeader("HOST", host)
+			.setHeader("CONNECTION", "Close") // always set so it doesn't hang
+			.setHeader("X-FORWARDED-FOR", x_client)
+			.setHeader("X-FORWARDED-HOST", x_host)
+			.setHeader("X-FORWARDED-PROTO", x_proto)
 			.build()
 		);
-		return;
+
+	} catch (Proxy::SocketException &e) {
+		globalLogger.logItem(logger::ERROR, std::string("Proxy error: ") + e.what());
+		handleError(client, server, route, 500);
+	} catch (Proxy::ConnectionException &e) {
+		globalLogger.logItem(logger::ERROR, std::string("Proxy error: ") + e.what());
+		handleError(client, server, route, 502);
+	} catch (std::exception &e) {
+		globalLogger.logItem(logger::ERROR, std::string("Proxy error: ") + e.what());
+		handleError(client, server, route, 500);
 	}
 }

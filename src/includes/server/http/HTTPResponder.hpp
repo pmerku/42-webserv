@@ -33,6 +33,8 @@ namespace NotApache {
 		serveDirectory(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const struct ::stat &directoryStat, const std::string &dirPath);
 		static void	prepareFile(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const utils::Uri &file, int code = 200);
 		static void	prepareFile(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const struct ::stat &buf, const utils::Uri &file, int code = 200);
+
+		static void handleProxy(HTTPClient &client, config::ServerBlock *server, config::RouteBlock *route);
 	};
 
 }

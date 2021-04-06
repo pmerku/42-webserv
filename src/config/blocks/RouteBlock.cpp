@@ -120,7 +120,6 @@ void RouteBlock::parseData() {
 	_directoryListing = false;
 	_index = "";
 	_saveUploads = "";
-	_proxyUrl = "";
 	_cgiExt = "";
 	_cgi = "";
 	_plugins.clear();
@@ -139,7 +138,7 @@ void RouteBlock::parseData() {
 	if (hasKey("save_uploads"))
 		_saveUploads = getKey("save_uploads")->getArg(0);
 	if (hasKey("proxy_url"))
-		_proxyUrl = getKey("proxy_url")->getArg(0);
+		_proxyUrl = UrlValidator::parseUrl(getKey("proxy_url")->getArg(0));
 	if (hasKey("cgi"))
 		_cgi = getKey("cgi")->getArg(0);
 	if (hasKey("cgi_ext"))
@@ -196,7 +195,7 @@ const std::string &RouteBlock::getSaveUploads() const {
 	return _saveUploads;
 }
 
-const std::string &RouteBlock::getProxyUrl() const {
+const UrlValidator::urlParsed &RouteBlock::getProxyUrl() const {
 	throwNotParsed();
 	return _proxyUrl;
 }
@@ -212,7 +211,7 @@ bool RouteBlock::isAllowedMethod(const std::string &method) const {
 
 bool RouteBlock::shouldDoFile() const {
 	throwNotParsed();
-	return _proxyUrl.empty();
+	return _proxyUrl.protocol.empty();
 }
 
 bool RouteBlock::shouldDoCgi() const {
