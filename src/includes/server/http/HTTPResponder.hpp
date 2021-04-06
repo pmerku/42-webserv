@@ -9,6 +9,13 @@
 #include "server/http/HTTPClient.hpp"
 #include <sys/stat.h>
 
+#ifdef BUILD_APPLE
+	#define STAT_TIME_FIELD st_mtimespec
+#endif
+#ifndef STAT_TIME_FIELD
+	#define STAT_TIME_FIELD st_mtim
+#endif
+
 namespace NotApache {
 
 	class HTTPResponder {

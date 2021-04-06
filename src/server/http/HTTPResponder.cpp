@@ -121,7 +121,7 @@ void HTTPResponder::serveDirectory(HTTPClient &client, config::ServerBlock &serv
 
 		ResponseBuilder builder;
 		builder
-		.setModifiedDate(directoryStat.st_mtim)
+		.setModifiedDate(directoryStat.STAT_TIME_FIELD)
 		.setHeader("Content-Type", "text/html");
 
 		// add OPTIONS specific header
@@ -180,7 +180,7 @@ void HTTPResponder::prepareFile(HTTPClient &client, config::ServerBlock &server,
 }
 
 void HTTPResponder::prepareFile(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const struct ::stat &buf, const utils::Uri &file, int code) {
-	client.data.response.builder.setModifiedDate(buf.st_mtim);
+	client.data.response.builder.setModifiedDate(buf.STAT_TIME_FIELD);
 	prepareFile(client, server, route, file, code);
 }
 
