@@ -17,6 +17,8 @@
 
 using namespace NotApache;
 
+// TODO cleanup this file
+
 void HTTPResponder::generateAssociatedResponse(HTTPClient &client) {
 	if (client.responseState == FILE) {
 		client.data.response.setResponse(
@@ -231,8 +233,13 @@ void HTTPResponder::uploadFile(HTTPClient &client, config::ServerBlock &server, 
 		message = "Successfully created file!";
 	}
 
+	// 403 on anything that isnt a regular file
+	if (!S_ISREG(buf.st_mode)) {
+		handleError(client, &server, 403);
+		return;
+	}
+
 	// create the file
-	// TODO empty body breaks everything
 	FD uploadFd = ::open(file.path.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
 	if (uploadFd == -1) {
 		if (errno == ENOENT)
