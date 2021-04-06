@@ -12,12 +12,17 @@ using namespace config;
 IpValidator::IpValidator(int arg): AConfigValidator(false), _arg(arg) {}
 
 void IpValidator::test(const ConfigLine &line, const AConfigBlock &block) const {
-	std::string	temp = line.getArg(_arg);
+	if (!isValidIp(line.getArg(_arg)))
+		ERROR_THROW(IpValidatorException(line, &block));
+}
+
+bool IpValidator::isValidIp(const std::string &str) {
+	std::string	temp = str;
 
 	// check for valid chars
 	for (std::string::size_type i = 0; i < temp.length(); ++i) {
 		if (!utils::isDigit(temp[i]) && temp[i] != '.')
-			ERROR_THROW(IpValidatorException(line, &block));
+			return false;
 	}
 
 	// check if in right order
@@ -28,29 +33,30 @@ void IpValidator::test(const ConfigLine &line, const AConfigBlock &block) const 
 
 		// invalid length
 		if (part.length() == 0 || part.length() > 3)
-			ERROR_THROW(IpValidatorException(line, &block));
+			return false;
 
 		// part count
 		parts++;
 		if (parts > 4)
-			ERROR_THROW(IpValidatorException(line, &block));
+			return false;
 
 		// invalid number
 		int num = utils::atoi(part.c_str());
 		if (num < 0 || num > 255)
-			ERROR_THROW(IpValidatorException(line, &block));
+			return false;
 
 		// next iteration
 		if (pos != std::string::npos) {
 			temp = temp.substr(pos+1);
 			// dot at end of string
 			if (temp.length() == 0)
-				ERROR_THROW(IpValidatorException(line, &block));
+				return false;
 		}
 		else break;
 	}
 
 	// part count
 	if (parts != 4)
-		ERROR_THROW(IpValidatorException(line, &block));
+		return false;
+	return true;
 }

@@ -14,6 +14,9 @@ ifeq ($(UNAME_S),Linux)
 	ifeq ($(CXX),g++)
 		CXX_FLAGS += -fPIE
 	endif
+	CXX_FLAGS += -DBUILD_LINUX=1
+else ifeq ($(UNAME_S),Darwin)
+    CXX_FLAGS += -DBUILD_APPLE=1
 endif
 
 ifdef BUILD_DEBUG
@@ -48,11 +51,12 @@ SRC	=\
 	config/blocks/ServerBlock.cpp\
 	config/validators/ArgumentLength.cpp\
 	config/validators/RegexCompiler.cpp\
-	config/validators/PluginValidator.cpp\
 	config/validators/FileNameValidator.cpp\
-	config/validators/ErrorCodeValidator.cpp\
-	config/validators/DomainNameValidator.cpp\
 	config/validators/StartsWithValidator.cpp\
+	config/validators/PluginValidator.cpp\
+	config/validators/UrlValidator.cpp\
+	config/validators/DomainNameValidator.cpp\
+	config/validators/ErrorCodeValidator.cpp\
 	config/validators/RequiredKey.cpp\
 	config/validators/IntValidator.cpp\
 	config/validators/IsDirectory.cpp\
@@ -91,6 +95,7 @@ SRC	=\
 	server/http/HTTPParser.cpp\
 	server/http/HTTPParseData.cpp\
 	server/http/HTTPResponder.cpp\
+	server/http/Proxy.cpp\
 	server/http/HTTPMimeTypes.cpp\
 	server/http/RequestBuilder.cpp\
 	server/http/ResponseBuilder.cpp\
@@ -105,33 +110,35 @@ HEADERS	=\
 	log/LogItem.hpp\
 	regex/Regex.hpp\
 	config/ConfigValidatorBuilder.hpp\
-  config/ConfigParser.hpp\
-  config/ConfigLine.hpp\
-  config/ConfigException.hpp\
-  config/AConfigValidator.hpp\
-  config/AConfigBlock.hpp\
-  config/blocks/RootBlock.hpp\
-  config/blocks/RouteBlock.hpp\
-  config/blocks/ServerBlock.hpp\
-  config/validators/ArgumentLength.hpp\
-  config/validators/PluginValidator.hpp\
-  config/validators/FileNameValidator.hpp\
-  config/validators/ErrorCodeValidator.hpp\
-  config/validators/DomainNameValidator.hpp\
-  config/validators/StartsWithValidator.hpp\
-  config/validators/RequiredKey.hpp\
-  config/validators/IntValidator.hpp\
-  config/validators/MutuallyExclusive.hpp\
-  config/validators/BooleanValidator.hpp\
-  config/validators/IsDirectory.hpp\
-  config/validators/IsFile.hpp\
-  config/validators/HTTPMethodValidator.hpp\
-  config/validators/IpValidator.hpp\
-  config/validators/Unique.hpp\
-  config/ParseExceptions.hpp\
-  env/env.hpp\
+	config/ConfigParser.hpp\
+	config/ConfigLine.hpp\
+	config/ConfigException.hpp\
+	config/AConfigValidator.hpp\
+	config/AConfigBlock.hpp\
+	config/blocks/RootBlock.hpp\
+	config/blocks/RouteBlock.hpp\
+	config/blocks/ServerBlock.hpp\
+	config/validators/ArgumentLength.hpp\
+	config/validators/RegexCompiler.hpp\
+	config/validators/FileNameValidator.hpp\
+	config/validators/StartsWithValidator.hpp\
+	config/validators/PluginValidator.hpp\
+	config/validators/UrlValidator.hpp\
+	config/validators/DomainNameValidator.hpp\
+	config/validators/ErrorCodeValidator.hpp\
+	config/validators/RequiredKey.hpp\
+	config/validators/IntValidator.hpp\
+	config/validators/MutuallyExclusive.hpp\
+	config/validators/BooleanValidator.hpp\
+	config/validators/IsDirectory.hpp\
+	config/validators/IsFile.hpp\
+	config/validators/HTTPMethodValidator.hpp\
+	config/validators/IpValidator.hpp\
+	config/validators/Unique.hpp\
+	config/ParseExceptions.hpp\
+	env/env.hpp\
 	env/ENVBuilder.hpp\
-  utils/AThread.hpp\
+	utils/AThread.hpp\
 	utils/split.hpp\
 	utils/atoi.hpp\
 	utils/toUpper.hpp\
@@ -139,10 +146,10 @@ HEADERS	=\
 	utils/stoh.hpp\
 	utils/isDigit.hpp\
 	utils/countSpaces.hpp\
-  utils/CreateMap.hpp\
-  utils/CreateVector.hpp\
-  utils/ErrorThrow.hpp\
-  utils/intToString.hpp\
+	utils/CreateMap.hpp\
+	utils/CreateVector.hpp\
+	utils/ErrorThrow.hpp\
+	utils/intToString.hpp\
 	utils/isSpace.hpp\
 	utils/localTime.hpp\
 	utils/mutex.hpp\
@@ -152,25 +159,26 @@ HEADERS	=\
 	utils/ArgParser.hpp\
     utils/base64.hpp\
 	server/handlers/AHandler.hpp\
-  server/handlers/StandardHandler.hpp\
-  server/handlers/HandlerHolder.hpp\
-  server/handlers/ThreadHandler.hpp\
-  server/communication/TCPListener.hpp\
-  server/communication/ServerEventBus.hpp\
-  server/http/HTTPClient.hpp\
-  server/http/HTTPClientData.hpp\
-  server/http/HTTPParser.hpp\
-  server/http/HTTPParseData.hpp\
-  server/http/HTTPResponder.hpp\
-  server/http/HTTPMimeTypes.hpp\
-  server/http/RequestBuilder.hpp\
-  server/http/ResponseBuilder.hpp\
-  server/terminal/TerminalClient.hpp\
-  server/terminal/TerminalResponder.hpp\
-  server/global/GlobalConfig.hpp\
-  server/global/GlobalLogger.hpp\
-  server/ServerTypes.hpp\
-  server/Server.hpp
+	server/handlers/StandardHandler.hpp\
+	server/handlers/HandlerHolder.hpp\
+	server/handlers/ThreadHandler.hpp\
+	server/communication/TCPListener.hpp\
+	server/communication/ServerEventBus.hpp\
+	server/http/HTTPClient.hpp\
+	server/http/HTTPClientData.hpp\
+	server/http/HTTPParser.hpp\
+	server/http/HTTPParseData.hpp\
+	server/http/HTTPResponder.hpp\
+	server/http/Proxy.hpp\
+	server/http/HTTPMimeTypes.hpp\
+	server/http/RequestBuilder.hpp\
+	server/http/ResponseBuilder.hpp\
+	server/terminal/TerminalClient.hpp\
+	server/terminal/TerminalResponder.hpp\
+	server/global/GlobalConfig.hpp\
+	server/global/GlobalLogger.hpp\
+	server/ServerTypes.hpp\
+	server/Server.hpp
 
 # Fix sources and headers
 OBJ				= $(patsubst %.cpp,%.o,$(SRC))

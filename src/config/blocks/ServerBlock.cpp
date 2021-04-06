@@ -48,7 +48,6 @@ const AConfigBlock::validatorsMapType	ServerBlock::_validators =
 
 const AConfigBlock::validatorListType 	ServerBlock::_blockValidators =
 		ConfigValidatorListBuilder()
-		.add(new RequiredKey("host"))
 		.add(new RequiredKey("port"))
 		.build();
 
@@ -89,7 +88,10 @@ void ServerBlock::parseData() {
 	_errorPages.clear();
 
 	_port = utils::stoi(getKey("port")->getArg(0));
-	_host = inet_addr(getKey("host")->getArg(0).c_str());
+	_host = 0;
+
+	if (hasKey("host"))
+		_host = inet_addr(getKey("host")->getArg(0).c_str());
 
 	if (hasKey("server_name"))
 		_serverName = getKey("server_name")->getArg(0);

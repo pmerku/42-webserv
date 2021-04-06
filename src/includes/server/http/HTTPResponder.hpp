@@ -11,6 +11,14 @@
 #include "utils/base64.hpp"
 #include <climits>
 #include <cstdlib>
+#include <sys/stat.h>
+
+#ifdef BUILD_APPLE
+	#define STAT_TIME_FIELD st_mtimespec
+#endif
+#ifndef STAT_TIME_FIELD
+	#define STAT_TIME_FIELD st_mtim
+#endif
 
 namespace NotApache {
 	class HTTPResponder {
@@ -24,9 +32,11 @@ namespace NotApache {
 		static void handleError(HTTPClient &client, config::ServerBlock *server, int code, bool doErrorPage = true);
 		static void handleError(HTTPClient &client, config::ServerBlock *server, config::RouteBlock *route, int code, bool doErrorPage = true);
 
-		static void
-		serveDirectory(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route,
-					   const std::string &dirPath);
+		static void	serveDirectory(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const struct ::stat &directoryStat, const std::string &dirPath);
+		static void	prepareFile(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const utils::Uri &file, int code = 200);
+		static void	prepareFile(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const struct ::stat &buf, const utils::Uri &file, int code = 200);
+
+		static void handleProxy(HTTPClient &client, config::ServerBlock *server, config::RouteBlock *route);
 
 		static void setEnv(HTTPClient& client, CGIenv::env& envp, std::string& uri, const std::string& f);
 		static void runCGI(HTTPClient& client, const std::string &f, const std::string& cgi);
