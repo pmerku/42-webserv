@@ -174,10 +174,6 @@ HTTPParser::ParseReturn		HTTPParser::parseHeaders(HTTPParseData &data, const std
 			data.parseStatusCode = 400;
 			return ERROR;
 		}
-
-		std::map<std::string,std::string>::iterator contentLengthIt = data.headers.find("CONTENT-LENGTH");
-		if (contentLengthIt != data.headers.end())
-			data.bodyLength = utils::stoi(contentLengthIt->second);
 		config::ServerBlock *server = NotApache::configuration->findServerBlock(hostIt->second, client->getPort(), client->getHost());
 		if (server == 0) {
 			globalLogger.logItem(logger::ERROR, "No matching server block");
