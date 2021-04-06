@@ -8,6 +8,7 @@
 #include <ctime>
 #include <sys/time.h> // have to use C header for gettimeofday()
 #include "utils/DataList.hpp"
+#include "server/http/HTTPParseData.hpp"
 
 #include <map>
 #include <string>
@@ -31,6 +32,7 @@ namespace NotApache {
 
 		ResponseBuilder();
 		explicit ResponseBuilder(const std::string &protocol);
+		explicit ResponseBuilder(const HTTPParseData &data);
 
 		ResponseBuilder		&setStatus(int code);
 		ResponseBuilder		&setHeader(const std::string &key, const std::string &value);

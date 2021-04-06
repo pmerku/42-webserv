@@ -5,10 +5,9 @@
 #include <stdexcept>
 #include "server/http/ResponseBuilder.hpp"
 #include "utils/intToString.hpp"
-#include "utils/localTime.hpp"
-#include "utils/ErrorThrow.hpp"
 #include "utils/CreateMap.hpp"
 #include "utils/DataList.hpp"
+#include "utils/toUpper.hpp"
 
 using namespace NotApache;
 
@@ -82,10 +81,28 @@ const std::map<int, std::string> ResponseBuilder::statusMap =
 
 ResponseBuilder::ResponseBuilder() {
 	_protocol = "HTTP/1.1";
+	// set defaults
+	setDefaults();
 }
 
 ResponseBuilder::ResponseBuilder(const std::string &protocol) {
 	_protocol = protocol;
+	// set defaults
+	setDefaults();
+}
+
+ResponseBuilder::ResponseBuilder(const HTTPParseData &data) {
+	_protocol = "HTTP/1.1";
+	setStatus(data.statusCode);
+	for (std::map<std::string, std::string>::const_iterator it = data.headers.begin(); it != data.headers.end(); ++it) {
+		setHeader(it->first, it->second);
+	}
+	if (data.isChunked)
+		setBody(data.chunkedData);
+	else
+		setBody(data.data);
+	// set defaults
+	setDefaults();
 }
 
 ResponseBuilder &ResponseBuilder::setStatus(int code) {
@@ -99,12 +116,13 @@ ResponseBuilder &ResponseBuilder::setStatus(int code) {
 }
 
 ResponseBuilder &ResponseBuilder::setHeader(const std::string &key, const std::string &value) {
+	utils::toUpper(const_cast<std::string&>(key));
 	_headerMap[key] = value;
 	return *this;
 }
 
 ResponseBuilder &ResponseBuilder::setBody(const std::string &data, size_t length) {
-	setHeader("Content-Length", utils::intToString(length));
+	setHeader("CONTENT-LENGTH", utils::intToString(length));
 	_body.add(data.c_str());
 	return *this;
 }
@@ -114,7 +132,7 @@ ResponseBuilder &ResponseBuilder::setBody(const std::string &data) {
 }
 
 ResponseBuilder &ResponseBuilder::setBody(const utils::DataList &data) {
-	setHeader("Content-Length", utils::intToString(data.size()));
+	setHeader("CONTENT-LENGTH", utils::intToString(data.size()));
 	_body = data;
 	return *this;
 }
@@ -122,7 +140,7 @@ ResponseBuilder &ResponseBuilder::setBody(const utils::DataList &data) {
 ResponseBuilder &ResponseBuilder::setDate() {
 	struct timeval tv = {};
 	gettimeofday(&tv, NULL);
-	setHeader("Date", convertTime(tv.tv_sec));
+	setHeader("DATE", convertTime(tv.tv_sec));
 	return *this;
 }
 
@@ -136,16 +154,17 @@ std::string ResponseBuilder::convertTime(time_t time) {
 }
 
 ResponseBuilder &ResponseBuilder::setServer() {
-	setHeader("Server", "Not-Apache");
+	setHeader("SERVER", "Not-Apache");
 	return *this;
 }
 
 ResponseBuilder &ResponseBuilder::setConnection() {
-	setHeader("Connection", "Close");
+	setHeader("CONNECTION", "Close");
 	return *this;
 }
 
 ResponseBuilder &ResponseBuilder::removeHeader(const std::string &header) {
+	utils::toUpper(const_cast<std::string&>(header));
 	for (std::map<std::string, std::string>::iterator it = _headerMap.begin(); it != _headerMap.end(); it++) {
 		if (it->first == header) {
 			_headerMap.erase(it);
@@ -161,23 +180,23 @@ ResponseBuilder &ResponseBuilder::setDefaults() {
 		setStatus(200);
 
 	// if no date header set it
-	std::map<std::string, std::string>::iterator it = _headerMap.find("Date");
+	std::map<std::string, std::string>::iterator it = _headerMap.find("DATE");
 	if (it == _headerMap.end())
 		setDate();
 
 	// if no server header set it
-	it = _headerMap.find("Server");
+	it = _headerMap.find("SERVER");
 	if (it == _headerMap.end())
 		setServer();
 
 	// if no connection header set it
-	it = _headerMap.find("Connection");
+	it = _headerMap.find("CONNECTION");
 	if (it == _headerMap.end())
 		setConnection();
 
 	// if body is empty set content-length to 0
 	if (_body.empty())
-		setBody("");
+		setHeader("CONTENT-LENGTH", "0");
 
 	return *this;
 }
@@ -186,9 +205,6 @@ utils::DataList	ResponseBuilder::build() {
 	// HTTP/1.1 {code} {string value} \r\n
 	utils::DataList	output;
 	std::string response = _protocol;
-
-	// set defaults
-	setDefaults();
 
 	response += " " + _statusLine.first;
 	response += " " + _statusLine.second;
@@ -202,8 +218,8 @@ utils::DataList	ResponseBuilder::build() {
 	}
 
 	// \r\n {body} \r\n
+	response += _endLine;
 	if (!_body.empty()) {
-		response += _endLine;
 		output = _body;
 		output.add(_endLine.c_str());
 	}

@@ -21,9 +21,9 @@ namespace NotApache {
 		static void handleError(HTTPClient &client, config::ServerBlock *server, int code, bool doErrorPage = true);
 		static void handleError(HTTPClient &client, config::ServerBlock *server, config::RouteBlock *route, int code, bool doErrorPage = true);
 
-		static void
-		serveDirectory(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route,
-					   const std::string &dirPath);
+		static void serveDirectory(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const std::string &dirPath);
+
+		static void handleProxy(HTTPClient &client, config::ServerBlock *server, config::RouteBlock *route);
 	};
 
 }

@@ -81,8 +81,9 @@ HTTPParser::ParseReturn		HTTPParser::parseRequestLine(HTTPParseData &data, const
 HTTPParser::ParseReturn		HTTPParser::parseResponseLine(HTTPParseData &data, const std::string &line) {
 	// check if spaces count in line is correct
 	std::vector<std::string> parts = utils::split(line, " ");
-	if (utils::countSpaces(line) != 2 || parts.size() != 3) {
-		globalLogger.logItem(logger::ERROR, "Invalid request line");
+	int spaces = utils::countSpaces(line);
+	if ((spaces != 2 && spaces != 3) || (parts.size() != 3 && parts.size() != 4)) { // TODO fix this jank
+		globalLogger.logItem(logger::ERROR, "Invalid response line");
 		data.parseStatusCode = 400;
 		return ERROR;
 	}
@@ -159,6 +160,12 @@ HTTPParser::ParseReturn		HTTPParser::parseHeaders(HTTPParseData &data, const std
 		}
 	}
 
+	if (data._type == HTTPParseData::RESPONSE || data._type == HTTPParseData::REQUEST) {
+		std::map<std::string,std::string>::iterator contentLengthIt = data.headers.find("CONTENT-LENGTH");
+		if (contentLengthIt != data.headers.end())
+			data.bodyLength = utils::stoi(contentLengthIt->second);
+	}
+
 	// host header needs to exist on requests
 	if (data._type == HTTPParseData::REQUEST) {
 		std::map<std::string,std::string>::iterator hostIt = data.headers.find("HOST");
@@ -167,10 +174,6 @@ HTTPParser::ParseReturn		HTTPParser::parseHeaders(HTTPParseData &data, const std
 			data.parseStatusCode = 400;
 			return ERROR;
 		}
-
-		std::map<std::string,std::string>::iterator contentLengthIt = data.headers.find("CONTENT-LENGTH");
-		if (contentLengthIt != data.headers.end())
-			data.bodyLength = utils::stoi(contentLengthIt->second);
 		config::ServerBlock *server = NotApache::configuration->findServerBlock(hostIt->second, client->getPort(), client->getHost());
 		if (server == 0) {
 			globalLogger.logItem(logger::ERROR, "No matching server block");
