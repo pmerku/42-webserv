@@ -9,6 +9,7 @@
 #include "utils/mutex.hpp"
 #include "server/http/HTTPClientData.hpp"
 #include "server/http/Proxy.hpp"
+#include "server/http/CGIClass.hpp"
 #include "netinet/in.h"
 #include <vector>
 #include <netinet/in.h>
@@ -60,6 +61,7 @@ namespace NotApache {
 		utils::Mutex<bool>		isHandled;
 		HTTPClientData			data;
 		Proxy					*proxy;
+		CgiClass				*cgi;
 
 		HTTPClient(FD clientFd, int port, long host, sockaddr_in cli_addr);
 		~HTTPClient();

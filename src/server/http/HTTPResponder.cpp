@@ -39,17 +39,10 @@ void HTTPResponder::generateAssociatedResponse(HTTPClient &client) {
 		);
 		return;
 	}
-	// TODO proxy & cgi
 	else if (client.responseState == CGI) {
-		client.data.request.setRequest(client.data.response.getAssociatedDataRaw());
-		HTTPParser::parse(client);
-
 		client.data.response.setResponse(
-			client.data.response.builder
-			.setHeader("Server", "Not-Apache")
-			.setDate()
-			.setHeader("Connection", "Close")
-			.setBody(client.data.response.getAssociatedDataRaw())
+			ResponseBuilder()
+			.setBody(client.cgi->response.data.data)
 			.build()
 		);
 		return;
@@ -267,7 +260,7 @@ bool HTTPResponder::checkCredentials(const std::string& authFile, const std::str
 	// open and read from "password database"
 	fd = ::open(authFile.c_str(), O_RDONLY);
 	if (fd == -1)
-		ERROR_THROW(OpenFail());
+		ERROR_THROW(CgiClass::OpenFail()); //TODO not part of cgi
 	while ((ret = ::read(fd, &buf, sizeof(buf))) > 0) {
 		buf[ret] = '\0';
 		fileContent += buf;
@@ -275,7 +268,7 @@ bool HTTPResponder::checkCredentials(const std::string& authFile, const std::str
 			return false; // TODO throw something
 	}
 	if (ret == -1)
-		ERROR_THROW(ReadFail());	
+		ERROR_THROW(CgiClass::ReadFail()); //TODO not part of cgi
 
 	// split per user
 	std::vector<std::string> userPasswordPair = utils::split(fileContent, "\n");
@@ -425,35 +418,40 @@ void	HTTPResponder::runCGI(HTTPClient& client, const std::string &f, const std::
 	struct stat 	sb;
 	CGIenv::env 	envp;
 	bool 			body = false;
+	client.cgi = new CgiClass;
 
 	setEnv(client, envp, client.data.request.data.uri.path, f);
 	char** args = new char *[2]();
 	args[0] = utils::strdup(cgi.c_str());
 
 	if (::stat(args[0], &sb) == -1)
-		ERROR_THROW(NotFound());
+		ERROR_THROW(CgiClass::NotFound());
 
 	if (::pipe(pipefd) == -1)
-		ERROR_THROW(PipeFail());
-	client.data.response._fd = pipefd[0];
+		ERROR_THROW(CgiClass::PipeFail());
 
 	if (client.data.request.data.bodyLength) {
 		if (::pipe(bodyPipefd))
-			ERROR_THROW(PipeFail());
-		client.data.response._bodyfd = bodyPipefd[0];
-		if (::close(bodyPipefd[1]) == -1) 
-			ERROR_THROW(CloseFail());
+			ERROR_THROW(CgiClass::PipeFail());
 		body = true;
 	}
 
 	int pid = ::fork();
 	if (pid == -1)
-		ERROR_THROW(ForkFail());
+		ERROR_THROW(CgiClass::ForkFail());
 	if (!pid) // TODO ERROR logging
 	{
 		if (body) {
 			if (::dup2(bodyPipefd[0], STDIN_FILENO) == -1) {
 				globalLogger.logItem(logger::ERROR, "dup2 failed");
+				::exit(1);
+			}
+			if (::close(bodyPipefd[0]) == -1) {
+				globalLogger.logItem(logger::ERROR, "close failed");
+				::exit(1);
+			}
+			if (::close(bodyPipefd[1]) == -1) {
+				globalLogger.logItem(logger::ERROR, "close failed");
 				::exit(1);
 			}
 		}
@@ -476,8 +474,13 @@ void	HTTPResponder::runCGI(HTTPClient& client, const std::string &f, const std::
 		::exit(1);
 	}
 	if (::close(pipefd[1]) == -1)
-		ERROR_THROW(CloseFail());
+		ERROR_THROW(CgiClass::CloseFail());
 	client.addAssociatedFd(pipefd[0]); //
+	if (body) {
+		client.addAssociatedFd(bodyPipefd[1], associatedFD::WRITE); //
+		if (::close(bodyPipefd[0]) == -1)
+			ERROR_THROW(CgiClass::CloseFail());
+	}
 	client.responseState = CGI; // 
 	client.connectionState = ASSOCIATED_FD; //
 }

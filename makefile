@@ -96,6 +96,7 @@ SRC	=\
 	server/http/HTTPParseData.cpp\
 	server/http/HTTPResponder.cpp\
 	server/http/Proxy.cpp\
+	server/http/CGIClass.cpp\
 	server/http/HTTPMimeTypes.cpp\
 	server/http/RequestBuilder.cpp\
 	server/http/ResponseBuilder.cpp\
@@ -170,6 +171,7 @@ HEADERS	=\
 	server/http/HTTPParseData.hpp\
 	server/http/HTTPResponder.hpp\
 	server/http/Proxy.hpp\
+	server/http/CGIClass.hpp\
 	server/http/HTTPMimeTypes.hpp\
 	server/http/RequestBuilder.hpp\
 	server/http/ResponseBuilder.hpp\

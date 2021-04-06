@@ -41,35 +41,6 @@ namespace NotApache {
 		static void setEnv(HTTPClient& client, CGIenv::env& envp, std::string& uri, const std::string& f);
 		static void runCGI(HTTPClient& client, const std::string &f, const std::string& cgi);
 		static bool checkCredentials(const std::string& authFile, const std::string& credentials);
-
-		class NotFound : public std::exception {
-			public:
-				virtual const char *what() const throw() { return "CGI not found"; }
-		};
-		class PipeFail : public std::exception {
-			public:
-				virtual const char *what() const throw() { return "Pipe fail"; }
-		};
-		class ReadFail : public std::exception {
-			public:
-				virtual const char *what() const throw() { return "Read fail"; }
-		};
-		class OpenFail : public std::exception {
-			public:
-				virtual const char *what() const throw() { return "Open fail"; }
-		};
-		class CloseFail : public std::exception {
-			public:
-				virtual const char *what() const throw() { return "Close fail"; }
-		};
-		class ForkFail : public std::exception {
-			public:
-				virtual const char *what() const throw() { return "Fork fail"; }
-		};
-		class CWDFail: public std::exception {
-			public:
-				virtual const char *what() const throw() { return "CWD fail"; }
-		};
 	};
 }
 
