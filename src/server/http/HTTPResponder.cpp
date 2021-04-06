@@ -215,9 +215,17 @@ void HTTPResponder::serveFile(HTTPClient &client, config::ServerBlock &server, c
 			handleError(client, &server, &route, 401);
 			return ;
 		}
-		else if (!checkCredentials(route.getAuthBasicUserFile(), it->second)) { // try/catch?
-			handleError(client, &server, &route, 403); // is 403 this right in all cases
-			return ;
+		else {
+			try {
+				if (!checkCredentials(route.getAuthBasicUserFile(), it->second)) {
+					handleError(client, &server, &route, 403);
+					return ;
+				}
+			}
+			catch (const std::exception& e) {
+				globalLogger.logItem(logger::ERROR, std::string("File serving error: ") + e.what());
+				handleError(client, &server, &route, 500);
+			}
 		}
 	}
 
@@ -260,22 +268,23 @@ bool HTTPResponder::checkCredentials(const std::string& authFile, const std::str
 	// open and read from "password database"
 	fd = ::open(authFile.c_str(), O_RDONLY);
 	if (fd == -1)
-		ERROR_THROW(CgiClass::OpenFail()); //TODO not part of cgi
+		ERROR_THROW(OpenFail());
 	while ((ret = ::read(fd, &buf, sizeof(buf))) > 0) {
 		buf[ret] = '\0';
 		fileContent += buf;
 		if (fileContent.size() > 10000)
-			return false; // TODO throw something
+			ERROR_THROW(MaxFileSize());
 	}
 	if (ret == -1)
-		ERROR_THROW(CgiClass::ReadFail()); //TODO not part of cgi
+		ERROR_THROW(ReadFail());
 
 	// split per user
 	std::vector<std::string> userPasswordPair = utils::split(fileContent, "\n");
 	
 	// Check header
 	if (credentials.find("Basic ", 0, 6) != 0)
-		return false; // TODO throw something
+		ERROR_THROW(AuthHeader());
+
 	// Find match
 	for (size_t i = 0; i < userPasswordPair.size(); ++i) {
 		if (utils::base64_decode(credentials.substr(6)) == userPasswordPair[i])

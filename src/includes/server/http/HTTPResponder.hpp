@@ -41,6 +41,23 @@ namespace NotApache {
 		static void setEnv(HTTPClient& client, CGIenv::env& envp, std::string& uri, const std::string& f);
 		static void runCGI(HTTPClient& client, const std::string &f, const std::string& cgi);
 		static bool checkCredentials(const std::string& authFile, const std::string& credentials);
+		
+		class ReadFail : public std::exception {
+			public:
+				virtual const char *what() const throw() { return "Read fail"; }
+		};
+		class OpenFail : public ReadFail {
+			public:
+				virtual const char *what() const throw() { return "Open fail"; }
+		};
+		class MaxFileSize : public ReadFail {
+			public:
+				virtual const char *what() const throw() { return "Reached max file size"; }
+		};
+		class AuthHeader : public ReadFail {
+			public:
+				virtual const char *what() const throw() { return "Invalid authentication header"; }
+		};
 	};
 }
 

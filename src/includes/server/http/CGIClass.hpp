@@ -34,14 +34,6 @@ namespace NotApache {
 			public:
 				virtual const char *what() const throw() { return "Pipe fail"; }
 		};
-		class ReadFail : public CGIException {
-			public:
-				virtual const char *what() const throw() { return "Read fail"; }
-		};
-		class OpenFail : public CGIException {
-			public:
-				virtual const char *what() const throw() { return "Open fail"; }
-		};
 		class CloseFail : public CGIException {
 			public:
 				virtual const char *what() const throw() { return "Close fail"; }
