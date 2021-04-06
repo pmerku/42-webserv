@@ -69,6 +69,12 @@ public:
 			return 1;
 		}
 
+		// validate only mode
+		if (args.onlyValidate()) {
+			logger.log(logger::LogItem(logger::INFO, "Configuration is valid, exiting!"));
+			return 0;
+		}
+
 		// create server
 		server.setLogger(logger);
 

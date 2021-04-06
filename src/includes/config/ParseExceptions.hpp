@@ -11,7 +11,7 @@
 namespace config {
 	class ArgsWithBlockException: public ConfigException {
 	protected:
-		const char * getTemplate() const throw() {
+		std::string getTemplate() const throw() {
 			return "Block '{KEY}' cannot have any arguments before/after opening bracket";
 		}
 
@@ -21,7 +21,7 @@ namespace config {
 
 	class BlockMissingOpeningException: public ConfigException {
 	protected:
-		const char * getTemplate() const throw() {
+		std::string getTemplate() const throw() {
 			return "Block '{KEY}' must have opening bracket";
 		}
 
@@ -31,7 +31,7 @@ namespace config {
 
 	class UnknownKeyException: public ConfigException {
 	protected:
-		const char * getTemplate() const throw() {
+		std::string getTemplate() const throw() {
 			return "Key '{KEY}' is not a valid config key";
 		}
 
@@ -41,7 +41,7 @@ namespace config {
 
 	class InvalidNestedBlockException: public ConfigException {
 	protected:
-		const char * getTemplate() const throw() {
+		std::string getTemplate() const throw() {
 			return "Block '{KEY}' may not be inside a '{BLOCK_NAME}' block";
 		}
 

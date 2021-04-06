@@ -42,7 +42,7 @@ namespace config {
 
 		class UnbalancedBracketsException: public ConfigException {
 		protected:
-			const char * getTemplate() const throw() {
+			std::string getTemplate() const throw() {
 				return "Unbalanced brackets detected in file";
 			}
 
