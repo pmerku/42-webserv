@@ -401,7 +401,7 @@ HTTPParser::ParseState		HTTPParser::parse(HTTPParseData &data, HTTPClient *clien
 	}
 
 	if (!data._gotBody) {
-		utils::DataList::DataListIterator beginOfData = data._pos; // 4. move it var to start of new chunk
+		utils::DataList::DataListIterator beginOfData = data._pos; // move it var to start of new chunk
 		std::advance(beginOfData, 2);
 
 		ParseReturn	ret;
