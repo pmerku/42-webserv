@@ -7,6 +7,6 @@
 
 using namespace NotApache;
 
-CgiClass::CgiClass() {}
+CgiClass::CgiClass() : response(HTTPParseData::CGI_RESPONSE) {}
 
 CgiClass::~CgiClass() {}

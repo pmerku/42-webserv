@@ -11,7 +11,6 @@ HTTPParseData::HTTPParseData(HTTPParseData::HTTPParseType type):
 		data(),
 		chunkedData(),
 		_pos(data.beginList()),
-		_isCGI(false),
 		_type(type),
 		_gotHeaders(false),
 		_gotFirstLine(false),

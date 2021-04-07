@@ -37,7 +37,6 @@ namespace NotApache {
 
 	private:
 		utils::DataList::DataListIterator	_pos;
-		bool 								_isCGI;
 		HTTPParseType 						_type;
 		bool								_gotHeaders;
 		bool								_gotFirstLine;
@@ -53,6 +52,7 @@ namespace NotApache {
 		std::map<std::string, std::string>	headers;
 		int 								bodyLength;
 		int 								statusCode;
+		std::string 						reasonPhrase;
 
 		int									parseStatusCode;
 

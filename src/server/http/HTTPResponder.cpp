@@ -22,6 +22,7 @@
 using namespace NotApache;
 
 void HTTPResponder::generateAssociatedResponse(HTTPClient &client) {
+	config::ServerBlock *server = configuration->findServerBlock(client.data.request.data.headers.find("HOST")->second, client.getPort(), client.getHost());
 	if (client.responseState == FILE) {
 		client.data.response.setResponse(
 			client.data.response.builder
@@ -33,6 +34,10 @@ void HTTPResponder::generateAssociatedResponse(HTTPClient &client) {
 		);
 		return;
 	} else if (client.responseState == PROXY) {
+		if (client.proxy->response.data.parseStatusCode != 200) {
+			handleError(client, server, 502, false);
+			return;
+		}
 		client.data.response.setResponse(
 			ResponseBuilder(client.proxy->response.data)
 			.build()
@@ -40,9 +45,12 @@ void HTTPResponder::generateAssociatedResponse(HTTPClient &client) {
 		return;
 	}
 	else if (client.responseState == CGI) {
+		if (client.cgi->response.data.parseStatusCode != 200) {
+			handleError(client, server, 500, false);
+			return;
+		}
 		client.data.response.setResponse(
-			ResponseBuilder()
-			.setBody(client.cgi->response.data.data)
+			ResponseBuilder(client.cgi->response.data)
 			.build()
 		);
 		return;
@@ -415,12 +423,6 @@ void	HTTPResponder::setEnv(HTTPClient& client, CGIenv::env& envp, std::string& u
 }
 
 // TODO current working directory
-// TODO writing body -> wait for primoz
-// TODO parsing body
-// headers and body
-// 2 headers?
-// Add unknown headers
-
 void	HTTPResponder::runCGI(HTTPClient& client, const std::string &f, const std::string& cgi) {
 	FD				pipefd[2];
 	FD				bodyPipefd[2];
@@ -431,7 +433,7 @@ void	HTTPResponder::runCGI(HTTPClient& client, const std::string &f, const std::
 
 	setEnv(client, envp, client.data.request.data.uri.path, f);
 	char** args = new char *[2]();
-	args[0] = utils::strdup(cgi.c_str());
+	args[0] = utils::strdup(cgi); // TODO arg[1] is file path of script
 
 	if (::stat(args[0], &sb) == -1)
 		ERROR_THROW(CgiClass::NotFound());
@@ -445,7 +447,7 @@ void	HTTPResponder::runCGI(HTTPClient& client, const std::string &f, const std::
 		body = true;
 	}
 
-	int pid = ::fork();
+	int pid = ::fork(); // TODO pid needs to be waited for exit code
 	if (pid == -1)
 		ERROR_THROW(CgiClass::ForkFail());
 	if (!pid) // TODO ERROR logging

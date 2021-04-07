@@ -93,10 +93,10 @@ void StandardHandler::handleAssociatedRead(HTTPClient &client) {
 			default:
 				client.cgi->response.appendResponseData(buf, ret);
 				client.isHandled.lock();
-				//if (_parser->parse(client.cgi->response.data, &client) == HTTPParser::READY_FOR_WRITE) {
-					//client.connectionState = WRITING;
-					//client.writeState = GOT_ASSOCIATED;
-				//}
+				if (_parser->parse(client.cgi->response.data, &client) == HTTPParser::READY_FOR_WRITE) {
+					client.connectionState = WRITING;
+					client.writeState = GOT_ASSOCIATED;
+				}
 				std::cout << client.cgi->response.data << std::endl;
 				stopHandle(client, false);
 				return;

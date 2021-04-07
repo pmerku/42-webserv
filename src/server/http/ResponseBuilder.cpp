@@ -93,7 +93,10 @@ ResponseBuilder::ResponseBuilder(const std::string &protocol) {
 
 ResponseBuilder::ResponseBuilder(const HTTPParseData &data) {
 	_protocol = "HTTP/1.1";
-	setStatus(data.statusCode);
+	if (!data.reasonPhrase.empty())
+		setStatus(data.statusCode, data.reasonPhrase);
+	else
+		setStatus(data.statusCode);
 	for (std::map<std::string, std::string>::const_iterator it = data.headers.begin(); it != data.headers.end(); ++it) {
 		setHeader(it->first, it->second);
 	}
@@ -110,8 +113,13 @@ ResponseBuilder &ResponseBuilder::setStatus(int code) {
 	if (it == statusMap.end()) {
 		it = statusMap.find(500);
 	}
-	_statusLine.first = utils::intToString(it->first);
-	_statusLine.second = it->second;
+	setStatus(it->first, it->second);
+	return *this;
+}
+
+ResponseBuilder &ResponseBuilder::setStatus(int code, const std::string &reasonPhrase) {
+	_statusLine.first = utils::intToString(code);
+	_statusLine.second = reasonPhrase;
 	return *this;
 }
 
