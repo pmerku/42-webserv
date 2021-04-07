@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include "utils/base64.hpp"
 
 #define LAST_TWO		0xfc		// 11111100
