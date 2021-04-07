@@ -140,7 +140,8 @@ HTTPParser::ParseReturn		HTTPParser::parseHeaders(HTTPParseData &data, const std
 		data.headers[key] = value;
 
 		if (key == "TRANSFER-ENCODING") {
-			if (key.find_first_not_of("chunked ") != std::string::npos) {
+			// TODO parse transfer encoding better (split on comma, trim whitespace, check parts for unsupported)
+			if (value.find("chunked") == std::string::npos) {
 				globalLogger.logItem(logger::ERROR, "Not supported transfer encoding");
 				data.parseStatusCode = 400;
 				// TODO accept-encoding header
@@ -223,7 +224,8 @@ HTTPParser::ParseReturn HTTPParser::parseTrailHeaders(HTTPParseData &data, const
 		std::string	value = it->substr(colonPos+1);
 		value = value.substr(value.find_first_not_of(' '), value.find_last_not_of(' '));
 		// ignore already present headers
-		data.headers.erase(data.headers.find("TRAILER"));
+		if (data.headers.find("TRAILER") != data.headers.end())
+		    data.headers.erase(data.headers.find("TRAILER"));
 		if (data.headers.find(key) == data.headers.end())
 			data.headers[key] = value;
 	}
@@ -287,6 +289,8 @@ HTTPParser::ParseReturn		HTTPParser::parseChunkedBody(HTTPParseData &data, utils
 	data._pos = it;
 
 	while (true) {
+        if (data._pos == data.data.endList() && data._posStart)
+            data._pos = data.data.beginList();
 		utils::DataList::DataListIterator sizeEnd = data.data.find("\r\n", data._pos);
 		// check if CRLF was transmitted
 		if (sizeEnd == data.data.endList()) {
@@ -306,7 +310,7 @@ HTTPParser::ParseReturn		HTTPParser::parseChunkedBody(HTTPParseData &data, utils
 		if (data.data.size(sizeEnd) < chunkSize + 2) {
 			return OK; // unfinished
 		} else if (chunkSize == 0) {
-			if (data.data.find("\r\n", sizeEnd) != data.data.endList())
+			if (data.data.find("\r\n", sizeEnd) == sizeEnd)
 				data._gotTrailHeaders = true;
 			data._pos = sizeEnd;
 			return FINISHED;
@@ -334,6 +338,7 @@ HTTPParser::ParseReturn		HTTPParser::parseChunkedBody(HTTPParseData &data, utils
 		data.data.resize(chunkEnd, data.data.endList());
 
 		data._pos = data.data.beginList(); // set last position of chunk
+        data._posStart = data._pos == data.data.endList();
 	}
 }
 
@@ -395,20 +400,19 @@ HTTPParser::ParseState		HTTPParser::parse(HTTPParseData &data, HTTPClient *clien
 			ret = parseHeaders(data, data.data.substring(beginOfHeaders, endOfHeaders), client);
 		if (ret == ERROR)
 			return READY_FOR_WRITE;
-		std::advance(endOfHeaders, 2);
-		data._pos = endOfHeaders; // points to /r/n of empty line
+		std::advance(endOfHeaders, 4);
+		data.data.resize(endOfHeaders, data.data.endList());
+		data._pos = data.data.beginList(); // points beginning of body
+        data._posStart = data._pos == data.data.endList();
 		data._gotHeaders = true;
 	}
 
 	if (!data._gotBody) {
-		utils::DataList::DataListIterator beginOfData = data._pos; // move it var to start of new chunk
-		std::advance(beginOfData, 2);
-
 		ParseReturn	ret;
 		if (data.isChunked)
-			ret = parseChunkedBody(data, beginOfData);
+			ret = parseChunkedBody(data, data._pos);
 		else
-			ret = parseBody(data, beginOfData);
+			ret = parseBody(data, data._pos);
 
 		if (ret == FINISHED) {
 			data._gotBody = true;

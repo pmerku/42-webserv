@@ -37,6 +37,7 @@ namespace NotApache {
 
 	private:
 		utils::DataList::DataListIterator	_pos;
+	    bool                                _posStart;
 		HTTPParseType 						_type;
 		bool								_gotHeaders;
 		bool								_gotFirstLine;
