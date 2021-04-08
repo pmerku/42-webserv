@@ -12,6 +12,12 @@
 
 namespace NotApache {
 
+#define EXECVE_ERROR 1
+#define CLOSE_ERROR 2
+#define DUP2_ERROR 3
+
+    class HTTPClient;
+
 	class CgiClass {
 	public:
 		HTTPClientRequest	request;
@@ -20,7 +26,7 @@ namespace NotApache {
 		explicit CgiClass();
 		~CgiClass();
 
-		class CGIException : public std::exception {
+	    class CGIException : public std::exception {
 		public:
 			virtual const char *what() const throw() {
 				return "Failed to create CGI";

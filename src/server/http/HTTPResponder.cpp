@@ -320,7 +320,8 @@ void HTTPResponder::generateResponse(HTTPClient &client) {
 
 	// find which route block to use
 	utils::Uri uri = client.data.request.data.uri;
-	config::RouteBlock	*route = server->findRoute(uri.path);
+	std::string rewrittenUrl = uri.path; // findRoute will rewrite url
+	config::RouteBlock	*route = server->findRoute(rewrittenUrl);
 	if (route == 0) {
 		handleError(client, server, 400);
 		return;
@@ -334,7 +335,7 @@ void HTTPResponder::generateResponse(HTTPClient &client) {
 
 	if (route->shouldDoFile()) {
 		utils::Uri file = route->getRoot();
-		file.appendPath(uri.path);
+		file.appendPath(rewrittenUrl);
 		serveFile(client, *server, *route, file.path);
 		return;
 	}
