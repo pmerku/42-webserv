@@ -185,6 +185,7 @@ regex::Regex &RouteBlock::getLocation() {
 }
 
 bool RouteBlock::shouldLocationRewrite() const {
+	throwNotParsed();
 	return _shouldRewrite;
 }
 
