@@ -55,6 +55,7 @@ SRC	=\
 	config/validators/StartsWithValidator.cpp\
 	config/validators/PluginValidator.cpp\
 	config/validators/UrlValidator.cpp\
+	config/validators/UploadValidator.cpp\
 	config/validators/DomainNameValidator.cpp\
 	config/validators/ErrorCodeValidator.cpp\
 	config/validators/RequiredKey.cpp\
@@ -125,6 +126,7 @@ HEADERS	=\
 	config/validators/StartsWithValidator.hpp\
 	config/validators/PluginValidator.hpp\
 	config/validators/UrlValidator.hpp\
+	config/validators/UploadValidator.hpp\
 	config/validators/DomainNameValidator.hpp\
 	config/validators/ErrorCodeValidator.hpp\
 	config/validators/RequiredKey.hpp\

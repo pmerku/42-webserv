@@ -58,12 +58,12 @@ void Server::_createFdSets() {
 		}
 		else if ((*i)->connectionState == ASSOCIATED_FD) {
 			for (size_t j = 0; j < (*i)->getAssociatedFdLength(); ++j) {
-                if ((*i)->getAssociatedFd(j).fd > _maxFd) _maxFd = (*i)->getAssociatedFd(j).fd;
-                if ((*i)->getAssociatedFd(j).mode == associatedFD::READ)
-                    FD_SET((*i)->getAssociatedFd(j).fd, &_readFdSet);
-                else
-                    FD_SET((*i)->getAssociatedFd(j).fd, &_writeFdSet);
-            }
+				if ((*i)->getAssociatedFd(j).fd > _maxFd) _maxFd = (*i)->getAssociatedFd(j).fd;
+				if ((*i)->getAssociatedFd(j).mode == associatedFD::READ)
+					FD_SET((*i)->getAssociatedFd(j).fd, &_readFdSet);
+				else
+					FD_SET((*i)->getAssociatedFd(j).fd, &_writeFdSet);
+			}
 		}
 	}
 }
