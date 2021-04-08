@@ -1,17 +1,23 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <strings.h>
 
 #define BUFFER_SIZE 1024
 
 int main(int argc, char *argv[], char *env[]) {
 	setbuf(stdout, NULL);
+	char pathOof[BUFFER_SIZE+1];
+	bzero(pathOof, BUFFER_SIZE+1);
 	// headers
 	printf("Content-Type: text/html\r\n");
 	printf("Status: 418 Teapot\r\n");
 	printf("X-CGI-HI: Not cool\r\n");
 	printf("abc-X-CGI-HI: This is cool\r\n");
 	printf("\r\n");
+
+    getcwd(pathOof, BUFFER_SIZE);
+	printf("<h2>CWD: %s</h2>", pathOof);
 
 	// argv
 	printf("<h1>Argv</h1><ol>\n");

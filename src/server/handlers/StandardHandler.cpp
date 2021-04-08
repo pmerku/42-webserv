@@ -7,11 +7,13 @@
 #include <unistd.h>
 #include <cerrno>
 #include <cstring>
+#include <sys/wait.h>
 
 using namespace NotApache;
 
 const int	StandardHandler::_bufferSize = 1024;
 
+// TODO broken pipe??
 void StandardHandler::stopHandle(HTTPClient &client, bool shouldLock) {
 	if (shouldLock) client.isHandled.lock();
 	client.timeout(false);
@@ -79,6 +81,15 @@ void StandardHandler::handleAssociatedRead(HTTPClient &client) {
 		ssize_t	ret = ::read(fileFd, buf, _bufferSize);
 		switch (ret) {
 			case 0:
+			    // check for error exit codes
+                if (::waitpid(client.cgi->pid, &client.cgi->status, WUNTRACED) > 0) {
+                    if (WIFEXITED(client.cgi->status))
+                        client.cgi->status = WEXITSTATUS(client.cgi->status);
+                    else if (WIFSIGNALED(client.cgi->status)) {
+                        client.cgi->status = WTERMSIG(client.cgi->status);
+                    }
+				    client.cgi->hasExited = true;
+                }
 				// has read everything
 				client.isHandled.lock();
 				client.connectionState = WRITING;

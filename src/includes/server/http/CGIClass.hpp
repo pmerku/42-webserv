@@ -7,6 +7,7 @@
 
 #include "server/ServerTypes.hpp"
 #include "server/http/HTTPClientData.hpp"
+#include "env/env.hpp"
 #include "utils/Uri.hpp"
 #include <string>
 
@@ -19,12 +20,23 @@ namespace NotApache {
     class HTTPClient;
 
 	class CgiClass {
+    private:
+        CGIenv::env         _envp;
+
 	public:
+        pid_t               pid;
+	    int                 status;
+
 		HTTPClientRequest	request;
 		HTTPClientResponse	response;
 
+	    bool                hasExited;
+
 		explicit CgiClass();
 		~CgiClass();
+
+        void generateENV(HTTPClient& client, const utils::Uri& uri, const std::string &filePath, const std::string &execPath);
+	    const CGIenv::env &getEnvp() const;
 
 	    class CGIException : public std::exception {
 		public:
