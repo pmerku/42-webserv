@@ -140,12 +140,16 @@ HTTPParser::ParseReturn		HTTPParser::parseHeaders(HTTPParseData &data, const std
 		data.headers[key] = value;
 
 		if (key == "TRANSFER-ENCODING") {
-			// TODO parse transfer encoding better (split on comma, trim whitespace, check parts for unsupported)
-			if (value.find("chunked") == std::string::npos) {
-				globalLogger.logItem(logger::ERROR, "Not supported transfer encoding");
-				data.parseStatusCode = 400;
-				// TODO accept-encoding header
-				return ERROR;
+			std::vector<std::string> headerValue = utils::split(value, ",");
+			for (std::vector<std::string>::iterator valueIt = headerValue.begin(); valueIt != headerValue.end(); ++valueIt) {
+				std::string::size_type start = (*valueIt).find_first_not_of(' ');
+				std::string::size_type end = (*valueIt).find_last_not_of(' ');
+				*valueIt = (*valueIt).substr(start, end+1 - start);
+				if ((*valueIt).find("chunked") == std::string::npos) {
+					globalLogger.logItem(logger::ERROR, "Not supported transfer encoding");
+					data.parseStatusCode = 400;
+					return ERROR;
+				}
 			}
 			if (data._type != HTTPParseData::CGI_RESPONSE && value.find("chunked") != std::string::npos)
 				data.isChunked = true;
@@ -272,8 +276,6 @@ HTTPParser::ParseReturn		HTTPParser::parseCgiHeaders(HTTPParseData &data, const 
 		data.statusCode = utils::stoi(statusCode);
 		data.reasonPhrase = it->second.substr(pos + 3);
 	}
-
-	// TODO location header
 
 	return OK;
 }
