@@ -35,10 +35,6 @@ StandardHandler::IOReturn StandardHandler::doRead(FD fd, utils::DataList &readab
 	}
 }
 
-StandardHandler::IOReturn StandardHandler::doWrite(FD fd, HTTPClientRequest &writable) {
-	return doWrite(fd, writable, writable.getRequest());
-}
-
 StandardHandler::IOReturn StandardHandler::doWrite(FD fd, HTTPClientRequest &writable, utils::DataList &data) {
 	if (!writable.hasProgress) {
 		writable.currentPacket = data.begin();
@@ -140,7 +136,7 @@ void StandardHandler::read(HTTPClient &client) {
 void StandardHandler::handleAssociatedWrite(HTTPClient &client) {
 	globalLogger.logItem(logger::DEBUG, "Handling associated file descriptors (WRITE)");
 	if (client.responseState == PROXY) {
-		IOReturn ret = doWrite(client.getAssociatedFd(0).fd, client.proxy->request);
+		IOReturn ret = doWrite(client.getAssociatedFd(0).fd, client.proxy->request, client.proxy->request.getRequest());
 		if (ret == IO_ERROR || ret == SUCCESS) {
 			stopHandle(client);
 			return;

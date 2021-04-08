@@ -18,7 +18,6 @@ namespace NotApache {
 		};
 
 		IOReturn		doRead(FD fd, utils::DataList &readable);
-		IOReturn		doWrite(FD fd, HTTPClientRequest &writable);
 		IOReturn		doWrite(FD fd, HTTPClientRequest &writable, utils::DataList &data);
 
 		void handleAssociatedRead(HTTPClient &client);
