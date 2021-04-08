@@ -423,12 +423,11 @@ void HTTPResponder::generateResponse(HTTPClient &client) {
 
 	if (route->shouldDoFile()) {
 		utils::Uri file = route->getRoot();
-		file.appendPath(rewrittenUrl);
 
 		// use upload directory instead for upload modifications
 		if (client.data.request.data.method == DELETE || client.data.request.data.method == PUT)
 			file = utils::Uri(route->getSaveUploads());
-		file.appendPath(uri.path);
+		file.appendPath(rewrittenUrl);
 		if (client.data.request.data.method == DELETE)
 			deleteFile(client, *server, *route, file.path);
 		else if (client.data.request.data.method == PUT)
