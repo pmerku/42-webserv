@@ -80,13 +80,10 @@ HTTPParser::ParseReturn		HTTPParser::parseRequestLine(HTTPParseData &data, const
 
 HTTPParser::ParseReturn		HTTPParser::parseResponseLine(HTTPParseData &data, const std::string &line) {
 	// check if spaces count in line is correct
-	std::vector<std::string> parts = utils::split(line, " ");
-	int spaces = utils::countSpaces(line);
-	if ((spaces != 2 && spaces != 3) || (parts.size() != 3 && parts.size() != 4)) { // TODO fix this jank
-		globalLogger.logItem(logger::ERROR, "Invalid response line");
-		data.parseStatusCode = 400;
-		return ERROR;
-	}
+	std::vector<std::string> parts;
+	parts.push_back(line.substr(0, 8));
+	parts.push_back(line.substr(9, 3));
+	parts.push_back(line.substr(13));
 
 	if (parts[0] != "HTTP/1.1") {
 		globalLogger.logItem(logger::ERROR, "HTTP protocol not supported");
@@ -108,12 +105,16 @@ HTTPParser::ParseReturn		HTTPParser::parseResponseLine(HTTPParseData &data, cons
 		}
 	}
 	data.statusCode = utils::stoi(parts[1]);
+	std::map<int, std::string>::const_iterator it = ResponseBuilder::statusMap.find(data.statusCode);
+	if (it == ResponseBuilder::statusMap.end()) {
+		globalLogger.logItem(logger::ERROR, "Invalid status code");
+		data.parseStatusCode = 400;
+		return ERROR;
+	}
 	return OK;
 }
 
 HTTPParser::ParseReturn		HTTPParser::parseHeaders(HTTPParseData &data, const std::string &headers, HTTPClient *client) {
-	// TODO cgi headers (status must parse to status code)
-	// TODO cgi headers ignore X-GI-* headers
 	// check if header field name has correct format
 	std::vector<std::string> headersArray = utils::split(headers, "\r\n");
 	for (std::vector<std::string>::iterator it = headersArray.begin(); it != headersArray.end(); ++it) {
@@ -137,9 +138,18 @@ HTTPParser::ParseReturn		HTTPParser::parseHeaders(HTTPParseData &data, const std
 		std::string	value = it->substr(colonPos+1);
 		value = value.substr(value.find_first_not_of(' '), value.find_last_not_of(' '));
 		data.headers[key] = value;
-		// TODO parse stricter (transfer-encoding: gzip, chunked should fail)
-		if (!data._isCGI && key == "TRANSFER-ENCODING" && value.find("chunked") != std::string::npos)
-			data.isChunked = true;
+
+		if (key == "TRANSFER-ENCODING") {
+			// TODO parse transfer encoding better (split on comma, trim whitespace, check parts for unsupported)
+			if (value.find("chunked") == std::string::npos) {
+				globalLogger.logItem(logger::ERROR, "Not supported transfer encoding");
+				data.parseStatusCode = 400;
+				// TODO accept-encoding header
+				return ERROR;
+			}
+			if (data._type != HTTPParseData::CGI_RESPONSE && value.find("chunked") != std::string::npos)
+				data.isChunked = true;
+		}
 	}
 
 	// at least one header
@@ -214,7 +224,8 @@ HTTPParser::ParseReturn HTTPParser::parseTrailHeaders(HTTPParseData &data, const
 		std::string	value = it->substr(colonPos+1);
 		value = value.substr(value.find_first_not_of(' '), value.find_last_not_of(' '));
 		// ignore already present headers
-		data.headers.erase(data.headers.find("TRAILER"));
+		if (data.headers.find("TRAILER") != data.headers.end())
+		    data.headers.erase(data.headers.find("TRAILER"));
 		if (data.headers.find(key) == data.headers.end())
 			data.headers[key] = value;
 	}
@@ -222,8 +233,53 @@ HTTPParser::ParseReturn HTTPParser::parseTrailHeaders(HTTPParseData &data, const
 	return OK;
 }
 
+HTTPParser::ParseReturn		HTTPParser::parseCgiHeaders(HTTPParseData &data, const std::string &headers) {
+	// check if header field name has correct format
+	std::vector<std::string> headersArray = utils::split(headers, "\r\n");
+	for (std::vector<std::string>::iterator it = headersArray.begin(); it != headersArray.end(); ++it) {
+		std::string::size_type colonPos = it->find(':');
+		if (colonPos == std::string::npos) {
+			globalLogger.logItem(logger::ERROR, "no \":\" in header field");
+			data.parseStatusCode = 400;
+			return ERROR;
+		}
+
+		// key parsing
+		std::string	key = it->substr(0, colonPos);
+		utils::toUpper(key);
+		if (key.find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.~!#$&'*+") != std::string::npos) {
+			globalLogger.logItem(logger::ERROR, "Invalid character in header field name");
+			data.parseStatusCode = 400;
+			return ERROR;
+		}
+
+		// add to map
+		std::string	value = it->substr(colonPos+1);
+		value = value.substr(value.find_first_not_of(' '), value.find_last_not_of(' '));
+		// ignore X-CGI-* headers
+		if (key.find("X-CGI-") != 0)
+			data.headers[key] = value;
+	}
+
+	std::map<std::string, std::string>::iterator it = data.headers.find("STATUS");
+	if (it != data.headers.end()) {
+		std::string::size_type pos = it->second.find_first_of("12345");
+		if (pos == std::string::npos) {
+			globalLogger.logItem(logger::ERROR, "Invalid status code");
+			data.parseStatusCode = 400;
+		}
+		std::string statusCode = it->second.substr(pos, 3);
+		data.statusCode = utils::stoi(statusCode);
+		data.reasonPhrase = it->second.substr(pos + 3);
+	}
+
+	// TODO location header
+
+	return OK;
+}
+
 HTTPParser::ParseReturn		HTTPParser::parseBody(HTTPParseData &data, utils::DataList::DataListIterator it) {
-	if (data.data.size(it) < static_cast<utils::DataList::size_type>(data.bodyLength))
+	if (data._type != HTTPParseData::CGI_RESPONSE && data.data.size(it) < static_cast<utils::DataList::size_type>(data.bodyLength))
 		return OK; // unfinished
 	data.data.resize(it, data.data.endList());
 	return FINISHED;
@@ -233,6 +289,8 @@ HTTPParser::ParseReturn		HTTPParser::parseChunkedBody(HTTPParseData &data, utils
 	data._pos = it;
 
 	while (true) {
+        if (data._pos == data.data.endList() && data._posStart)
+            data._pos = data.data.beginList();
 		utils::DataList::DataListIterator sizeEnd = data.data.find("\r\n", data._pos);
 		// check if CRLF was transmitted
 		if (sizeEnd == data.data.endList()) {
@@ -252,7 +310,7 @@ HTTPParser::ParseReturn		HTTPParser::parseChunkedBody(HTTPParseData &data, utils
 		if (data.data.size(sizeEnd) < chunkSize + 2) {
 			return OK; // unfinished
 		} else if (chunkSize == 0) {
-			if (data.data.find("\r\n", sizeEnd) != data.data.endList())
+			if (data.data.find("\r\n", sizeEnd) == sizeEnd)
 				data._gotTrailHeaders = true;
 			data._pos = sizeEnd;
 			return FINISHED;
@@ -270,16 +328,17 @@ HTTPParser::ParseReturn		HTTPParser::parseChunkedBody(HTTPParseData &data, utils
 		// check for CRLF at end of chunk data
 		if (data.data.find("\r\n", chunkEnd) != chunkEnd) {
 			globalLogger.logItem(logger::ERROR, "No CRLF characters after chunk data");
-			data.parseStatusCode = 400; // TODO which code?
+			data.parseStatusCode = 400;
 			return ERROR;
 		}
 
 		// extract chunk data
-		data.chunkedData.add(data.data.substring(sizeEnd, chunkEnd).c_str(), chunkSize); // TODO test if this removes \0 chars
+		data.chunkedData.add(data.data.substring(sizeEnd, chunkEnd).c_str(), chunkSize);
 		std::advance(chunkEnd, 2); // now past \r\n at end of chunk
 		data.data.resize(chunkEnd, data.data.endList());
 
 		data._pos = data.data.beginList(); // set last position of chunk
+        data._posStart = data._pos == data.data.endList();
 	}
 }
 
@@ -317,6 +376,8 @@ HTTPParser::ParseState		HTTPParser::parse(HTTPParseData &data, HTTPClient *clien
 
 	if (!data._gotHeaders) {
 		// find header terminator, ends with CRLFCRLF
+		if (data._type == HTTPParseData::CGI_RESPONSE)
+			data._pos = data.data.beginList();
 		utils::DataList::DataListIterator endOfHeaders = data.data.find("\r\n\r\n", data._pos);
 		utils::DataList::DataListIterator beginOfHeaders = data._pos;
 
@@ -332,23 +393,26 @@ HTTPParser::ParseState		HTTPParser::parse(HTTPParseData &data, HTTPClient *clien
 			return UNFINISHED;
 
 		// parse! if error occurred, start writing error response
-		ParseReturn	ret = parseHeaders(data, data.data.substring(beginOfHeaders, endOfHeaders), client);
+		ParseReturn ret;
+		if (data._type == HTTPParseData::CGI_RESPONSE)
+			ret = parseCgiHeaders(data, data.data.substring(beginOfHeaders, endOfHeaders));
+		else
+			ret = parseHeaders(data, data.data.substring(beginOfHeaders, endOfHeaders), client);
 		if (ret == ERROR)
 			return READY_FOR_WRITE;
-		std::advance(endOfHeaders, 2);
-		data._pos = endOfHeaders; // points to /r/n of empty line
+		std::advance(endOfHeaders, 4);
+		data.data.resize(endOfHeaders, data.data.endList());
+		data._pos = data.data.beginList(); // points beginning of body
+        data._posStart = data._pos == data.data.endList();
 		data._gotHeaders = true;
 	}
 
 	if (!data._gotBody) {
-		utils::DataList::DataListIterator beginOfData = data._pos; // 4. move it var to start of new chunk
-		std::advance(beginOfData, 2);
-
 		ParseReturn	ret;
 		if (data.isChunked)
-			ret = parseChunkedBody(data, beginOfData);
+			ret = parseChunkedBody(data, data._pos);
 		else
-			ret = parseBody(data, beginOfData);
+			ret = parseBody(data, data._pos);
 
 		if (ret == FINISHED) {
 			data._gotBody = true;

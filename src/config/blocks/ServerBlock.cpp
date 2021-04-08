@@ -20,15 +20,15 @@ using namespace config;
 const AConfigBlock::validatorsMapType	ServerBlock::_validators =
 		ConfigValidatorBuilder()
 		.addKey("host", ConfigValidatorListBuilder()
-			  .add(new ArgumentLength(1))
-			  .add(new Unique())
-			  .add(new IpValidator(0))
-			  .build())
+			.add(new ArgumentLength(1))
+			.add(new Unique())
+			.add(new IpValidator(0))
+			.build())
 	  	.addKey("port", ConfigValidatorListBuilder()
-			  .add(new ArgumentLength(1))
-			  .add(new Unique())
-			  .add(new IntValidator(0, 1, 65535))
-			  .build())
+			.add(new ArgumentLength(1))
+			.add(new Unique())
+			.add(new IntValidator(0, 1, 65535))
+			.build())
 		.addKey("server_name", ConfigValidatorListBuilder()
 			.add(new ArgumentLength(1))
 			.add(new DomainNameValidator(0))
@@ -41,9 +41,9 @@ const AConfigBlock::validatorsMapType	ServerBlock::_validators =
 			.add(new IsFile(1))
 			.build())
 		.addKey("body_limit", ConfigValidatorListBuilder()
-				.add(new ArgumentLength(1))
-				.add(new IntValidator(0, 0, 600))
-				.build())
+			.add(new ArgumentLength(1))
+			.add(new IntValidator(0, 0))
+			.build())
 	  	.build();
 
 const AConfigBlock::validatorListType 	ServerBlock::_blockValidators =
@@ -137,12 +137,31 @@ const std::string &ServerBlock::getServerName() const {
 	return _serverName;
 }
 
-RouteBlock *ServerBlock::findRoute(const std::string &path) {
+RouteBlock *ServerBlock::findRoute(std::string &path) {
 	throwNotParsed();
 	for (std::vector<RouteBlock*>::iterator route = _routeBlocks.begin(); route != _routeBlocks.end(); ++route) {
-		if ((*route)->getLocation().match(path)) {
-			return *route;
+		// rewrite location check
+		if ((*route)->shouldLocationRewrite()) {
+			std::string            matchedPart;
+			std::string::size_type slashPos = 0;
+			do {
+				slashPos = path.find('/', slashPos);
+				matchedPart = path.substr(0, slashPos);
+				if (!matchedPart.empty() && (*route)->getLocation().match(matchedPart)) {
+					if (slashPos == std::string::npos)
+						path = "/";
+					else
+						path = path.substr(slashPos);
+					return *route;
+				}
+				if (slashPos != std::string::npos)
+					slashPos++;
+			} while (slashPos != std::string::npos);
 		}
+		// do normal regex match
+		else if ((*route)->getLocation().match(path)) {
+            return *route;
+	    }
 	}
 	return 0;
 }

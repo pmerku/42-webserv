@@ -49,8 +49,8 @@ ENVBuilder &ENVBuilder::REMOTE_ADDR(const std::string &value) {
 	return *this;
 }
 
-ENVBuilder &ENVBuilder::REMOTE_INDENT(const std::string &value) {
-	_metaVariables["REMOTE_INDENT"] = value;
+ENVBuilder &ENVBuilder::REMOTE_IDENT(const std::string &value) {
+	_metaVariables["REMOTE_IDENT"] = value;
 	return *this;
 }
 
@@ -91,6 +91,11 @@ ENVBuilder &ENVBuilder::SERVER_PROTOCOL(const std::string &value) {
 
 ENVBuilder &ENVBuilder::SERVER_SOFTWARE(const std::string &value) {
 	_metaVariables["SERVER_SOFTWARE"] = value;
+	return *this;
+}
+
+ENVBuilder &ENVBuilder::REDIRECT_STATUS(const std::string& value) {
+	_metaVariables["REDIRECT_STATUS"] = value;
 	return *this;
 }
 

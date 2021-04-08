@@ -9,8 +9,10 @@
 #include "utils/mutex.hpp"
 #include "server/http/HTTPClientData.hpp"
 #include "server/http/Proxy.hpp"
+#include "server/http/CGIClass.hpp"
 #include "netinet/in.h"
 #include <vector>
+#include <netinet/in.h>
 
 namespace NotApache {
 
@@ -30,6 +32,7 @@ namespace NotApache {
 		PROXY,
 		FILE,
 		CGI,
+		UPLOAD,
 		NONE
 	};
 
@@ -59,6 +62,7 @@ namespace NotApache {
 		utils::Mutex<bool>		isHandled;
 		HTTPClientData			data;
 		Proxy					*proxy;
+		CgiClass				*cgi;
 
 		HTTPClient(FD clientFd, int port, long host, sockaddr_in cli_addr);
 		~HTTPClient();
@@ -66,6 +70,7 @@ namespace NotApache {
 		FD	getFd() const;
 		int getPort() const;
 		long getHost() const;
+		sockaddr_in getCliAddr() const;
 		std::string getIp() const;
 
 		void	addAssociatedFd(FD fd, associatedFD::type mode = associatedFD::READ);

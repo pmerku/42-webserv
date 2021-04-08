@@ -5,10 +5,11 @@
 #include "server/http/HTTPClient.hpp"
 #include "utils/intToString.hpp"
 #include <unistd.h>
+#include <sys/socket.h>
 
 using namespace NotApache;
 
-HTTPClient::HTTPClient(FD clientFd, int port, long host, sockaddr_in cli_addr): _fd(clientFd), _port(port), _host(host), _associatedFds(), _cli_addr(cli_addr), writeState(NO_RESPONSE), connectionState(READING), responseState(NONE), isHandled(false), proxy() {
+HTTPClient::HTTPClient(FD clientFd, int port, long host, sockaddr_in cli_addr): _fd(clientFd), _port(port), _host(host), _associatedFds(), _cli_addr(cli_addr), writeState(NO_RESPONSE), connectionState(READING), responseState(NONE), isHandled(false), proxy(), cgi() {
 	timeval timeData;
 	::gettimeofday(&timeData, 0);
 	_createdAt = timeData.tv_sec;
@@ -20,6 +21,8 @@ HTTPClient::~HTTPClient() {
 		::close(it->fd);
 	}
 	_associatedFds.clear();
+	delete cgi;
+	delete proxy;
 }
 
 FD HTTPClient::getFd() const {
@@ -32,6 +35,10 @@ int HTTPClient::getPort() const {
 
 long HTTPClient::getHost() const {
 	return _host;
+}
+
+sockaddr_in HTTPClient::getCliAddr() const {
+	return _cli_addr;
 }
 
 void HTTPClient::addAssociatedFd(FD fd, associatedFD::type mode) {

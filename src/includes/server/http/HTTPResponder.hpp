@@ -7,6 +7,10 @@
 
 #include <config/blocks/ServerBlock.hpp>
 #include "server/http/HTTPClient.hpp"
+#include "env/env.hpp"
+#include "utils/base64.hpp"
+#include <climits>
+#include <cstdlib>
 #include <sys/stat.h>
 
 #ifdef BUILD_APPLE
@@ -17,10 +21,9 @@
 #endif
 
 namespace NotApache {
-
 	class HTTPResponder {
 	public:
-		static void	generateResponse(HTTPClient &client);
+		static void		generateResponse(HTTPClient &client);
 
 		static void generateAssociatedResponse(HTTPClient &client);
 
@@ -28,15 +31,34 @@ namespace NotApache {
 
 		static void handleError(HTTPClient &client, config::ServerBlock *server, int code, bool doErrorPage = true);
 		static void handleError(HTTPClient &client, config::ServerBlock *server, config::RouteBlock *route, int code, bool doErrorPage = true);
-
-		static void
-		serveDirectory(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const struct ::stat &directoryStat, const std::string &dirPath);
-		static void	prepareFile(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const utils::Uri &file, int code = 200);
+		static void serveDirectory(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const struct ::stat &directoryStat, const std::string &dirPath);
+		static void	prepareFile(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const utils::Uri &file, int code = 200, bool shouldErrorFile = true);
 		static void	prepareFile(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const struct ::stat &buf, const utils::Uri &file, int code = 200);
+		static void	uploadFile(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const std::string &f);
+		static void	deleteFile(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const std::string &f);
 
 		static void handleProxy(HTTPClient &client, config::ServerBlock *server, config::RouteBlock *route);
-	};
 
+		static void runCGI(HTTPClient& client, const std::string &filePath, const std::string& cgi);
+		static bool checkCredentials(const std::string& authFile, const std::string& credentials);
+		
+		class ReadFail : public std::exception {
+			public:
+				virtual const char *what() const throw() { return "Read fail"; }
+		};
+		class OpenFail : public ReadFail {
+			public:
+				virtual const char *what() const throw() { return "Open fail"; }
+		};
+		class MaxFileSize : public ReadFail {
+			public:
+				virtual const char *what() const throw() { return "Reached max file size"; }
+		};
+		class AuthHeader : public ReadFail {
+			public:
+				virtual const char *what() const throw() { return "Invalid authentication header"; }
+		};
+	};
 }
 
 #endif //HTTPRESPONDER_HPP

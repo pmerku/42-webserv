@@ -30,6 +30,7 @@ namespace config {
 
 	private:
 		regex::Regex				_location;
+	    bool                        _shouldRewrite;
 		std::vector<std::string>	_allowedMethods;
 		std::vector<std::string>	_plugins;
 		std::string					_root;
@@ -38,10 +39,13 @@ namespace config {
 		std::string					_cgi;
 		std::string					_cgiExt;
 		std::string					_saveUploads;
+		std::string					_authBasic;
+		std::string					_authBasicUserFile;
 		UrlValidator::urlParsed		_proxyUrl;
 
 	public:
 		regex::Regex &getLocation();
+	    bool shouldLocationRewrite() const;
 		const std::vector<std::string> &getAllowedMethods() const;
 		const std::string &getRoot() const;
 		bool isDirectoryListing() const;
@@ -56,6 +60,9 @@ namespace config {
 		bool shouldDoCgi() const;
 
 		bool isAllowedMethod(const std::string &method) const;
+
+		const std::string &getAuthBasic() const;
+		const std::string &getAuthBasicUserFile() const;
 	};
 
 }

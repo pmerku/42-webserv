@@ -18,7 +18,8 @@ function doRequestPackets(arr) {
         s.on('connect', async () => {
             for (let data of arr) {
                 send(data);
-                await sleep(100);
+                console.log("Sent packet", data.replaceAll("\r", "\\r").replaceAll("\n", "\\n"));
+                await sleep(10);
             }
         })
 
@@ -46,7 +47,8 @@ function httpRequest(ops = {}) {
     if (ops.addHeaders) {
         req.headers = [ ...req.headers, ...ops.addHeaders ];
     }
-    return `${req.method} ${req.uri} HTTP/${req.version}\r\n${req.headers.map(v=>v+"\r\n").join("")}\r\n${req.body}`;
+    const out = `${req.method} ${req.uri} HTTP/${req.version}\r\n${req.headers.map(v=>v+"\r\n").join("")}\r\n${req.body}`;
+    return ops.perChar ? out.split("") : out;
 }
 
 const tests = [
@@ -76,12 +78,13 @@ const tests = [
     [httpRequest({ addHeaders: ["Content-Length: 0"] } ), 200], // no body
     [httpRequest({ addHeaders: ["Content-Length: 12"], body: "012345678912"} ), 200], // has body
     [httpRequest({ addHeaders: ["Transfer-Encoding: chunked"], body: "10\r\n1234567890123HI:\r\n1\r\n)\r\n0\r\n\r\n"} ), 200], // chunked body
-    [httpRequest({ addHeaders: ["Transfer-Encoding: chunked"], body: "10\r\n123456789012HI:\r\n1\r\n)\r\n0\r\nHeader: hello world\r\n"} ), 400], // chunked body with invalid chunk size
-    [httpRequest({ addHeaders: ["Transfer-Encoding: chunked"], body: "10\r\n1234567890123HI:\r\n1\r\n)\r\n0\r\nHeader: hello world\r\n"} ), 200], // chunked body with header
-    [httpRequest({ addHeaders: ["Transfer-Encoding: chunked"], body: "10\r\n12345678901\0\0HI:\r\n1\r\n)\r\n0\r\nHeader: hello world\r\n"} ), 200], // chunked body with header and null's
+    [httpRequest({ addHeaders: ["Transfer-Encoding: chunked"], body: "10\r\n123456789012HI:\r\n1\r\n)\r\n0\r\nHeader: hello world\r\n\r\n"} ), 400], // chunked body with invalid chunk size
+    [httpRequest({ addHeaders: ["Transfer-Encoding: chunked"], body: "10\r\n1234567890123HI:\r\n1\r\n)\r\n0\r\nHeader: hello world\r\n\r\n"} ), 200], // chunked body with header
+    [httpRequest({ addHeaders: ["Transfer-Encoding: chunked"], body: "10\r\n12345678901\0\0HI:\r\n1\r\n)\r\n0\r\nHeader: hello world\r\n\r\n"} ), 200], // chunked body with header and null's
     [httpRequest({ addHeaders: ["Transfer-Encoding: chunked"], body: "-12\r\n123456789012HI:\r\n0\r\n\r\n"} ), 400], // wrong chunk size
-    [httpRequest({ addHeaders: ["Transfer-Encoding: chunked"], body: "\r\n0\r\n\r\n"} ), 200], // chunked, no body
-    [httpRequest({ addHeaders: ["Transfer-Encoding: chunked"], body: "5\r\n12345\r\n0\r\nHeader: test\r\n"} ), 200], // chunked, with trailer header
+    [httpRequest({ addHeaders: ["Transfer-Encoding: chunked"], body: "0\r\n\r\n"} ), 200], // chunked, no body
+    [httpRequest({ addHeaders: ["Transfer-Encoding: chunked"], body: "5\r\n12345\r\n0\r\nHeader: test\r\n\r\n"} ), 200], // chunked, with trailer header
+    [[httpRequest({ addHeaders: ["Transfer-Encoding: chunked"]}), "5\r\n12345\r\n", "0\r\nHeader: test\r\n\r\n"], 200] // chunked, with trailer header and seperate packets
 ]
 
 function runTest(test) {

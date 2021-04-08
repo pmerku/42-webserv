@@ -17,6 +17,7 @@
 #include "config/validators/RegexCompiler.hpp"
 #include "config/validators/PluginValidator.hpp"
 #include "config/validators/UrlValidator.hpp"
+#include "config/validators/UploadValidator.hpp"
 
 using namespace config;
 
@@ -75,12 +76,22 @@ const AConfigBlock::validatorsMapType	RouteBlock::_validators =
 		  .add(new UrlValidator(0))
 		  .add(new Unique())
 		  .build())
+		.addKey("auth_basic", ConfigValidatorListBuilder()
+		  .add(new ArgumentLength(1))
+		  .add(new Unique())
+		  .build())
+		.addKey("auth_basic_user_file", ConfigValidatorListBuilder()
+		  .add(new ArgumentLength(1))
+		  .add(new Unique())
+		  .add(new IsFile(0))
+		  .build())
 		.build();
 
 const AConfigBlock::validatorListType 	RouteBlock::_blockValidators =
 		ConfigValidatorListBuilder()
 		.add(new RequiredKey("location"))
 		.add(new MutuallyExclusive("proxy_url", "root"))
+		.add(new UploadValidator())
 		.build();
 
 const std::string 						RouteBlock::_allowedBlocks[] = { "" };
@@ -115,13 +126,21 @@ void	RouteBlock::cleanup() {
 }
 
 void RouteBlock::parseData() {
-	_location = regex::Regex(getKey("location")->getArg(0));
+	std::string loc = getKey("location")->getArg(0);
+	if (loc == "/")
+		loc = "/.*"; // if its a single slash, make a valid regex out of it. quality of life feature
+    _shouldRewrite = loc.length() >= 1 && loc.compare(loc.length() - 1, 1, "/") == 0; // ends with slash
+	if (loc.length() > 1 && _shouldRewrite) // remove slash from end if it exists
+		loc = loc.substr(0, loc.length()-1);
+	_location = regex::Regex(loc);
 	_root = "";
 	_directoryListing = false;
 	_index = "";
 	_saveUploads = "";
 	_cgiExt = "";
 	_cgi = "";
+	_authBasic = "";
+	_authBasicUserFile = "";
 	_plugins.clear();
 	_allowedMethods.clear();
 	_allowedMethods.push_back("GET");
@@ -148,6 +167,10 @@ void RouteBlock::parseData() {
 		for (ConfigLine::arg_size i = 0; i < getKey("allowed_methods")->getArgLength(); i++)
 			_allowedMethods.push_back(getKey("allowed_methods")->getArg(i));
 	}
+	if (hasKey("auth_basic"))
+		_authBasic = getKey("auth_basic")->getArg(0);
+	if (hasKey("auth_basic_user_file"))
+		_authBasicUserFile = getKey("auth_basic_user_file")->getArg(0);
 	for (std::vector<ConfigLine>::const_iterator i = _lines.begin(); i != _lines.end(); ++i) {
 		if (i->getKey() != "use_plugin") continue;
 		_plugins.push_back(i->getArg(0));
@@ -158,6 +181,10 @@ void RouteBlock::parseData() {
 regex::Regex &RouteBlock::getLocation() {
 	throwNotParsed();
 	return _location;
+}
+
+bool RouteBlock::shouldLocationRewrite() const {
+	return _shouldRewrite;
 }
 
 const std::vector<std::string> &RouteBlock::getAllowedMethods() const {
@@ -198,6 +225,16 @@ const std::string &RouteBlock::getSaveUploads() const {
 const UrlValidator::urlParsed &RouteBlock::getProxyUrl() const {
 	throwNotParsed();
 	return _proxyUrl;
+}
+
+const std::string &RouteBlock::getAuthBasic() const {
+	throwNotParsed();
+	return _authBasic;
+}
+
+const std::string &RouteBlock::getAuthBasicUserFile() const {
+	throwNotParsed();
+	return _authBasicUserFile;
 }
 
 bool RouteBlock::isAllowedMethod(const std::string &method) const {

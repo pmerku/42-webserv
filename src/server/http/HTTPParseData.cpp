@@ -11,7 +11,6 @@ HTTPParseData::HTTPParseData(HTTPParseData::HTTPParseType type):
 		data(),
 		chunkedData(),
 		_pos(data.beginList()),
-		_isCGI(false),
 		_type(type),
 		_gotHeaders(false),
 		_gotFirstLine(false),
@@ -27,7 +26,7 @@ HTTPParseData::HTTPParseData(HTTPParseData::HTTPParseType type):
 		_gotFirstLine = true;
 }
 
-std::ostream& operator<<(std::ostream& o, HTTPParseData& x) {
+std::ostream& operator<<(std::ostream& o, NotApache::HTTPParseData& x) {
 	o	<< "==REQUEST=="					<< std::endl
 		 << "Method: "	<< x.method 		<< std::endl
 		 << "URI: "		<< x.uri.getFull()	<< std::endl;
@@ -39,13 +38,13 @@ std::ostream& operator<<(std::ostream& o, HTTPParseData& x) {
 	}
 	else
 		o	<< "-NO HEADERS-" 											<< std::endl;
-	utils::DataList &body = x.data;
+	utils::DataList *body = &x.data;
 	if (x.isChunked)
-		body = x.chunkedData;
-	if (!body.empty()) {
-		o << "Body length: " << body.size() << std::endl << std::endl
+		body = &x.chunkedData;
+	if (!body->empty()) {
+		o << "Body length: " << body->size() << std::endl << std::endl
 		  << "-BODY-" << std::endl
-		  << body.substring(body.beginList(), body.endList()) << std::endl;
+		  << body->substring(body->beginList(), body->endList()) << std::endl;
 	}
 	else
 		o << std::endl << "-NO BODY-" 									<< std::endl;
