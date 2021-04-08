@@ -84,6 +84,7 @@ SRC	=\
 	utils/DataList.cpp\
     utils/Uri.cpp\
     utils/ArgParser.cpp\
+    utils/base64.cpp\
 	server/handlers/AHandler.cpp\
 	server/handlers/StandardHandler.cpp\
 	server/handlers/HandlerHolder.cpp\
@@ -96,6 +97,7 @@ SRC	=\
 	server/http/HTTPParseData.cpp\
 	server/http/HTTPResponder.cpp\
 	server/http/Proxy.cpp\
+	server/http/CGIClass.cpp\
 	server/http/HTTPMimeTypes.cpp\
 	server/http/RequestBuilder.cpp\
 	server/http/ResponseBuilder.cpp\
@@ -158,6 +160,7 @@ HEADERS	=\
 	utils/DataList.hpp\
 	utils/Uri.hpp\
 	utils/ArgParser.hpp\
+    utils/base64.hpp\
 	server/handlers/AHandler.hpp\
 	server/handlers/StandardHandler.hpp\
 	server/handlers/HandlerHolder.hpp\
@@ -170,6 +173,7 @@ HEADERS	=\
 	server/http/HTTPParseData.hpp\
 	server/http/HTTPResponder.hpp\
 	server/http/Proxy.hpp\
+	server/http/CGIClass.hpp\
 	server/http/HTTPMimeTypes.hpp\
 	server/http/RequestBuilder.hpp\
 	server/http/ResponseBuilder.hpp\
@@ -226,7 +230,7 @@ exec:
 	./$(NAME)
 
 valgrind:
-	cd ./build; valgrind --undef-value-errors=no --leak-check=full ../$(NAME) -f ../tests/parser/parser.conf -c; cd ../
+	valgrind --undef-value-errors=no --leak-check=full ./$(NAME)
 
 debug:
 	$(MAKE) BUILD_DEBUG=1 all

@@ -25,7 +25,7 @@ namespace CGIenv {
 		ENVBuilder	&PATH_TRANSLATED(const std::string &value);
 		ENVBuilder	&QUERY_STRING(const std::string &value);
 		ENVBuilder	&REMOTE_ADDR(const std::string &value);
-		ENVBuilder	&REMOTE_INDENT(const std::string &value);
+		ENVBuilder	&REMOTE_IDENT(const std::string &value);
 		ENVBuilder	&REMOTE_USER(const std::string &value);
 		ENVBuilder	&REQUEST_METHOD(const std::string &value);
 		ENVBuilder	&REQUEST_URI(const std::string &value);
@@ -34,6 +34,7 @@ namespace CGIenv {
 		ENVBuilder	&SERVER_PORT(const std::string &value);
 		ENVBuilder	&SERVER_PROTOCOL(const std::string &value);
 		ENVBuilder	&SERVER_SOFTWARE(const std::string &value);
+		ENVBuilder	&REDIRECT_STATUS(const std::string &value);
 
 		char		**build();
 	};

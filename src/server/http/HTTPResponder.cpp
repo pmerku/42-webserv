@@ -3,11 +3,14 @@
 //
 
 #include "server/http/HTTPResponder.hpp"
+#include "utils/intToString.hpp"
+#include "utils/strdup.hpp"
+#include "utils/ErrorThrow.hpp"
+#include "server/http/ResponseBuilder.hpp"
 #include "server/http/HTTPParser.hpp"
 #include "env/ENVBuilder.hpp"
 #include "server/global/GlobalLogger.hpp"
 #include "server/global/GlobalConfig.hpp"
-#include "utils/intToString.hpp"
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <cerrno>
@@ -20,6 +23,7 @@ using namespace NotApache;
 // TODO cleanup this file
 
 void HTTPResponder::generateAssociatedResponse(HTTPClient &client) {
+	config::ServerBlock *server = configuration->findServerBlock(client.data.request.data.headers.find("HOST")->second, client.getPort(), client.getHost());
 	if (client.responseState == FILE) {
 		client.data.response.setResponse(
 			client.data.response.builder
@@ -31,12 +35,40 @@ void HTTPResponder::generateAssociatedResponse(HTTPClient &client) {
 			client.data.response.builder.build()
 		);
 	} else if (client.responseState == PROXY) {
+		if (client.proxy->response.data.parseStatusCode != 200) {
+			handleError(client, server, 502, false);
+			return;
+		}
 		client.data.response.setResponse(
 			ResponseBuilder(client.proxy->response.data)
 			.build()
 		);
 	}
-	// TODO cgi
+	else if (client.responseState == CGI) {
+		// parse error
+		if (client.cgi->response.data.parseStatusCode != 200) {
+			handleError(client, server, 500, false);
+			return;
+		}
+
+		// child process exit codes
+		if (client.cgi->status != 0) {
+            if (client.cgi->status == EXECVE_ERROR)
+                globalLogger.logItem(logger::ERROR, "CGI error: execve");
+            else if (client.cgi->status == CLOSE_ERROR)
+                globalLogger.logItem(logger::ERROR, "CGI error: close");
+            else if (client.cgi->status == DUP2_ERROR)
+                globalLogger.logItem(logger::ERROR, "CGI error: dup2");
+            handleError(client, server, 500, false);
+			return;
+		}
+
+		// cgi success, respond normally
+		client.data.response.setResponse(
+			ResponseBuilder(client.cgi->response.data)
+			.build()
+		);
+	}
 }
 
 void HTTPResponder::handleError(HTTPClient &client, config::ServerBlock *server, int code, bool doErrorPage) {
@@ -44,6 +76,10 @@ void HTTPResponder::handleError(HTTPClient &client, config::ServerBlock *server,
 }
 
 void HTTPResponder::handleError(HTTPClient &client, config::ServerBlock *server, config::RouteBlock *route, int code, bool doErrorPage) {
+	// Request authentication
+	if (code == 401 && route)
+		client.data.response.builder.setHeader("WWW-AUTHENTICATE", "Basic realm=\"Not-Apache\"");
+
 	// allow header in 405
 	if (code == 405 && route) {
 		client.data.response.builder.setAllowedMethods(route->getAllowedMethods());
@@ -147,8 +183,8 @@ void HTTPResponder::serveDirectory(HTTPClient &client, config::ServerBlock &serv
 		return;
 	}
 
-	// normal directory handler
-	handleError(client, &server, 403);
+	// normal directory handler (also cmon, it should be 403, not 404. stupid 42)
+	handleError(client, &server, 404);
 }
 
 void HTTPResponder::prepareFile(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const utils::Uri &file, int code, bool shouldErrorFile) {
@@ -188,6 +224,27 @@ void HTTPResponder::prepareFile(HTTPClient &client, config::ServerBlock &server,
 void HTTPResponder::serveFile(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const std::string &f) {
 	struct ::stat buf = {};
 
+	// check autorization
+	if (!route.getAuthBasic().empty()) {
+		std::map<std::string, std::string>::iterator it = client.data.request.data.headers.find("AUTHORIZATION");
+		if (it == client.data.request.data.headers.end()) {
+			handleError(client, &server, &route, 401);
+			return ;
+		}
+		else {
+			try {
+				if (!checkCredentials(route.getAuthBasicUserFile(), it->second)) {
+					handleError(client, &server, &route, 403);
+					return ;
+				}
+			}
+			catch (const std::exception& e) {
+				globalLogger.logItem(logger::ERROR, std::string("File serving error: ") + e.what());
+				handleError(client, &server, &route, 500);
+			}
+		}
+	}
+
 	// get file data
 	utils::Uri file = f;
 	if (::stat(file.path.c_str(), &buf) == -1) {
@@ -211,9 +268,50 @@ void HTTPResponder::serveFile(HTTPClient &client, config::ServerBlock &server, c
 	// serve the file
 	if (route.shouldDoCgi() && !route.getCgiExt().empty() && file.getExt() == route.getCgiExt()) {
 		globalLogger.logItem(logger::DEBUG, "Handling cgi request");
-		// TODO handle cgi
+		// handle cgi
+		try {
+			runCGI(client, file.path, route.getCgi());
+		} catch (std::exception &e) {
+			globalLogger.logItem(logger::ERROR, std::string("CGI error: ") + e.what());
+			handleError(client, &server, &route, 500);
+		}
+		return;
 	}
 	prepareFile(client, server, route, buf, file);
+}
+
+bool HTTPResponder::checkCredentials(const std::string& authFile, const std::string& credentials) {
+	FD fd;
+	int ret = 1;
+	char buf[255];
+	std::string fileContent; // TODO parse file?
+
+	// open and read from "password database"
+	fd = ::open(authFile.c_str(), O_RDONLY);
+	if (fd == -1)
+		ERROR_THROW(OpenFail());
+	while ((ret = ::read(fd, &buf, sizeof(buf))) > 0) {
+		buf[ret] = '\0';
+		fileContent += buf;
+		if (fileContent.size() > 10000)
+			ERROR_THROW(MaxFileSize());
+	}
+	if (ret == -1)
+		ERROR_THROW(ReadFail());
+
+	// split per user
+	std::vector<std::string> userPasswordPair = utils::split(fileContent, "\n");
+	
+	// Check header
+	if (credentials.find("Basic ", 0, 6) != 0)
+		ERROR_THROW(AuthHeader());
+
+	// Find match
+	for (size_t i = 0; i < userPasswordPair.size(); ++i) {
+		if (utils::base64_decode(credentials.substr(6)) == userPasswordPair[i])
+			return true;
+	}
+	return false;
 }
 
 void HTTPResponder::uploadFile(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const std::string &f) {
@@ -310,7 +408,8 @@ void HTTPResponder::generateResponse(HTTPClient &client) {
 
 	// find which route block to use
 	utils::Uri uri = client.data.request.data.uri;
-	config::RouteBlock	*route = server->findRoute(uri.path);
+	std::string rewrittenUrl = uri.path; // findRoute will rewrite url
+	config::RouteBlock	*route = server->findRoute(rewrittenUrl);
 	if (route == 0) {
 		handleError(client, server, 400);
 		return;
@@ -324,6 +423,7 @@ void HTTPResponder::generateResponse(HTTPClient &client) {
 
 	if (route->shouldDoFile()) {
 		utils::Uri file = route->getRoot();
+		file.appendPath(rewrittenUrl);
 
 		// use upload directory instead for upload modifications
 		if (client.data.request.data.method == DELETE || client.data.request.data.method == PUT)
@@ -380,4 +480,67 @@ void HTTPResponder::handleProxy(HTTPClient &client, config::ServerBlock *server,
 		globalLogger.logItem(logger::ERROR, std::string("Proxy error: ") + e.what());
 		handleError(client, server, route, 500);
 	}
+}
+
+// TODO current working directory
+// TODO php not working
+void	HTTPResponder::runCGI(HTTPClient& client, const std::string &filePath, const std::string& cgiPath) {
+	FD				pipefd[2];
+	FD				bodyPipefd[2];
+	struct stat 	sb;
+	bool 			body = false;
+	client.cgi = new CgiClass;
+
+	client.cgi->generateENV(client, client.data.request.data.uri, filePath, cgiPath);
+	char** args = new char *[3]();
+	args[0] = utils::strdup(cgiPath);
+	args[1] = utils::strdup(filePath);
+
+	if (::stat(args[0], &sb) == -1)
+		ERROR_THROW(CgiClass::NotFound());
+
+	if (::pipe(pipefd) == -1)
+		ERROR_THROW(CgiClass::PipeFail());
+    if (::pipe(bodyPipefd))
+        ERROR_THROW(CgiClass::PipeFail());
+
+	if (client.data.request.data.bodyLength)
+		body = true;
+
+    client.cgi->pid = ::fork();
+	client.cgi->hasExited = false;
+	if (client.cgi->pid == -1)
+		ERROR_THROW(CgiClass::ForkFail());
+	if (!client.cgi->pid) {
+		// set body pipes
+        if (::dup2(bodyPipefd[0], STDIN_FILENO) == -1)
+            ::exit(DUP2_ERROR);
+        if (::close(bodyPipefd[0]) == -1)
+            ::exit(CLOSE_ERROR);
+        if (::close(bodyPipefd[1]) == -1)
+            ::exit(CLOSE_ERROR);
+
+		// set output pipes
+		if (::dup2(pipefd[1], STDOUT_FILENO) == -1)
+			::exit(DUP2_ERROR);
+		if (::close(pipefd[0]) == -1 || ::close(pipefd[1]) == -1)
+			::exit(CLOSE_ERROR);
+
+		// run cgi
+		::execve(args[0], args, client.cgi->getEnvp().getEnv());
+        ::exit(EXECVE_ERROR);
+	}
+	if (::close(pipefd[1]) == -1)
+		ERROR_THROW(CgiClass::CloseFail());
+    if (::close(bodyPipefd[0]) == -1)
+        ERROR_THROW(CgiClass::CloseFail());
+
+	client.addAssociatedFd(pipefd[0]);
+	if (body)
+		client.addAssociatedFd(bodyPipefd[1], associatedFD::WRITE);
+	else if (::close(bodyPipefd[1]) == -1)
+        ERROR_THROW(CgiClass::CloseFail());
+
+	client.responseState = CGI;
+	client.connectionState = ASSOCIATED_FD;
 }

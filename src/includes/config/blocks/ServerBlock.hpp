@@ -43,7 +43,9 @@ namespace config {
 		const std::vector<RouteBlock*>	&getRouteBlocks() const;
 		const std::string				&getServerName() const;
 		std::string						getErrorPage(int code) const;
-		RouteBlock						*findRoute(const std::string &path);
+
+        // will modify path to be the rest of the path that hasnt been matched yet
+        RouteBlock						*findRoute(std::string &path);
 	};
 
 }

@@ -7,11 +7,13 @@
 #include <unistd.h>
 #include <cerrno>
 #include <cstring>
+#include <sys/wait.h>
 
 using namespace NotApache;
 
 const int	StandardHandler::_bufferSize = 1024;
 
+// TODO broken pipe??
 void StandardHandler::stopHandle(HTTPClient &client, bool shouldLock) {
 	if (shouldLock) client.isHandled.lock();
 	client.timeout(false);
@@ -105,6 +107,44 @@ void StandardHandler::handleAssociatedRead(HTTPClient &client) {
 		stopHandle(client);
 		return;
 	}
+	else if (client.responseState == CGI) {
+		char	buf[_bufferSize+1];
+		FD fileFd = client.getAssociatedFd(0).fd;
+		ssize_t	ret = ::read(fileFd, buf, _bufferSize);
+		switch (ret) {
+			case 0:
+			    // check for error exit codes
+                if (::waitpid(client.cgi->pid, &client.cgi->status, WUNTRACED) > 0) {
+                    if (WIFEXITED(client.cgi->status))
+                        client.cgi->status = WEXITSTATUS(client.cgi->status);
+                    else if (WIFSIGNALED(client.cgi->status)) {
+                        client.cgi->status = WTERMSIG(client.cgi->status);
+                    }
+				    client.cgi->hasExited = true;
+                }
+				// has read everything
+				client.isHandled.lock();
+				client.connectionState = WRITING;
+				client.writeState = GOT_ASSOCIATED;
+				stopHandle(client, false);
+				return;
+			case -1:
+				globalLogger.logItem(logger::ERROR, "Failed to read from associated file FD");
+				globalLogger.logItem(logger::ERROR, std::string("Failed to read: ") + std::strerror(errno)); // TODO remove
+				stopHandle(client);
+				return;
+			default:
+				client.cgi->response.appendResponseData(buf, ret);
+				client.isHandled.lock();
+				if (_parser->parse(client.cgi->response.data, &client) == HTTPParser::READY_FOR_WRITE) {
+					client.connectionState = WRITING;
+					client.writeState = GOT_ASSOCIATED;
+				}
+				std::cout << client.cgi->response.data << std::endl;
+				stopHandle(client, false);
+				return;
+		}
+	}
 }
 
 void StandardHandler::read(HTTPClient &client) {
@@ -168,6 +208,47 @@ void StandardHandler::handleAssociatedWrite(HTTPClient &client) {
 		client.removeAssociatedFd(client.getAssociatedFd(0).fd);
 		stopHandle(client, false);
 		return;
+	}
+	else if (client.responseState == CGI) {
+		utils::DataList *body = NULL;
+		if (client.data.request.data.isChunked)
+			body = &client.data.request.data.chunkedData;
+		else
+			body = &client.data.request.data.data;
+		if (!client.data.request.hasProgress) {
+			client.data.request.currentPacket = body->begin();
+			client.data.request.packetProgress = 0;
+			client.data.request.hasProgress = true;
+		}
+		std::string::size_type	pos = client.data.request.packetProgress;
+		std::string::size_type	len = client.data.request.currentPacket->size - pos;
+		FD fileFd = client.getAssociatedFd(1).fd;
+		ssize_t ret = ::write(fileFd, client.data.request.currentPacket->data + pos, len);
+		switch (ret) {
+			case -1:
+				std::cout << fileFd << std::endl;
+				globalLogger.logItem(logger::ERROR, "Failed to write to server");
+				globalLogger.logItem(logger::ERROR, std::string("Failed to write: ") + std::strerror(errno)); // TODO remove
+				client.isHandled = false;
+				return;
+			case 0:
+				// zero bytes is unlikely to happen, dont do anything if it does happen
+				break;
+			default:
+				client.data.request.packetProgress += ret;
+				if (client.data.request.packetProgress == client.data.request.currentPacket->size) {
+					++client.data.request.currentPacket;
+					client.data.request.packetProgress = 0;
+				}
+				if (client.data.request.currentPacket == body->end()) {
+					// wrote entire request, closing
+					client.isHandled.lock();
+					client.removeAssociatedFd(fileFd);
+					stopHandle(client, false);
+					return;
+				}
+				break;
+		}
 	}
 }
 

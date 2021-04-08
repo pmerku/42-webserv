@@ -36,6 +36,7 @@ namespace NotApache {
 		explicit ResponseBuilder(const HTTPParseData &data);
 
 		ResponseBuilder		&setStatus(int code);
+		ResponseBuilder		&setStatus(int code, const std::string &reasonPhrase);
 		ResponseBuilder		&setHeader(const std::string &key, const std::string &value);
 		ResponseBuilder		&setBody(const std::string &data, size_t length);
 		ResponseBuilder		&setBody(const std::string &data);

@@ -39,6 +39,12 @@ namespace NotApache {
 	};
 
 	class HTTPClientResponse {
+		enum responseType {
+			FILE,
+			CGI_FILE,
+			PROXY
+		};
+
 	private:
 		utils::DataList 		_associatedData;
 
@@ -50,6 +56,9 @@ namespace NotApache {
 		bool 						hasProgress;
 		utils::DataList::size_type	packetProgress;
 		utils::DataList::iterator 	currentPacket;
+		
+		FD							_fd;
+		FD							_bodyfd;
 		ResponseBuilder				builder;
 
 		utils::DataList			&getResponse();
