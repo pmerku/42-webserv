@@ -17,6 +17,7 @@
 #include "config/validators/RegexCompiler.hpp"
 #include "config/validators/PluginValidator.hpp"
 #include "config/validators/UrlValidator.hpp"
+#include "config/validators/UploadValidator.hpp"
 
 using namespace config;
 
@@ -81,6 +82,7 @@ const AConfigBlock::validatorListType 	RouteBlock::_blockValidators =
 		ConfigValidatorListBuilder()
 		.add(new RequiredKey("location"))
 		.add(new MutuallyExclusive("proxy_url", "root"))
+		.add(new UploadValidator())
 		.build();
 
 const std::string 						RouteBlock::_allowedBlocks[] = { "" };

@@ -30,6 +30,7 @@ namespace NotApache {
 		PROXY,
 		FILE,
 		CGI,
+		UPLOAD,
 		NONE
 	};
 
