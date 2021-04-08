@@ -125,6 +125,7 @@ void	RouteBlock::cleanup() {
 	}
 }
 
+// TODO add client body limit on route block
 void RouteBlock::parseData() {
 	std::string loc = getKey("location")->getArg(0);
 	if (loc == "/")
