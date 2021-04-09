@@ -145,14 +145,14 @@ HTTPParser::ParseReturn		HTTPParser::parseHeaders(HTTPParseData &data, const std
 				std::string::size_type start = (*valueIt).find_first_not_of(' ');
 				std::string::size_type end = (*valueIt).find_last_not_of(' ');
 				*valueIt = (*valueIt).substr(start, end+1 - start);
-				if ((*valueIt).find("chunked") == std::string::npos) {
+				if (data._type != HTTPParseData::CGI_RESPONSE && *valueIt == "chunked")
+					data.isChunked = true;
+				else if (!(*valueIt).empty()){
 					globalLogger.logItem(logger::ERROR, "Not supported transfer encoding");
 					data.parseStatusCode = 400;
 					return ERROR;
 				}
 			}
-			if (data._type != HTTPParseData::CGI_RESPONSE && value.find("chunked") != std::string::npos)
-				data.isChunked = true;
 		}
 	}
 
