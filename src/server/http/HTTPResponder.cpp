@@ -53,12 +53,18 @@ void HTTPResponder::generateAssociatedResponse(HTTPClient &client) {
 
 		// child process exit codes
 		if (client.cgi->status != 0) {
-            if (client.cgi->status == EXECVE_ERROR)
-                globalLogger.logItem(logger::ERROR, "CGI error: execve");
-            else if (client.cgi->status == CLOSE_ERROR)
-                globalLogger.logItem(logger::ERROR, "CGI error: close");
-            else if (client.cgi->status == DUP2_ERROR)
-                globalLogger.logItem(logger::ERROR, "CGI error: dup2");
+			if (client.cgi->status == EXECVE_ERROR)
+				globalLogger.logItem(logger::ERROR, "CGI error: execve");
+			else if (client.cgi->status == CLOSE_ERROR)
+				globalLogger.logItem(logger::ERROR, "CGI error: close");
+			else if (client.cgi->status == DUP2_ERROR)
+				globalLogger.logItem(logger::ERROR, "CGI error: dup2");
+			else if (client.cgi->status == CHDIR_ERROR)
+				globalLogger.logItem(logger::ERROR, "CGI error: chdir");
+			else if (client.cgi->status == GETCWD_ERROR)
+				globalLogger.logItem(logger::ERROR, "CGI error: getcdw");
+			else if (client.cgi->status == MEMORY_ERROR)
+				globalLogger.logItem(logger::ERROR, "CGI error: memory");
             handleError(client, server, 500, false);
 			return;
 		}
@@ -490,7 +496,7 @@ void	HTTPResponder::runCGI(HTTPClient& client, const std::string &filePath, cons
 	bool 			body = false;
 	client.cgi = new CgiClass;
 
-	client.cgi->generateENV(client, client.data.request.data.uri, filePath, cgiPath);
+	client.cgi->generateENV(client, client.data.request.data.uri, cgiPath);
 	char** args = new char *[3]();
 	args[0] = utils::strdup(cgiPath);
 	args[1] = utils::strdup(filePath);

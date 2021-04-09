@@ -7,6 +7,7 @@
 #include "utils/intToString.hpp"
 #include "server/http/HTTPParser.hpp"
 #include <signal.h>
+#include <algorithm>
 
 using namespace NotApache;
 
@@ -47,9 +48,10 @@ void CgiClass::generateENV(HTTPClient& client, const utils::Uri& uri, const std:
 	    .REDIRECT_STATUS("200");
 
 	for (std::map<std::string, std::string>::iterator it = data.headers.begin(); it != data.headers.end(); ++it) {
-		if (it->first.find("HTTP_") == 0) {
-			builder.EXPORT(it->first, it->second);
-		}
+		std::string key = "HTTP_";
+		key += it->first;
+		std::replace(key.begin(), key.end(), '-', '_');
+		builder.EXPORT(key, it->second);
 	}
 
 	std::map<std::string, std::string>::iterator it = data.headers.find("AUTHORIZATION");
@@ -65,6 +67,6 @@ void CgiClass::generateENV(HTTPClient& client, const utils::Uri& uri, const std:
     _envp.setEnv(builder.build());
 }
 
-const CGIenv::env &CgiClass::getEnvp() const {
+CGIenv::env &CgiClass::getEnvp() {
 	return _envp;
 }
