@@ -5,8 +5,6 @@
 #include "server/handlers/StandardHandler.hpp"
 #include "server/global/GlobalLogger.hpp"
 #include <unistd.h>
-#include <cerrno>
-#include <cstring>
 #include <sys/wait.h>
 
 using namespace NotApache;
@@ -37,7 +35,8 @@ StandardHandler::IOReturn StandardHandler::doRead(FD fd, utils::DataList &readab
 	}
 }
 
-StandardHandler::IOReturn StandardHandler::doWrite(FD fd, HTTPClientRequest &writable, utils::DataList &data) {
+template<typename HTTPClientType>
+StandardHandler::IOReturn StandardHandler::doWrite(FD fd, HTTPClientType &writable, utils::DataList &data) {
 	if (!writable.hasProgress) {
 		writable.currentPacket = data.begin();
 		writable.packetProgress = 0;
@@ -130,7 +129,6 @@ void StandardHandler::handleAssociatedRead(HTTPClient &client) {
 				return;
 			case -1:
 				globalLogger.logItem(logger::ERROR, "Failed to read from associated file FD");
-				globalLogger.logItem(logger::ERROR, std::string("Failed to read: ") + std::strerror(errno)); // TODO remove
 				stopHandle(client);
 				return;
 			default:
@@ -228,7 +226,6 @@ void StandardHandler::handleAssociatedWrite(HTTPClient &client) {
 			case -1:
 				std::cout << fileFd << std::endl;
 				globalLogger.logItem(logger::ERROR, "Failed to write to server");
-				globalLogger.logItem(logger::ERROR, std::string("Failed to write: ") + std::strerror(errno)); // TODO remove
 				client.isHandled = false;
 				return;
 			case 0:
@@ -271,38 +268,15 @@ void StandardHandler::write(HTTPClient &client) {
 	}
 
 	if (client.writeState == IS_WRITING) {
-		// TODO use doWrite
-		if (!client.data.response.hasProgress) {
-			client.data.response.currentPacket = client.data.response.getResponse().begin();
-			client.data.response.packetProgress = 0;
-			client.data.response.hasProgress = true;
-		}
-		std::string::size_type	pos = client.data.response.packetProgress;
-		std::string::size_type	len = client.data.response.currentPacket->size - pos;
-		ssize_t ret = ::write(client.getFd(), client.data.response.currentPacket->data + pos, len);
-		switch (ret) {
-			case -1:
-				globalLogger.logItem(logger::ERROR, "Failed to write to client");
-				globalLogger.logItem(logger::ERROR, std::string("Failed to write: ") + std::strerror(errno)); // TODO remove
-				client.isHandled = false;
-				return;
-			case 0:
-				// zero bytes is unlikely to happen, dont do anything if it does happen
-				break;
-			default:
-				client.data.response.packetProgress += ret;
-				if (client.data.response.packetProgress == client.data.response.currentPacket->size) {
-					++client.data.response.currentPacket;
-					client.data.response.packetProgress = 0;
-				}
-				if (client.data.response.currentPacket == client.data.response.getResponse().end()) {
-					// wrote entire response, closing
-					client.isHandled.lock();
-					client.connectionState = CLOSED;
-					stopHandle(client, false);
-					return;
-				}
-				break;
+		IOReturn ret = doWrite(client.getFd(), client.data.response, client.data.response.data.data);
+		if (ret == IO_EOF) {
+			client.isHandled.lock();
+			client.connectionState = CLOSED;
+			stopHandle(client, false);
+			return;
+		} else if (ret == IO_ERROR) {
+			client.isHandled = false;
+			return;
 		}
 	}
 	stopHandle(client);
