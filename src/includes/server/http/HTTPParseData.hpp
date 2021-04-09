@@ -53,7 +53,8 @@ namespace NotApache {
 		std::map<std::string, std::string>	headers;
 		int 								bodyLength;
 		int 								statusCode;
-
+		std::map<std::string, std::string> 	languageMap;
+		std::string						 	acceptLanguage;
 		int									parseStatusCode;
 
 		friend class HTTPParser;

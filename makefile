@@ -78,6 +78,7 @@ SRC	=\
 	utils/toUpper.cpp\
 	utils/stoh.cpp\
 	utils/isDigit.cpp\
+	utils/stringIsDouble.cpp\
 	utils/countSpaces.cpp\
 	utils/strdup.cpp\
 	utils/DataList.cpp\
@@ -146,6 +147,7 @@ HEADERS	=\
 	utils/stoi.hpp\
 	utils/stoh.hpp\
 	utils/isDigit.hpp\
+	utils/stringIsDouble.hpp\
 	utils/countSpaces.hpp\
 	utils/CreateMap.hpp\
 	utils/CreateVector.hpp\

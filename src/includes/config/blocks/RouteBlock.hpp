@@ -31,6 +31,7 @@ namespace config {
 	private:
 		regex::Regex				_location;
 		std::vector<std::string>	_allowedMethods;
+		std::vector<std::string>	_acceptLanguage;
 		std::vector<std::string>	_plugins;
 		std::string					_root;
 		bool						_directoryListing;
@@ -39,7 +40,7 @@ namespace config {
 		std::string					_cgiExt;
 		std::string					_saveUploads;
 		std::string					_authBasic;
-		std::string					_authBasicUserFile;
+		std::vector<std::string>	_authorized;
 		UrlValidator::urlParsed		_proxyUrl;
 
 	public:
@@ -52,6 +53,9 @@ namespace config {
 		const std::string &getCgiExt() const;
 		const std::string &getSaveUploads() const;
 		const UrlValidator::urlParsed &getProxyUrl() const;
+		const std::vector<std::string> &getAcceptLanguage() const;
+		const std::vector<std::string> &getAuthorized() const;
+		const std::string &getAuthBasic() const;
 		/// return if it should serve files (if false -> proxy)
 		bool shouldDoFile() const;
 		/// return if it cgi is enabled
@@ -59,8 +63,6 @@ namespace config {
 
 		bool isAllowedMethod(const std::string &method) const;
 
-		const std::string &getAuthBasic() const;
-		const std::string &getAuthBasicUserFile() const;
 	};
 
 }

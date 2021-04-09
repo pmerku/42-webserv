@@ -79,10 +79,11 @@ const AConfigBlock::validatorsMapType	RouteBlock::_validators =
 		  .add(new ArgumentLength(1))
 		  .add(new Unique())
 		  .build())
-		.addKey("auth_basic_user_file", ConfigValidatorListBuilder()
-		  .add(new ArgumentLength(1))
+		.addKey("authorized", ConfigValidatorListBuilder()
 		  .add(new Unique())
-		  .add(new IsFile(0))
+		  .build())
+		.addKey("accept_language", ConfigValidatorListBuilder()
+		  .add(new Unique())
 		  .build())
 		.build();
 
@@ -132,7 +133,6 @@ void RouteBlock::parseData() {
 	_cgiExt = "";
 	_cgi = "";
 	_authBasic = "";
-	_authBasicUserFile = "";
 	_plugins.clear();
 	_allowedMethods.clear();
 	_allowedMethods.push_back("GET");
@@ -161,12 +161,19 @@ void RouteBlock::parseData() {
 	}
 	if (hasKey("auth_basic"))
 		_authBasic = getKey("auth_basic")->getArg(0);
-	if (hasKey("auth_basic_user_file"))
-		_authBasicUserFile = getKey("auth_basic_user_file")->getArg(0);
+	if (hasKey("authorized")) {
+		for (ConfigLine::arg_size i = 0; i < getKey("authorized")->getArgLength(); i++)
+			_authorized.push_back(getKey("authorized")->getArg(i));
+	}
+	if (hasKey("accept_language")) {
+		for (ConfigLine::arg_size i = 0; i < getKey("accept_language")->getArgLength(); i++)
+			_acceptLanguage.push_back(getKey("accept_language")->getArg(i));
+	}
 	for (std::vector<ConfigLine>::const_iterator i = _lines.begin(); i != _lines.end(); ++i) {
 		if (i->getKey() != "use_plugin") continue;
 		_plugins.push_back(i->getArg(0));
 	}
+	
 	_isParsed = true;
 }
 
@@ -220,9 +227,14 @@ const std::string &RouteBlock::getAuthBasic() const {
 	return _authBasic;
 }
 
-const std::string &RouteBlock::getAuthBasicUserFile() const {
+const std::vector<std::string> &RouteBlock::getAuthorized() const {
 	throwNotParsed();
-	return _authBasicUserFile;
+	return _authorized;
+}
+
+const std::vector<std::string> &RouteBlock::getAcceptLanguage() const {
+	throwNotParsed();
+	return _acceptLanguage;
 }
 
 bool RouteBlock::isAllowedMethod(const std::string &method) const {

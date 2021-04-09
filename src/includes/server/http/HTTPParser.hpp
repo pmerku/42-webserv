@@ -11,12 +11,15 @@
 #include "utils/stoi.hpp"
 #include "utils/stoh.hpp"
 #include "utils/split.hpp"
+#include "utils/stringIsDouble.hpp"
 #include "utils/toUpper.hpp"
 #include "utils/countSpaces.hpp"
 #include "utils/CreateMap.hpp"
+#include "utils/CreateVector.hpp"
 #include "utils/DataList.hpp"
 #include "utils/Uri.hpp"
 
+#include <utility>
 #include <iostream>
 
 namespace NotApache {
@@ -56,6 +59,7 @@ namespace NotApache {
 
 	private:
 		static const std::string 								allowedURIChars;
+		static const std::string 								acceptedCharset; // TODO in config?
 	};
 }
 
