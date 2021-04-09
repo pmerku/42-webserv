@@ -19,18 +19,22 @@ CgiClass::~CgiClass() {
 }
 
 void CgiClass::generateENV(HTTPClient& client, const utils::Uri& uri, const std::string &filePath, const std::string &execPath) {
-    std::string	domain = (*client.data.request.data.headers.find("HOST")).second;
+	HTTPParseData data = client.data.request.data;
+    std::string	domain = (*data.headers.find("HOST")).second;
     domain = domain.substr(0, domain.find(':'));
 
-    CGIenv::ENVBuilder env;
-	env.SERVER_NAME(domain)
-        .CONTENT_LENGTH(utils::intToString(client.data.request.data.data.size())) // TODO check with chunked
-        .GATEWAY_INTERFACE("CGI/1.1")
+    CGIenv::ENVBuilder builder;
+	builder.SERVER_NAME(domain);
+	if (data.isChunked)
+		builder.CONTENT_LENGTH(utils::intToString(data.chunkedData.size()));
+	else
+        builder.CONTENT_LENGTH(utils::intToString(data.data.size()));
+	builder.GATEWAY_INTERFACE("CGI/1.1")
         .PATH_INFO(uri.path) // TODO URL translating/encoding
         .PATH_TRANSLATED(filePath)
         .QUERY_STRING(uri.query)
         .REMOTE_ADDR(client.getIp())
-        .REMOTE_IDENT("") // TODO what is this? (maybe not handle)
+        .REMOTE_IDENT("")
         .REQUEST_METHOD(HTTPParser::methodMap_EtoS.find(client.data.request.data.method)->second)
         .REQUEST_URI(uri.getFull())
         .SCRIPT_NAME(execPath)
@@ -42,20 +46,23 @@ void CgiClass::generateENV(HTTPClient& client, const utils::Uri& uri, const std:
 	    .REMOTE_USER("")
 	    .REDIRECT_STATUS("200");
 
-	// TODO HTTP_<headers>
-    std::map<std::string, std::string>::iterator it;
-    std::map<std::string, std::string>::iterator end = client.data.request.data.headers.end();
-    it = client.data.request.data.headers.find("AUTHORIZATION");
-    if (it != end)
-        env.AUTH_TYPE(it->second);
-    it = client.data.request.data.headers.find("CONTENT_TYPE");
-    if (it != end)
-        env.CONTENT_TYPE(it->second);
-    it = client.data.request.data.headers.find("REMOTE_USER");
-    if (it != end)
-        env.REMOTE_USER(it->second);
+	for (std::map<std::string, std::string>::iterator it = data.headers.begin(); it != data.headers.end(); ++it) {
+		if (it->first.find("HTTP_") == 0) {
+			builder.EXPORT(it->first, it->second);
+		}
+	}
 
-    _envp.setEnv(env.build());
+	std::map<std::string, std::string>::iterator it = data.headers.find("AUTHORIZATION");
+    if (it != data.headers.end())
+        builder.AUTH_TYPE(it->second);
+    it = data.headers.find("CONTENT_TYPE");
+    if (it != data.headers.end())
+        builder.CONTENT_TYPE(it->second);
+    it = data.headers.find("REMOTE_USER");
+    if (it != data.headers.end())
+        builder.REMOTE_USER(it->second);
+
+    _envp.setEnv(builder.build());
 }
 
 const CGIenv::env &CgiClass::getEnvp() const {
