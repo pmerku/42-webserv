@@ -134,6 +134,7 @@ void HTTPResponder::serveDirectory(HTTPClient &client, config::ServerBlock &serv
 
 		// index file exists, serve it
 		if (S_ISREG(indexData.st_mode)) {
+			// TODO index files need cgi too
 			prepareFile(client, server, route, indexData, indexFile);
 			return;
 		}
@@ -252,6 +253,7 @@ void HTTPResponder::serveFile(HTTPClient &client, config::ServerBlock &server, c
 	}
 
 	// get file data
+	// TODO cgi needs magic path parsing -> https://tools.ietf.org/html/rfc3875#section-3.2
 	utils::Uri file = f;
 	if (::stat(file.path.c_str(), &buf) == -1) {
 		if (errno == ENOENT || errno == ENOTDIR)
