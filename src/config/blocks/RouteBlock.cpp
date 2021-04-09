@@ -3,12 +3,14 @@
 //
 
 #include "config/blocks/RouteBlock.hpp"
+#include "config/blocks/ServerBlock.hpp"
 #include "config/ConfigValidatorBuilder.hpp"
 #include "config/validators/ArgumentLength.hpp"
 #include "config/validators/RequiredKey.hpp"
 #include "config/validators/Unique.hpp"
 #include "config/validators/MutuallyExclusive.hpp"
 #include "config/validators/BooleanValidator.hpp"
+#include "config/validators/IntValidator.hpp"
 #include "config/validators/HTTPMethodValidator.hpp"
 #include "config/validators/IsDirectory.hpp"
 #include "config/validators/IsFile.hpp"
@@ -18,6 +20,7 @@
 #include "config/validators/PluginValidator.hpp"
 #include "config/validators/UrlValidator.hpp"
 #include "config/validators/UploadValidator.hpp"
+#include "utils/stoi.hpp"
 
 using namespace config;
 
@@ -85,6 +88,10 @@ const AConfigBlock::validatorsMapType	RouteBlock::_validators =
 		  .add(new Unique())
 		  .add(new IsFile(0))
 		  .build())
+        .addKey("body_limit", ConfigValidatorListBuilder()
+          .add(new ArgumentLength(1))
+          .add(new IntValidator(0, 0))
+          .build())
 		.build();
 
 const AConfigBlock::validatorListType 	RouteBlock::_blockValidators =
@@ -125,7 +132,6 @@ void	RouteBlock::cleanup() {
 	}
 }
 
-// TODO add client body limit on route block
 void RouteBlock::parseData() {
 	std::string loc = getKey("location")->getArg(0);
 	if (loc == "/")
@@ -140,7 +146,8 @@ void RouteBlock::parseData() {
 	_saveUploads = "";
 	_cgiExt = "";
 	_cgi = "";
-	_authBasic = "";
+    _bodyLimit = -1;
+    _authBasic = "";
 	_authBasicUserFile = "";
 	_plugins.clear();
 	_allowedMethods.clear();
@@ -149,34 +156,36 @@ void RouteBlock::parseData() {
 	_allowedMethods.push_back("OPTIONS");
 	_allowedMethods.push_back("HEAD");
 
-	if (hasKey("root"))
-		_root = getKey("root")->getArg(0);
-	if (hasKey("directory_listing"))
-		_directoryListing = getKey("directory_listing")->getArg(0) == "true";
-	if (hasKey("index"))
-		_index = getKey("index")->getArg(0);
-	if (hasKey("save_uploads"))
-		_saveUploads = getKey("save_uploads")->getArg(0);
-	if (hasKey("proxy_url"))
-		_proxyUrl = UrlValidator::parseUrl(getKey("proxy_url")->getArg(0));
-	if (hasKey("cgi"))
-		_cgi = getKey("cgi")->getArg(0);
-	if (hasKey("cgi_ext"))
-		_cgiExt = getKey("cgi_ext")->getArg(0);
-	if (hasKey("allowed_methods")) {
-		_allowedMethods.clear();
-		for (ConfigLine::arg_size i = 0; i < getKey("allowed_methods")->getArgLength(); i++)
-			_allowedMethods.push_back(getKey("allowed_methods")->getArg(i));
-	}
-	if (hasKey("auth_basic"))
-		_authBasic = getKey("auth_basic")->getArg(0);
-	if (hasKey("auth_basic_user_file"))
-		_authBasicUserFile = getKey("auth_basic_user_file")->getArg(0);
-	for (std::vector<ConfigLine>::const_iterator i = _lines.begin(); i != _lines.end(); ++i) {
-		if (i->getKey() != "use_plugin") continue;
-		_plugins.push_back(i->getArg(0));
-	}
-	_isParsed = true;
+    if (hasKey("root"))
+        _root = getKey("root")->getArg(0);
+    if (hasKey("directory_listing"))
+        _directoryListing = getKey("directory_listing")->getArg(0) == "true";
+    if (hasKey("index"))
+        _index = getKey("index")->getArg(0);
+    if (hasKey("save_uploads"))
+        _saveUploads = getKey("save_uploads")->getArg(0);
+    if (hasKey("proxy_url"))
+        _proxyUrl = UrlValidator::parseUrl(getKey("proxy_url")->getArg(0));
+    if (hasKey("cgi"))
+        _cgi = getKey("cgi")->getArg(0);
+    if (hasKey("cgi_ext"))
+        _cgiExt = getKey("cgi_ext")->getArg(0);
+    if (hasKey("body_limit"))
+        _bodyLimit = utils::stoi(getKey("body_limit")->getArg(0));
+    if (hasKey("allowed_methods")) {
+        _allowedMethods.clear();
+        for (ConfigLine::arg_size i = 0; i < getKey("allowed_methods")->getArgLength(); i++)
+            _allowedMethods.push_back(getKey("allowed_methods")->getArg(i));
+    }
+    if (hasKey("auth_basic"))
+        _authBasic = getKey("auth_basic")->getArg(0);
+    if (hasKey("auth_basic_user_file"))
+        _authBasicUserFile = getKey("auth_basic_user_file")->getArg(0);
+    for (std::vector<ConfigLine>::const_iterator i = _lines.begin(); i != _lines.end(); ++i) {
+        if (i->getKey() != "use_plugin") continue;
+        _plugins.push_back(i->getArg(0));
+    }
+    _isParsed = true;
 }
 
 regex::Regex &RouteBlock::getLocation() {
@@ -255,4 +264,16 @@ bool RouteBlock::shouldDoFile() const {
 bool RouteBlock::shouldDoCgi() const {
 	throwNotParsed();
 	return !_cgi.empty();
+}
+
+int RouteBlock::getBodyLimit() {
+    throwNotParsed();
+	if (_bodyLimit == -1) {
+		// check parent
+		config::ServerBlock *serverParent = dynamic_cast<config::ServerBlock*>(_parent);
+		if (!serverParent)
+			return -1;
+		return serverParent->getBodyLimit();
+	}
+	return _bodyLimit;
 }

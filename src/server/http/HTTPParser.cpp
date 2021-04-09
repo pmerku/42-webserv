@@ -203,7 +203,14 @@ HTTPParser::ParseReturn		HTTPParser::parseHeaders(HTTPParseData &data, const std
 			data.parseStatusCode = 500;
 			return ERROR;
 		}
-		if (server->getBodyLimit() != -1 && ( data.bodyLength == -1 || data.bodyLength > server->getBodyLimit()) ) {
+        std::string path = data.uri.path;
+        config::RouteBlock *route = server->findRoute(path);
+        if (route == 0) {
+            globalLogger.logItem(logger::ERROR, "No matching route block");
+            data.parseStatusCode = 400;
+            return ERROR;
+        }
+		if (route->getBodyLimit() != -1 && ( data.bodyLength == -1 || data.bodyLength > route->getBodyLimit()) ) {
 			globalLogger.logItem(logger::ERROR, "Body too large");
 			data.parseStatusCode = 413;
 			return ERROR;

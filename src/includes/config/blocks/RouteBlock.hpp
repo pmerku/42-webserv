@@ -38,8 +38,9 @@ namespace config {
 		std::string					_index;
 		std::string					_cgi;
 		std::string					_cgiExt;
+	    int							_bodyLimit;
 		std::string					_saveUploads;
-		std::string					_authBasic;
+        std::string					_authBasic;
 		std::string					_authBasicUserFile;
 		UrlValidator::urlParsed		_proxyUrl;
 
@@ -54,8 +55,13 @@ namespace config {
 		const std::string &getCgiExt() const;
 		const std::string &getSaveUploads() const;
 		const UrlValidator::urlParsed &getProxyUrl() const;
+
+	    // will also traverse parent block for body limit if not set
+        int getBodyLimit();
+
 		/// return if it should serve files (if false -> proxy)
 		bool shouldDoFile() const;
+
 		/// return if it cgi is enabled
 		bool shouldDoCgi() const;
 
