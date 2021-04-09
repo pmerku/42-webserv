@@ -28,16 +28,6 @@ Uri::Uri(const std::string &in): path(), query(), identifier() {
 void Uri::appendPath(const std::string &in) {
 	std::string p = in;
 
-	// check if path is '.' or '..' and erase it
-	std::string::size_type dot = p.find('.');
-	std::string::size_type dots = p.find("..");
-	if (dot == 0) {
-		p.erase(dot, 1);
-	}
-	if (dots == 0) {
-		p.erase(dots, 2);
-	}
-
 	if (p.length() == 0) return;
 	if (p[0] == '/') p = p.substr(1);
 	if (p.length() == 0) return;

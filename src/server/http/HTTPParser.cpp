@@ -61,15 +61,24 @@ HTTPParser::ParseReturn		HTTPParser::parseRequestLine(HTTPParseData &data, const
 		data.parseStatusCode = 400;
 		return ERROR;
 	}
-
 	if (parts[1].find_first_not_of(allowedURIChars) != std::string::npos) {
 		globalLogger.logItem(logger::ERROR, "Invalid character in URI");
 		data.parseStatusCode = 400;
 		return ERROR;
 	}
+	std::vector<std::string> uriParts = utils::split(parts[1], "/");
+	for (std::vector<std::string>::iterator it = uriParts.begin(); it != uriParts.end(); ++it) {
+		if (*it == "..") {
+			globalLogger.logItem(logger::ERROR, "Directory traversal in URI");
+			data.parseStatusCode = 400;
+			return ERROR;
+		}
+	}
+
 	// set URI
 	data.uri = parts[1];
 
+	// check request protocol
 	if (parts[2] != "HTTP/1.1") {
 		globalLogger.logItem(logger::ERROR, "HTTP protocol not supported");
 		data.parseStatusCode = 505;
