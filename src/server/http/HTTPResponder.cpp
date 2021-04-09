@@ -227,7 +227,7 @@ void HTTPResponder::prepareFile(HTTPClient &client, config::ServerBlock &server,
 	prepareFile(client, server, route, file, code);
 }
 
-void HTTPResponder::serveFile(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const std::string &f) {
+void HTTPResponder::serveFile(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const std::string &f, const std::string &rewrittenUrl) {
 	struct ::stat buf = {};
 
 	// check autorization
@@ -276,7 +276,7 @@ void HTTPResponder::serveFile(HTTPClient &client, config::ServerBlock &server, c
 		globalLogger.logItem(logger::DEBUG, "Handling cgi request");
 		// handle cgi
 		try {
-			runCGI(client, file.path, route.getCgi());
+			runCGI(client, route, file.path, route.getCgi(), rewrittenUrl);
 		} catch (std::exception &e) {
 			globalLogger.logItem(logger::ERROR, std::string("CGI error: ") + e.what());
 			handleError(client, &server, &route, 500);
@@ -439,7 +439,7 @@ void HTTPResponder::generateResponse(HTTPClient &client) {
 		else if (client.data.request.data.method == PUT)
 			uploadFile(client, *server, *route, file.path);
 		else
-			serveFile(client, *server, *route, file.path);
+			serveFile(client, *server, *route, file.path, rewrittenUrl);
 		return;
 	}
 	else {
@@ -487,9 +487,9 @@ void HTTPResponder::handleProxy(HTTPClient &client, config::ServerBlock *server,
 	}
 }
 
-// TODO current working directory
 // TODO php not working
-void	HTTPResponder::runCGI(HTTPClient& client, const std::string &filePath, const std::string& cgiPath) {
+// TODO fix close issues (if one doesnt get closed, the others dont get closed either which makes it a fd leak)
+void	HTTPResponder::runCGI(HTTPClient& client, config::RouteBlock &route, const std::string &filePath, const std::string& cgiPath, const std::string &rewrittenUrl) {
 	FD				pipefd[2];
 	FD				bodyPipefd[2];
 	struct stat 	sb;
@@ -517,6 +517,35 @@ void	HTTPResponder::runCGI(HTTPClient& client, const std::string &filePath, cons
 	if (client.cgi->pid == -1)
 		ERROR_THROW(CgiClass::ForkFail());
 	if (!client.cgi->pid) {
+		char buf[1024];
+
+		// CHILD PROCESS
+		// change directory to document root
+		std::cerr << route.getRoot().c_str() << std::endl;
+		if (::chdir(route.getRoot().c_str()) == -1)
+			::exit(CHDIR_ERROR);
+
+		if (::getcwd(buf, 1023) == NULL)
+			::exit(GETCWD_ERROR);
+
+		try {
+			std::string *pathTranslated = new std::string(buf);
+			*pathTranslated += rewrittenUrl;
+			pathTranslated->insert(0, "PATH_TRANSLATED=");
+			for (char **envp = client.cgi->getEnvp().getEnv(); *envp != NULL; envp++) {
+					std::cerr << *envp << std::endl;
+				std::string envStr = *envp;
+				if (envStr.find("PATH_TRANSLATED=") == 0) {
+					delete [] *envp;
+					*envp = const_cast<char *>(pathTranslated->c_str());
+					break;
+				}
+			}
+		} catch (std::exception &e) {
+			std::cerr << e.what() << std::endl;
+			::exit(MEMORY_ERROR);
+		}
+
 		// set body pipes
         if (::dup2(bodyPipefd[0], STDIN_FILENO) == -1)
             ::exit(DUP2_ERROR);
@@ -535,6 +564,7 @@ void	HTTPResponder::runCGI(HTTPClient& client, const std::string &filePath, cons
 		::execve(args[0], args, client.cgi->getEnvp().getEnv());
         ::exit(EXECVE_ERROR);
 	}
+	// CURRENT PROCESS
 	if (::close(pipefd[1]) == -1)
 		ERROR_THROW(CgiClass::CloseFail());
     if (::close(bodyPipefd[0]) == -1)

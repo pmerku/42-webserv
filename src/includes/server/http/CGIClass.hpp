@@ -38,8 +38,8 @@ namespace NotApache {
 		explicit CgiClass();
 		~CgiClass();
 
-        void generateENV(HTTPClient& client, const utils::Uri& uri, const std::string &filePath, const std::string &execPath);
-	    const CGIenv::env &getEnvp() const;
+        void generateENV(HTTPClient& client, const utils::Uri& uri, const std::string &rewrittenUrl);
+	    CGIenv::env &getEnvp();
 
 	    class CGIException : public std::exception {
 		public:
