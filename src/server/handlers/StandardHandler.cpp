@@ -107,41 +107,32 @@ void StandardHandler::handleAssociatedRead(HTTPClient &client) {
 		return;
 	}
 	else if (client.responseState == CGI) {
-		char	buf[_bufferSize+1];
-		FD fileFd = client.getAssociatedFd(0).fd;
-		ssize_t	ret = ::read(fileFd, buf, _bufferSize);
-		switch (ret) {
-			case 0:
-			    // check for error exit codes
-                if (::waitpid(client.cgi->pid, &client.cgi->status, WUNTRACED) > 0) {
-                    if (WIFEXITED(client.cgi->status))
-                        client.cgi->status = WEXITSTATUS(client.cgi->status);
-                    else if (WIFSIGNALED(client.cgi->status)) {
-                        client.cgi->status = WTERMSIG(client.cgi->status);
-                    }
-				    client.cgi->hasExited = true;
-                }
-				// has read everything
-				client.isHandled.lock();
+		IOReturn ret = doRead(client.getAssociatedFd(0).fd, client.cgi->response.getResponse());
+		if (ret == IO_EOF) {
+			if (::waitpid(client.cgi->pid, &client.cgi->status, WUNTRACED) > 0) {
+				if (WIFEXITED(client.cgi->status))
+					client.cgi->status = WEXITSTATUS(client.cgi->status);
+				else if (WIFSIGNALED(client.cgi->status)) {
+					client.cgi->status = WTERMSIG(client.cgi->status);
+				}
+				client.cgi->hasExited = true;
+			}
+			client.isHandled.lock();
+			client.connectionState = WRITING;
+			client.writeState = GOT_ASSOCIATED;
+			stopHandle(client, false);
+			return;
+		} else if (ret == SUCCESS) {
+			client.isHandled.lock();
+			if (_parser->parse(client.cgi->response.data, &client) == HTTPParser::READY_FOR_WRITE) {
 				client.connectionState = WRITING;
 				client.writeState = GOT_ASSOCIATED;
-				stopHandle(client, false);
-				return;
-			case -1:
-				globalLogger.logItem(logger::ERROR, "Failed to read from associated file FD");
-				stopHandle(client);
-				return;
-			default:
-				client.cgi->response.appendResponseData(buf, ret);
-				client.isHandled.lock();
-				if (_parser->parse(client.cgi->response.data, &client) == HTTPParser::READY_FOR_WRITE) {
-					client.connectionState = WRITING;
-					client.writeState = GOT_ASSOCIATED;
-				}
-				std::cout << client.cgi->response.data << std::endl;
-				stopHandle(client, false);
-				return;
+			}
+			stopHandle(client, false);
+			return;
 		}
+		stopHandle(client);
+		return;
 	}
 }
 
