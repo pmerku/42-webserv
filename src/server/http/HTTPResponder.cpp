@@ -16,37 +16,59 @@
 #include <cerrno>
 #include <dirent.h>
 #include <unistd.h>
-#include "utils/Uri.hpp"
 #include "server/http/HTTPMimeTypes.hpp"
 
 using namespace NotApache;
 
+// TODO cleanup this file
+
 void HTTPResponder::generateAssociatedResponse(HTTPClient &client) {
+	config::ServerBlock *server = configuration->findServerBlock(client.data.request.data.headers.find("HOST")->second, client.getPort(), client.getHost());
 	if (client.responseState == FILE) {
 		client.data.response.setResponse(
 			client.data.response.builder
-			.setHeader("Server", "Not-Apache") // TODO remove
-			.setDate() // TODO remove
-			.setHeader("Connection", "Close") // TODO remove
 			.setBody(client.data.response.getAssociatedDataRaw())
 			.build()
 		);
-		return;
+	} else if (client.responseState == UPLOAD) {
+		client.data.response.setResponse(
+			client.data.response.builder.build()
+		);
 	} else if (client.responseState == PROXY) {
+		if (client.proxy->response.data.parseStatusCode != 200) {
+			handleError(client, server, 502, false);
+			return;
+		}
 		client.data.response.setResponse(
 			ResponseBuilder(client.proxy->response.data)
 			.build()
 		);
-		return;
 	}
 	else if (client.responseState == CGI) {
+		// parse error
+		if (client.cgi->response.data.parseStatusCode != 200) {
+			handleError(client, server, 500, false);
+			return;
+		}
+
+		// child process exit codes
+		if (client.cgi->status != 0) {
+            if (client.cgi->status == EXECVE_ERROR)
+                globalLogger.logItem(logger::ERROR, "CGI error: execve");
+            else if (client.cgi->status == CLOSE_ERROR)
+                globalLogger.logItem(logger::ERROR, "CGI error: close");
+            else if (client.cgi->status == DUP2_ERROR)
+                globalLogger.logItem(logger::ERROR, "CGI error: dup2");
+            handleError(client, server, 500, false);
+			return;
+		}
+
+		// cgi success, respond normally
 		client.data.response.setResponse(
-			ResponseBuilder()
-			.setBody(client.cgi->response.data.data)
+			ResponseBuilder(client.cgi->response.data)
 			.build()
 		);
-		return;
-	}	
+	}
 }
 
 void HTTPResponder::handleError(HTTPClient &client, config::ServerBlock *server, int code, bool doErrorPage) {
@@ -74,7 +96,7 @@ void HTTPResponder::handleError(HTTPClient &client, config::ServerBlock *server,
 			}
 		}
 		if (S_ISREG(errorPageData.st_mode)) {
-			prepareFile(client, *server, *route, errorPageFile, code);
+			prepareFile(client, *server, *route, errorPageFile, code, false);
 			return;
 		}
 	}
@@ -82,9 +104,6 @@ void HTTPResponder::handleError(HTTPClient &client, config::ServerBlock *server,
 	// generate error page
 	client.data.response.builder
 		.setStatus(code)
-		.setHeader("Server", "Not-Apache") // TODO remove
-		.setDate() // TODO remove
-		.setHeader("Connection", "Close") // TODO remove
 		.setHeader("Content-Type", "text/html");
 
 	std::map<int,std::string>::const_iterator statusIt = ResponseBuilder::statusMap.find(code);
@@ -164,14 +183,14 @@ void HTTPResponder::serveDirectory(HTTPClient &client, config::ServerBlock &serv
 		return;
 	}
 
-	// normal directory handler
-	handleError(client, &server, 403);
+	// normal directory handler (also cmon, it should be 403, not 404. stupid 42)
+	handleError(client, &server, 404);
 }
 
-void HTTPResponder::prepareFile(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const utils::Uri &file, int code) {
+void HTTPResponder::prepareFile(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const utils::Uri &file, int code, bool shouldErrorFile) {
 	FD fileFd = ::open(file.path.c_str(), O_RDONLY);
 	if (fileFd == -1) {
-		HTTPResponder::handleError(client, &server, 500);
+		handleError(client, &server, 500, shouldErrorFile);
 		return;
 	}
 
@@ -192,12 +211,9 @@ void HTTPResponder::prepareFile(HTTPClient &client, config::ServerBlock &server,
 	}
 
 	// send file
-	if (client.data.request.data.method == GET || client.data.request.data.method == POST) {
-		client.addAssociatedFd(fileFd);
-		client.responseState = NotApache::FILE;
-		client.connectionState = ASSOCIATED_FD;
-		return;
-	}
+	client.addAssociatedFd(fileFd);
+	client.responseState = NotApache::FILE;
+	client.connectionState = ASSOCIATED_FD;
 }
 
 void HTTPResponder::prepareFile(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const struct ::stat &buf, const utils::Uri &file, int code) {
@@ -279,8 +295,13 @@ void HTTPResponder::serveFile(HTTPClient &client, config::ServerBlock &server, c
 	if (route.shouldDoCgi() && !route.getCgiExt().empty() && file.getExt() == route.getCgiExt()) {
 		globalLogger.logItem(logger::DEBUG, "Handling cgi request");
 		// handle cgi
-		runCGI(client, f, route.getCgi());
-		return ;
+		try {
+			runCGI(client, file.path, route.getCgi());
+		} catch (std::exception &e) {
+			globalLogger.logItem(logger::ERROR, std::string("CGI error: ") + e.what());
+			handleError(client, &server, &route, 500);
+		}
+		return;
 	}
 	prepareFile(client, server, route, buf, file);
 }
@@ -296,6 +317,81 @@ bool HTTPResponder::checkCredentials(const std::vector<std::string>& authorizedU
 			return true;
 	}
 	return false;
+}
+
+void HTTPResponder::uploadFile(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const std::string &f) {
+	struct ::stat buf = {};
+	std::string message = "Successfully updated file!";
+
+	// get file data
+	utils::Uri file = f;
+	if (::stat(file.path.c_str(), &buf) == -1) {
+		if (errno != ENOENT) {
+			if (errno == ENOTDIR)
+				handleError(client, &server, &route, 404);
+			else
+				handleError(client, &server, &route, 500);
+			return;
+		}
+		message = "Successfully created file!";
+	}
+
+	// 403 on anything that isnt a regular file
+	if (!S_ISREG(buf.st_mode)) {
+		handleError(client, &server, 403);
+		return;
+	}
+
+	// create the file
+	FD uploadFd = ::open(file.path.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
+	if (uploadFd == -1) {
+		if (errno == ENOENT)
+			handleError(client, &server, 404);
+		else
+			handleError(client, &server, 500);
+		return;
+	}
+
+	// setup client for uploading
+	client.data.response.builder.setHeader("Content-Type", "text/html");
+	client.data.response.builder.setBody(std::string("<h1>") + message + "</h1>");
+	client.addAssociatedFd(uploadFd, associatedFD::WRITE);
+	client.responseState = NotApache::UPLOAD;
+	client.connectionState = ASSOCIATED_FD;
+}
+
+void HTTPResponder::deleteFile(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const std::string &f) {
+	struct ::stat buf = {};
+
+	// get file data
+	utils::Uri file = f;
+	if (::stat(file.path.c_str(), &buf) == -1) {
+		if (errno == ENOENT || errno == ENOTDIR)
+			handleError(client, &server, &route, 404);
+		else
+			handleError(client, &server, &route, 500);
+		return;
+	}
+
+	// only allow removing of normal files
+	if (!S_ISREG(buf.st_mode)) {
+		handleError(client, &server, &route, 403);
+		return;
+	}
+
+	// remove the file
+	int result = ::unlink(file.path.c_str());
+	if (result == -1) {
+		handleError(client, &server, &route, 500);
+		return;
+	}
+
+	client.data.response.setResponse(
+		ResponseBuilder()
+		.setHeader("Content-Type", "text/html")
+		.setBody("<h1>Successfully deleted file!</h1>")
+		.build()
+	);
 }
 
 void HTTPResponder::generateResponse(HTTPClient &client) {
@@ -317,7 +413,8 @@ void HTTPResponder::generateResponse(HTTPClient &client) {
 
 	// find which route block to use
 	utils::Uri uri = client.data.request.data.uri;
-	config::RouteBlock	*route = server->findRoute(uri.path);
+	std::string rewrittenUrl = uri.path; // findRoute will rewrite url
+	config::RouteBlock	*route = server->findRoute(rewrittenUrl);
 	if (route == 0) {
 		handleError(client, server, 400);
 		return;
@@ -331,8 +428,18 @@ void HTTPResponder::generateResponse(HTTPClient &client) {
 
 	if (route->shouldDoFile()) {
 		utils::Uri file = route->getRoot();
+		file.appendPath(rewrittenUrl);
+
+		// use upload directory instead for upload modifications
+		if (client.data.request.data.method == DELETE || client.data.request.data.method == PUT)
+			file = utils::Uri(route->getSaveUploads());
 		file.appendPath(uri.path);
-		serveFile(client, *server, *route, file.path);
+		if (client.data.request.data.method == DELETE)
+			deleteFile(client, *server, *route, file.path);
+		else if (client.data.request.data.method == PUT)
+			uploadFile(client, *server, *route, file.path);
+		else
+			serveFile(client, *server, *route, file.path);
 		return;
 	}
 	else {
@@ -380,114 +487,65 @@ void HTTPResponder::handleProxy(HTTPClient &client, config::ServerBlock *server,
 	}
 }
 
-void	HTTPResponder::setEnv(HTTPClient& client, CGIenv::env& envp, std::string& uri, const std::string &f) {
-	try {
-		CGIenv::ENVBuilder env;
-		std::string	domain = (*client.data.request.data.headers.find("HOST")).second;
-		domain = domain.substr(0, domain.find(':'));
-
-		env.SERVER_NAME(domain)
-			.CONTENT_LENGTH(utils::intToString(client.data.request.data.bodyLength))
-			.GATEWAY_INTERFACE("CGI/1.1")
-			.PATH_INFO(uri) // TODO URL translating/encoding
-			.PATH_TRANSLATED(f)
-			.QUERY_STRING(uri.substr(uri.find('?')+1))
-			.REMOTE_ADDR(utils::intToString(client.getCliAddr().sin_addr.s_addr)) //TODO convert to valid IP
-			.REMOTE_IDENT("") // TODO what is this?
-			.REQUEST_METHOD(HTTPParser::methodMap_EtoS.find(client.data.request.data.method)->second)
-			.REQUEST_URI(uri)
-			.SCRIPT_NAME(uri)
-			.SERVER_PORT(utils::intToString(client.getPort()))
-			.SERVER_PROTOCOL("HTTP/1.1")
-			.SERVER_SOFTWARE("HTTP 1.1");
-			
-		std::map<std::string, std::string>::iterator it;
-		std::map<std::string, std::string>::iterator end = client.data.request.data.headers.end();
-		it = client.data.request.data.headers.find("AUTHORIZATION");
-		if (it != end)
-			env.AUTH_TYPE(it->second);
-		it = client.data.request.data.headers.find("CONTENT_TYPE");
-		if (it != end)
-			env.CONTENT_TYPE(it->second);
-		it = client.data.request.data.headers.find("REMOTE_USER");
-		if (it != end)
-			env.CONTENT_TYPE(it->second);
-			
-		envp.setEnv(env.build());
-	} catch (std::exception &e) {
-		globalLogger.logItem(logger::ERROR, std::string("ENV could not be built: ") + e.what());
-	}
-}
-
-void	HTTPResponder::runCGI(HTTPClient& client, const std::string &f, const std::string& cgi) {
+// TODO current working directory
+// TODO php not working
+void	HTTPResponder::runCGI(HTTPClient& client, const std::string &filePath, const std::string& cgiPath) {
 	FD				pipefd[2];
 	FD				bodyPipefd[2];
 	struct stat 	sb;
-	CGIenv::env 	envp;
 	bool 			body = false;
 	client.cgi = new CgiClass;
 
-	setEnv(client, envp, client.data.request.data.uri.path, f);
-	char** args = new char *[2]();
-	args[0] = utils::strdup(cgi.c_str());
+	client.cgi->generateENV(client, client.data.request.data.uri, filePath, cgiPath);
+	char** args = new char *[3]();
+	args[0] = utils::strdup(cgiPath);
+	args[1] = utils::strdup(filePath);
 
 	if (::stat(args[0], &sb) == -1)
 		ERROR_THROW(CgiClass::NotFound());
 
 	if (::pipe(pipefd) == -1)
 		ERROR_THROW(CgiClass::PipeFail());
+    if (::pipe(bodyPipefd))
+        ERROR_THROW(CgiClass::PipeFail());
 
-	if (client.data.request.data.bodyLength) {
-		if (::pipe(bodyPipefd))
-			ERROR_THROW(CgiClass::PipeFail());
+	if (client.data.request.data.bodyLength)
 		body = true;
-	}
 
-	int pid = ::fork();
-	if (pid == -1)
+    client.cgi->pid = ::fork();
+	client.cgi->hasExited = false;
+	if (client.cgi->pid == -1)
 		ERROR_THROW(CgiClass::ForkFail());
-	if (!pid) // TODO ERROR logging
-	{
-		if (body) {
-			if (::dup2(bodyPipefd[0], STDIN_FILENO) == -1) {
-				globalLogger.logItem(logger::ERROR, "dup2 failed");
-				::exit(1);
-			}
-			if (::close(bodyPipefd[0]) == -1) {
-				globalLogger.logItem(logger::ERROR, "close failed");
-				::exit(1);
-			}
-			if (::close(bodyPipefd[1]) == -1) {
-				globalLogger.logItem(logger::ERROR, "close failed");
-				::exit(1);
-			}
-		}
-		else {
-			if (::close(STDIN_FILENO) == -1) {
-				globalLogger.logItem(logger::ERROR, "close failed");
-				::exit(1);
-			}
-		}
-		if (::dup2(pipefd[1], STDOUT_FILENO) == -1) {
-			globalLogger.logItem(logger::ERROR, "dup2 failed");
-			::exit(1);
-		}
-		if (::close(pipefd[0]) == -1 || ::close(pipefd[1]) == -1) {
-			globalLogger.logItem(logger::ERROR, "close failed");
-			::exit(1);
-		}
-		if (::execve(args[0], args, envp.getEnv()) == -1)
-			globalLogger.logItem(logger::ERROR, "execve failed");
-		::exit(1);
+	if (!client.cgi->pid) {
+		// set body pipes
+        if (::dup2(bodyPipefd[0], STDIN_FILENO) == -1)
+            ::exit(DUP2_ERROR);
+        if (::close(bodyPipefd[0]) == -1)
+            ::exit(CLOSE_ERROR);
+        if (::close(bodyPipefd[1]) == -1)
+            ::exit(CLOSE_ERROR);
+
+		// set output pipes
+		if (::dup2(pipefd[1], STDOUT_FILENO) == -1)
+			::exit(DUP2_ERROR);
+		if (::close(pipefd[0]) == -1 || ::close(pipefd[1]) == -1)
+			::exit(CLOSE_ERROR);
+
+		// run cgi
+		::execve(args[0], args, client.cgi->getEnvp().getEnv());
+        ::exit(EXECVE_ERROR);
 	}
 	if (::close(pipefd[1]) == -1)
 		ERROR_THROW(CgiClass::CloseFail());
+    if (::close(bodyPipefd[0]) == -1)
+        ERROR_THROW(CgiClass::CloseFail());
+
 	client.addAssociatedFd(pipefd[0]);
-	if (body) {
+	if (body)
 		client.addAssociatedFd(bodyPipefd[1], associatedFD::WRITE);
-		if (::close(bodyPipefd[0]) == -1)
-			ERROR_THROW(CgiClass::CloseFail());
-	}
+	else if (::close(bodyPipefd[1]) == -1)
+        ERROR_THROW(CgiClass::CloseFail());
+
 	client.responseState = CGI;
 	client.connectionState = ASSOCIATED_FD;
 }

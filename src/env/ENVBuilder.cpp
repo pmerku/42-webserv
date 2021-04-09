@@ -94,6 +94,11 @@ ENVBuilder &ENVBuilder::SERVER_SOFTWARE(const std::string &value) {
 	return *this;
 }
 
+ENVBuilder &ENVBuilder::REDIRECT_STATUS(const std::string& value) {
+	_metaVariables["REDIRECT_STATUS"] = value;
+	return *this;
+}
+
 char **ENVBuilder::build() {
 	char **envp = new char *[_metaVariables.size() + 1]();
 

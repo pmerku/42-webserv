@@ -30,6 +30,7 @@ namespace config {
 
 	private:
 		regex::Regex				_location;
+	    bool                        _shouldRewrite;
 		std::vector<std::string>	_allowedMethods;
 		std::vector<std::string>	_acceptLanguage;
 		std::vector<std::string>	_plugins;
@@ -45,6 +46,7 @@ namespace config {
 
 	public:
 		regex::Regex &getLocation();
+	    bool shouldLocationRewrite() const;
 		const std::vector<std::string> &getAllowedMethods() const;
 		const std::string &getRoot() const;
 		bool isDirectoryListing() const;

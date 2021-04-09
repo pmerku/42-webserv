@@ -37,7 +37,7 @@ namespace NotApache {
 
 	private:
 		utils::DataList::DataListIterator	_pos;
-		bool 								_isCGI;
+	    bool                                _posStart;
 		HTTPParseType 						_type;
 		bool								_gotHeaders;
 		bool								_gotFirstLine;
@@ -55,6 +55,8 @@ namespace NotApache {
 		int 								statusCode;
 		std::map<std::string, std::string> 	languageMap;
 		std::string						 	acceptLanguage;
+		std::string 						reasonPhrase;
+
 		int									parseStatusCode;
 
 		friend class HTTPParser;

@@ -34,6 +34,7 @@ namespace CGIenv {
 		ENVBuilder	&SERVER_PORT(const std::string &value);
 		ENVBuilder	&SERVER_PROTOCOL(const std::string &value);
 		ENVBuilder	&SERVER_SOFTWARE(const std::string &value);
+		ENVBuilder	&REDIRECT_STATUS(const std::string &value);
 
 		char		**build();
 	};

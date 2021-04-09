@@ -31,14 +31,14 @@ namespace NotApache {
 
 		static void handleError(HTTPClient &client, config::ServerBlock *server, int code, bool doErrorPage = true);
 		static void handleError(HTTPClient &client, config::ServerBlock *server, config::RouteBlock *route, int code, bool doErrorPage = true);
-
-		static void	serveDirectory(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const struct ::stat &directoryStat, const std::string &dirPath);
-		static void	prepareFile(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const utils::Uri &file, int code = 200);
+		static void serveDirectory(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const struct ::stat &directoryStat, const std::string &dirPath);
+		static void	prepareFile(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const utils::Uri &file, int code = 200, bool shouldErrorFile = true);
 		static void	prepareFile(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const struct ::stat &buf, const utils::Uri &file, int code = 200);
+		static void	uploadFile(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const std::string &f);
+		static void	deleteFile(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const std::string &f);
 
 		static void handleProxy(HTTPClient &client, config::ServerBlock *server, config::RouteBlock *route);
 
-		static void setEnv(HTTPClient& client, CGIenv::env& envp, std::string& uri, const std::string& f);
 		static void runCGI(HTTPClient& client, const std::string &f, const std::string& cgi);
 		static bool checkCredentials(const std::vector<std::string>& authFile, const std::string& credentials);
 		
