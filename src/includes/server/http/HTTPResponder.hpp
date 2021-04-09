@@ -39,7 +39,7 @@ namespace NotApache {
 
 		static void handleProxy(HTTPClient &client, config::ServerBlock *server, config::RouteBlock *route);
 
-		static void runCGI(HTTPClient& client, config::RouteBlock &route, const std::string &filePath, const std::string& cgi, const std::string &rewrittenUrl);
+		static void runCGI(HTTPClient& client, config::RouteBlock &route, const std::string& cgi, const std::string &rewrittenUrl);
 		static bool checkCredentials(const std::string& authFile, const std::string& credentials);
 		
 		class ReadFail : public std::exception {

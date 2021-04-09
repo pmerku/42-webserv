@@ -276,7 +276,7 @@ void HTTPResponder::serveFile(HTTPClient &client, config::ServerBlock &server, c
 		globalLogger.logItem(logger::DEBUG, "Handling cgi request");
 		// handle cgi
 		try {
-			runCGI(client, route, file.path, route.getCgi(), rewrittenUrl);
+			runCGI(client, route, route.getCgi(), rewrittenUrl);
 		} catch (std::exception &e) {
 			globalLogger.logItem(logger::ERROR, std::string("CGI error: ") + e.what());
 			handleError(client, &server, &route, 500);
@@ -336,11 +336,12 @@ void HTTPResponder::uploadFile(HTTPClient &client, config::ServerBlock &server, 
 		}
 		message = "Successfully created file!";
 	}
-
-	// 403 on anything that isnt a regular file
-	if (!S_ISREG(buf.st_mode)) {
-		handleError(client, &server, 403);
-		return;
+	else {
+        // 403 on anything that isnt a regular file
+        if (!S_ISREG(buf.st_mode)) {
+            handleError(client, &server, 403);
+            return;
+        }
 	}
 
 	// create the file
@@ -488,14 +489,13 @@ void HTTPResponder::handleProxy(HTTPClient &client, config::ServerBlock *server,
 }
 
 // TODO fix close issues (if one doesnt get closed, the others dont get closed either which makes it a fd leak)
-void	HTTPResponder::runCGI(HTTPClient& client, config::RouteBlock &route, const std::string &filePath, const std::string& cgiPath, const std::string &rewrittenUrl) {
+void	HTTPResponder::runCGI(HTTPClient& client, config::RouteBlock &route, const std::string& cgiPath, const std::string &rewrittenUrl) {
 	FD				pipefd[2];
 	FD				bodyPipefd[2];
 	struct stat 	sb;
 	bool 			body = false;
 	client.cgi = new CgiClass;
 
-    (void)filePath;
     char curCwd[1024];
     if (::getcwd(curCwd, 1023) == NULL)
         ERROR_THROW(CgiClass::NotFound());
@@ -518,7 +518,8 @@ void	HTTPResponder::runCGI(HTTPClient& client, config::RouteBlock &route, const 
     if (::pipe(bodyPipefd))
         ERROR_THROW(CgiClass::PipeFail());
 
-	if (client.data.request.data.bodyLength)
+	long int bodyLen = client.data.request.data.isChunked ? client.data.request.data.chunkedData.size() : client.data.request.data.data.size();
+	if (bodyLen > 0)
 		body = true;
 
     client.cgi->pid = ::fork();
@@ -530,7 +531,6 @@ void	HTTPResponder::runCGI(HTTPClient& client, config::RouteBlock &route, const 
 
 		// CHILD PROCESS
 		// change directory to document root
-		std::cerr << route.getRoot().c_str() << std::endl;
 		if (::chdir(route.getRoot().c_str()) == -1)
 			::exit(CHDIR_ERROR);
 
@@ -542,7 +542,7 @@ void	HTTPResponder::runCGI(HTTPClient& client, config::RouteBlock &route, const 
 			*pathTranslated += rewrittenUrl;
 			pathTranslated->insert(0, "PATH_TRANSLATED=");
 			for (char **envp = client.cgi->getEnvp().getEnv(); *envp != NULL; envp++) {
-					std::cerr << *envp << std::endl;
+				std::cerr << *envp << std::endl;
 				std::string envStr = *envp;
 				if (envStr.find("PATH_TRANSLATED=") == 0) {
 					delete [] *envp;
@@ -551,7 +551,6 @@ void	HTTPResponder::runCGI(HTTPClient& client, config::RouteBlock &route, const 
 				}
 			}
 		} catch (std::exception &e) {
-			std::cerr << e.what() << std::endl;
 			::exit(MEMORY_ERROR);
 		}
 

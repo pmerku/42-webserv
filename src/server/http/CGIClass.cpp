@@ -33,23 +33,9 @@ void CgiClass::generateENV(HTTPClient& client, const utils::Uri& uri, const std:
 	else
         builder.CONTENT_LENGTH(utils::intToString(data.data.size()));
 
-	// example: localhost:8080/directory/index.html
-	// root: /serve_me
-	// config location: /directory
-	// rewritten url: /index.html
-	// rewritten url as path: index.html
-
-	// ENV:
-	// PATH_INFO = <REWRITTEN_URL>
-	// PATH_TRANSLATED = <CWD> + <REWRITTEN_URL>
-	// SERVER_NAME=localhost
-	// HTTP_HOST=localhost:8080
-	// SCRIPT_NAME=<REWRITTEN_URL>
-	// REQUEST_URI=/directory/index.html
-
 	builder
 		.GATEWAY_INTERFACE("CGI/1.1") // which gateway version
-        .PATH_INFO(rewrittenUrl) // TODO url decoded
+        .PATH_INFO(uri.path)
         .PATH_TRANSLATED("") // will be set on fork
         .QUERY_STRING(uri.query)
         .REMOTE_ADDR(client.getIp())
