@@ -204,39 +204,18 @@ void StandardHandler::handleAssociatedWrite(HTTPClient &client) {
 			body = &client.data.request.data.chunkedData;
 		else
 			body = &client.data.request.data.data;
-		if (!client.data.request.hasProgress) {
-			client.data.request.currentPacket = body->begin();
-			client.data.request.packetProgress = 0;
-			client.data.request.hasProgress = true;
+		IOReturn ret = doWrite(client.getAssociatedFd(1).fd, client.data.request, *body);
+		if (ret == IO_ERROR) {
+			client.isHandled = false;
+			return;
+		} else if (ret == IO_EOF) {
+			client.isHandled.lock();
+			client.removeAssociatedFd(client.getAssociatedFd(1).fd);
+			stopHandle(client, false);
+			return;
 		}
-		std::string::size_type	pos = client.data.request.packetProgress;
-		std::string::size_type	len = client.data.request.currentPacket->size - pos;
-		FD fileFd = client.getAssociatedFd(1).fd;
-		ssize_t ret = ::write(fileFd, client.data.request.currentPacket->data + pos, len);
-		switch (ret) {
-			case -1:
-				std::cout << fileFd << std::endl;
-				globalLogger.logItem(logger::ERROR, "Failed to write to server");
-				client.isHandled = false;
-				return;
-			case 0:
-				// zero bytes is unlikely to happen, dont do anything if it does happen
-				break;
-			default:
-				client.data.request.packetProgress += ret;
-				if (client.data.request.packetProgress == client.data.request.currentPacket->size) {
-					++client.data.request.currentPacket;
-					client.data.request.packetProgress = 0;
-				}
-				if (client.data.request.currentPacket == body->end()) {
-					// wrote entire request, closing
-					client.isHandled.lock();
-					client.removeAssociatedFd(fileFd);
-					stopHandle(client, false);
-					return;
-				}
-				break;
-		}
+		stopHandle(client);
+		return;
 	}
 }
 
