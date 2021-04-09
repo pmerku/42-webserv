@@ -487,7 +487,6 @@ void HTTPResponder::handleProxy(HTTPClient &client, config::ServerBlock *server,
 	}
 }
 
-// TODO php not working
 // TODO fix close issues (if one doesnt get closed, the others dont get closed either which makes it a fd leak)
 void	HTTPResponder::runCGI(HTTPClient& client, config::RouteBlock &route, const std::string &filePath, const std::string& cgiPath, const std::string &rewrittenUrl) {
 	FD				pipefd[2];
@@ -496,10 +495,20 @@ void	HTTPResponder::runCGI(HTTPClient& client, config::RouteBlock &route, const 
 	bool 			body = false;
 	client.cgi = new CgiClass;
 
-	client.cgi->generateENV(client, client.data.request.data.uri, cgiPath);
+    (void)filePath;
+    char curCwd[1024];
+    if (::getcwd(curCwd, 1023) == NULL)
+        ERROR_THROW(CgiClass::NotFound());
+	utils::Uri curCwdUri(curCwd);
+	if (cgiPath[0] == '/')
+		curCwdUri = utils::Uri(cgiPath);
+	else
+		curCwdUri.appendPath(cgiPath, true);
+
+	client.cgi->generateENV(client, client.data.request.data.uri, rewrittenUrl);
 	char** args = new char *[3]();
-	args[0] = utils::strdup(cgiPath);
-	args[1] = utils::strdup(filePath);
+	args[0] = utils::strdup(curCwdUri.path);
+	args[1] = utils::strdup(rewrittenUrl.substr(1));
 
 	if (::stat(args[0], &sb) == -1)
 		ERROR_THROW(CgiClass::NotFound());
@@ -561,9 +570,12 @@ void	HTTPResponder::runCGI(HTTPClient& client, config::RouteBlock &route, const 
 			::exit(CLOSE_ERROR);
 
 		// run cgi
-		::execve(args[0], args, client.cgi->getEnvp().getEnv());
+		::execve(curCwdUri.path.c_str(), args, client.cgi->getEnvp().getEnv());
         ::exit(EXECVE_ERROR);
 	}
+
+	// TODO free args
+
 	// CURRENT PROCESS
 	if (::close(pipefd[1]) == -1)
 		ERROR_THROW(CgiClass::CloseFail());

@@ -275,6 +275,7 @@ HTTPParser::ParseReturn		HTTPParser::parseCgiHeaders(HTTPParseData &data, const 
 	}
 
 	std::map<std::string, std::string>::iterator it = data.headers.find("STATUS");
+	data.statusCode = 200;
 	if (it != data.headers.end()) {
 		std::string::size_type pos = it->second.find_first_of("12345");
 		if (pos == std::string::npos) {

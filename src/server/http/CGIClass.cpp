@@ -57,6 +57,7 @@ void CgiClass::generateENV(HTTPClient& client, const utils::Uri& uri, const std:
         .REQUEST_METHOD(HTTPParser::methodMap_EtoS.find(client.data.request.data.method)->second)
         .REQUEST_URI(uri.getFull())
         .SCRIPT_NAME(rewrittenUrl)
+	    .EXPORT("SCRIPT_FILENAME", rewrittenUrl.substr(1))
         .SERVER_PORT(utils::intToString(client.getPort()))
         .SERVER_PROTOCOL("HTTP/1.1")
         .SERVER_SOFTWARE("Not-Apache")

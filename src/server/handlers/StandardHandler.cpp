@@ -118,17 +118,16 @@ void StandardHandler::handleAssociatedRead(HTTPClient &client) {
 				client.cgi->hasExited = true;
 			}
 			client.isHandled.lock();
+            if (_parser->parse(client.cgi->response.data, &client) == HTTPParser::READY_FOR_WRITE) {
+                client.connectionState = WRITING;
+                client.writeState = GOT_ASSOCIATED;
+            }
 			client.connectionState = WRITING;
 			client.writeState = GOT_ASSOCIATED;
 			stopHandle(client, false);
 			return;
 		} else if (ret == SUCCESS) {
-			client.isHandled.lock();
-			if (_parser->parse(client.cgi->response.data, &client) == HTTPParser::READY_FOR_WRITE) {
-				client.connectionState = WRITING;
-				client.writeState = GOT_ASSOCIATED;
-			}
-			stopHandle(client, false);
+			stopHandle(client);
 			return;
 		}
 		stopHandle(client);

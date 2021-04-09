@@ -3,6 +3,9 @@
 //
 
 #include "utils/Uri.hpp"
+#include "utils/split.hpp"
+#include <list>
+#include <algorithm>
 
 using namespace utils;
 
@@ -25,7 +28,7 @@ Uri::Uri(const std::string &in): path(), query(), identifier() {
 	path = p;
 }
 
-void Uri::appendPath(const std::string &in) {
+void Uri::appendPath(const std::string &in, bool fixDirectoryTraversal) {
 	std::string p = in;
 
 	if (p.length() == 0) return;
@@ -35,7 +38,39 @@ void Uri::appendPath(const std::string &in) {
 		// doesnt end with slash, add one
 		path += '/';
 	}
-	path += p;
+
+	bool hasPrefixSlash = path[0] == '/';
+	std::string fullPath = path + p;
+	if (fixDirectoryTraversal) {
+		std::vector<std::string> parts = utils::split(fullPath, "/");
+
+		std::vector<std::string>::iterator directoryTraversal = std::find(parts.begin(), parts.end(), "..");
+		while (directoryTraversal != parts.end()) {
+			// remove one section of directory traversal
+			if (directoryTraversal == parts.begin())
+				break; // give up
+			std::vector<std::string>::iterator previousSection = directoryTraversal;
+			--previousSection;
+
+			parts.erase(previousSection); // in vector all places move by one, this will remove previous part and ..
+			parts.erase(previousSection);
+
+			// recheck for traversal
+			directoryTraversal = std::find(parts.begin(), parts.end(), "..");
+		}
+
+		fullPath.clear();
+		std::vector<std::string>::iterator it = parts.begin();
+		while (it != parts.end()) {
+			fullPath += *it;
+			++it;
+			if (it != parts.end())
+				fullPath += "/";
+		}
+		if (hasPrefixSlash)
+			fullPath.insert(0, "/");
+	}
+	path = fullPath;
 }
 
 void Uri::setQuery() {

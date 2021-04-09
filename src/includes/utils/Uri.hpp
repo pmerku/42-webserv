@@ -19,7 +19,7 @@ namespace utils {
 		Uri();
 		Uri(const std::string &path);
 
-		void		appendPath(const std::string &path);
+		void		appendPath(const std::string &path, bool fixDirectoryTraversal = false);
 
 		void		setQuery();
 		void		setQuery(const std::string &query);
