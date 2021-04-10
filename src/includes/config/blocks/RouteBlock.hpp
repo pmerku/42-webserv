@@ -35,6 +35,7 @@ namespace config {
 		std::vector<std::string>	_plugins;
 		std::string					_root;
 		bool						_directoryListing;
+	    bool                        _cgiHandleInvalidFile;
 		std::string					_index;
 		std::string					_cgi;
 		std::string					_cgiExt;
@@ -65,6 +66,8 @@ namespace config {
 		/// return if it cgi is enabled
 		bool shouldDoCgi() const;
 
+	    // if cgi should handle invalid files
+	    bool shouldCgiHandleFile() const;
 		bool isAllowedMethod(const std::string &method) const;
 
 		const std::string &getAuthBasic() const;

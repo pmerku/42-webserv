@@ -92,12 +92,17 @@ const AConfigBlock::validatorsMapType	RouteBlock::_validators =
           .add(new ArgumentLength(1))
           .add(new IntValidator(0, 0))
           .build())
+        .addKey("cgi_handle_invalid_file", ConfigValidatorListBuilder()
+          .add(new ArgumentLength(1))
+          .add(new BooleanValidator(0))
+          .add(new Unique())
+          .build())
 		.build();
 
 const AConfigBlock::validatorListType 	RouteBlock::_blockValidators =
 		ConfigValidatorListBuilder()
 		.add(new RequiredKey("location"))
-		.add(new MutuallyExclusive("proxy_url", "root"))
+		.add(new MutuallyExclusive("proxy_url;root"))
 		.add(new UploadValidator())
 		.build();
 
@@ -142,6 +147,7 @@ void RouteBlock::parseData() {
 	_location = regex::Regex(loc);
 	_root = "";
 	_directoryListing = false;
+	_cgiHandleInvalidFile = false;
 	_index = "";
 	_saveUploads = "";
 	_cgiExt = "";
@@ -160,6 +166,8 @@ void RouteBlock::parseData() {
         _root = getKey("root")->getArg(0);
     if (hasKey("directory_listing"))
         _directoryListing = getKey("directory_listing")->getArg(0) == "true";
+    if (hasKey("cgi_handle_invalid_file"))
+        _cgiHandleInvalidFile = getKey("cgi_handle_invalid_file")->getArg(0) == "true";
     if (hasKey("index"))
         _index = getKey("index")->getArg(0);
     if (hasKey("save_uploads"))
@@ -264,6 +272,11 @@ bool RouteBlock::shouldDoFile() const {
 bool RouteBlock::shouldDoCgi() const {
 	throwNotParsed();
 	return !_cgi.empty();
+}
+
+bool RouteBlock::shouldCgiHandleFile() const {
+	throwNotParsed();
+	return _cgiHandleInvalidFile;
 }
 
 int RouteBlock::getBodyLimit() {
