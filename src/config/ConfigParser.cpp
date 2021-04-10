@@ -14,6 +14,7 @@ using namespace config;
 
 const std::string	ConfigParser::possibleBlocks[] = { "server", "route", "" };
 
+// TODO unbalanced brackets cause segfaults and other errors
 std::string		ConfigParser::_readFile(const std::string &path) {
 	char		buf[1024];
 	::ssize_t	len = sizeof(buf)-1;

@@ -18,7 +18,8 @@ namespace NotApache {
 
 	public:
 		enum Events {
-			CLIENT_STATE_UPDATED = 'a'
+			CLIENT_STATE_UPDATED = 'a',
+			START_QUEUE = 'b'
 		};
 
 		ServerEventBus();
