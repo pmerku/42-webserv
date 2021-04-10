@@ -304,7 +304,7 @@ HTTPParser::ParseReturn		HTTPParser::parseBody(HTTPParseData &data, utils::DataL
 	return FINISHED;
 }
 
-HTTPParser::ParseReturn		HTTPParser::parseChunkedBody(HTTPParseData &data, utils::DataList::DataListIterator it) {
+HTTPParser::ParseReturn		HTTPParser::parseChunkedBody(HTTPClient *client, HTTPParseData &data, utils::DataList::DataListIterator it) {
 	data._pos = it;
 
 	while (true) {
@@ -325,6 +325,20 @@ HTTPParser::ParseReturn		HTTPParser::parseChunkedBody(HTTPParseData &data, utils
 			return ERROR;
 		}
 		size_t chunkSize = utils::stoh(tilEndl);
+
+		// check body limit
+        if (data._type == HTTPParseData::REQUEST) {
+            std::map<std::string,std::string>::iterator hostIt = data.headers.find("HOST");
+            config::ServerBlock *server = NotApache::configuration->findServerBlock(hostIt->second, client->getPort(), client->getHost());
+            std::string path = data.uri.path;
+            config::RouteBlock *route = server->findRoute(path);
+            if (route->getBodyLimit() != -1 && ( data.chunkedData.size() + chunkSize > (unsigned long)route->getBodyLimit()) ) {
+                globalLogger.logItem(logger::ERROR, "Body too large");
+                data.parseStatusCode = 413;
+                return ERROR;
+            }
+        }
+
 		std::advance(sizeEnd, 2);
 		if (data.data.size(sizeEnd) < chunkSize + 2) {
 			return OK; // unfinished
@@ -429,7 +443,7 @@ HTTPParser::ParseState		HTTPParser::parse(HTTPParseData &data, HTTPClient *clien
 	if (!data._gotBody) {
 		ParseReturn	ret;
 		if (data.isChunked)
-			ret = parseChunkedBody(data, data._pos);
+			ret = parseChunkedBody(client, data, data._pos);
 		else
 			ret = parseBody(data, data._pos);
 

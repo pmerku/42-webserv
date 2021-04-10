@@ -255,26 +255,29 @@ void HTTPResponder::serveFile(HTTPClient &client, config::ServerBlock &server, c
 	// get file data
 	// TODO cgi needs magic path parsing -> https://tools.ietf.org/html/rfc3875#section-3.2
 	utils::Uri file = f;
-	if (::stat(file.path.c_str(), &buf) == -1) {
-		if (errno == ENOENT || errno == ENOTDIR)
-			handleError(client, &server, &route, 404);
-		else
-			handleError(client, &server, &route, 500);
-		return;
-	}
+	bool shouldCgi = route.shouldDoCgi() && !route.getCgiExt().empty() && file.getExt() == route.getCgiExt();
+	if (!shouldCgi || !route.shouldCgiHandleFile()) {
+        if (::stat(file.path.c_str(), &buf) == -1) {
+            if (errno == ENOENT || errno == ENOTDIR)
+                handleError(client, &server, &route, 404);
+            else
+                handleError(client, &server, &route, 500);
+            return;
+        }
 
-	// check for directory
-	if (S_ISDIR(buf.st_mode)) {
-		serveDirectory(client, server, route, buf, file.path);
-		return;
-	}
-	else if (!S_ISREG(buf.st_mode)) {
-		handleError(client, &server, &route, 403);
-		return;
+        // check for directory
+        if (S_ISDIR(buf.st_mode)) {
+            serveDirectory(client, server, route, buf, file.path);
+            return;
+        }
+        else if (!S_ISREG(buf.st_mode)) {
+            handleError(client, &server, &route, 403);
+            return;
+        }
 	}
 
 	// serve the file
-	if (route.shouldDoCgi() && !route.getCgiExt().empty() && file.getExt() == route.getCgiExt()) {
+	if (shouldCgi) {
 		globalLogger.logItem(logger::DEBUG, "Handling cgi request");
 		// handle cgi
 		try {
@@ -533,6 +536,7 @@ void	HTTPResponder::runCGI(HTTPClient& client, config::RouteBlock &route, const 
 
 		// CHILD PROCESS
 		// change directory to document root
+		// TODO is this is the right dir?
 		if (::chdir(route.getRoot().c_str()) == -1)
 			::exit(CHDIR_ERROR);
 
