@@ -11,7 +11,6 @@ using namespace NotApache;
 
 const int	StandardHandler::_bufferSize = 1024;
 
-// TODO broken pipe??
 void StandardHandler::stopHandle(HTTPClient &client, bool shouldLock) {
 	if (shouldLock) client.isHandled.lock();
 	client.timeout(false);
@@ -238,13 +237,23 @@ void StandardHandler::write(HTTPClient &client) {
 
 	if (client.writeState == IS_WRITING) {
 		IOReturn ret = doWrite(client.getFd(), client.data.response, client.data.response.data.data);
+		if (ret != IO_ERROR)
+			client.concurrentFails = 0;
 		if (ret == IO_EOF) {
 			client.isHandled.lock();
 			client.connectionState = CLOSED;
 			stopHandle(client, false);
 			return;
 		} else if (ret == IO_ERROR) {
-			client.isHandled = false;
+            client.concurrentFails++;
+			// if failed 10 times in a row, close connection. we are assuming its dead (you would normally check errno here)
+			if (client.concurrentFails >= 10) {
+                client.isHandled.lock();
+                client.connectionState = CLOSED;
+                stopHandle(client, false);
+                return;
+			}
+            stopHandle(client);
 			return;
 		}
 	}
