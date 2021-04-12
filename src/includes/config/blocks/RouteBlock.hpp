@@ -23,13 +23,14 @@ namespace config {
 
 	public:
 		RouteBlock(const ConfigLine &line, int lineNumber, AConfigBlock *parent = 0);
+		~RouteBlock();
 		static void	cleanup();
 		void parseData();
 
 		std::string getType() const;
 
 	private:
-		regex::Regex				_location;
+		regex::Regex				*_location;
 	    bool                        _shouldRewrite;
 		std::vector<std::string>	_allowedMethods;
 		std::vector<std::string>	_acceptLanguage;

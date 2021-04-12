@@ -60,6 +60,7 @@ namespace regex {
 		unsigned char regexBuffer[MAX_REGEXP_BUFFER];
 	};
 
+	// WARNING, not copy safe, do not attempt to assign without using pointers
 	class Regex {
 	private:
 		struct Regexp _regex;

@@ -123,7 +123,7 @@ const std::string						*RouteBlock::getAllowedBlocks() const {
 	return RouteBlock::_allowedBlocks;
 }
 
-RouteBlock::RouteBlock(const ConfigLine &line, int lineNumber, AConfigBlock *parent): AConfigBlock(line, lineNumber, parent), _location("/"), _directoryListing() {}
+RouteBlock::RouteBlock(const ConfigLine &line, int lineNumber, AConfigBlock *parent): AConfigBlock(line, lineNumber, parent), _location(0), _directoryListing() {}
 
 std::string RouteBlock::getType() const {
 	return "route";
@@ -151,7 +151,7 @@ void RouteBlock::parseData() {
     _shouldRewrite = loc.length() >= 1 && loc.compare(loc.length() - 1, 1, "/") == 0; // ends with slash
 	if (loc.length() > 1 && _shouldRewrite) // remove slash from end if it exists
 		loc = loc.substr(0, loc.length()-1);
-	_location = regex::Regex(loc);
+	_location = new regex::Regex(loc);
 	_root = "";
 	_directoryListing = false;
 	_cgiHandleInvalidFile = false;
@@ -213,7 +213,7 @@ void RouteBlock::parseData() {
 
 regex::Regex &RouteBlock::getLocation() {
 	throwNotParsed();
-	return _location;
+	return *_location;
 }
 
 bool RouteBlock::shouldLocationRewrite() const {
@@ -315,4 +315,8 @@ int RouteBlock::getBodyLimit() {
 int RouteBlock::getTimeout() const {
 	throwNotParsed();
 	return _timeout;
+}
+
+RouteBlock::~RouteBlock() {
+	delete _location;
 }
