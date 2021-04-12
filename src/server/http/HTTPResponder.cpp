@@ -537,6 +537,8 @@ void	HTTPResponder::runCGI(HTTPClient& client, config::RouteBlock &route, const 
 		// CHILD PROCESS
 		// change directory to document root
 		// TODO is this is the right dir?
+		// TODO check with -> https://www.w3schools.com/php/php_includes.asp
+		// TODO use DOCUMENT_ROOT
 		if (::chdir(route.getRoot().c_str()) == -1)
 			::exit(CHDIR_ERROR);
 
