@@ -15,7 +15,7 @@ namespace CGIenv {
 		env();
 		~env();
 
-		char **getEnv() const;
+		char **getEnv();
 		void setEnv(char **envp);
 	};
 

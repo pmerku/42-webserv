@@ -9,11 +9,14 @@
 
 using namespace NotApache;
 
-HTTPClient::HTTPClient(FD clientFd, int port, long host, sockaddr_in cli_addr): _fd(clientFd), _port(port), _host(host), _associatedFds(), _cli_addr(cli_addr), writeState(NO_RESPONSE), connectionState(READING), responseState(NONE), isHandled(false), proxy(), cgi() {
+HTTPClient::HTTPClient(FD clientFd, int port, long host, sockaddr_in cli_addr): _fd(clientFd), _port(port), _host(host), _associatedFds(), _cli_addr(cli_addr), writeState(NO_RESPONSE), connectionState(READING), responseState(NONE), isHandled(false), proxy(), cgi(), concurrentFails(0) {
+	static unsigned int clientIdCounter = 0;
 	timeval timeData;
 	::gettimeofday(&timeData, 0);
 	_createdAt = timeData.tv_sec;
 	_timeoutAfter = 60; // timeout in seconds
+    clientIdCounter++;
+	clientCount = clientIdCounter;
 }
 
 HTTPClient::~HTTPClient() {
@@ -78,9 +81,7 @@ std::vector<associatedFD>::size_type HTTPClient::getAssociatedFdLength() const {
 }
 
 void HTTPClient::timeout(bool useLocks) {
-	timeval timeData;
-	::gettimeofday(&timeData, 0);
-	if (timeData.tv_sec < _createdAt + _timeoutAfter) {
+	if (getTimeDiff() < _timeoutAfter) {
 		return; // not timed out, continue like normal
 	}
 	if (useLocks)
@@ -100,4 +101,9 @@ std::string HTTPClient::getIp() const {
 		out += utils::intToString(ip[i]);
 	}
 	return out;
+}
+long int    HTTPClient::getTimeDiff() const {
+    timeval timeData;
+    ::gettimeofday(&timeData, 0);
+	return timeData.tv_sec - _createdAt;
 }

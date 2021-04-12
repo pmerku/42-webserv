@@ -63,6 +63,8 @@ namespace NotApache {
 		HTTPClientData			data;
 		Proxy					*proxy;
 		CgiClass				*cgi;
+	    unsigned int            clientCount;
+	    int                     concurrentFails;
 
 		HTTPClient(FD clientFd, int port, long host, sockaddr_in cli_addr);
 		~HTTPClient();
@@ -79,7 +81,8 @@ namespace NotApache {
 		associatedFD	getAssociatedFd(std::vector<associatedFD>::size_type i) const;
 		std::vector<associatedFD>::size_type	getAssociatedFdLength() const;
 
-		void 	timeout(bool useLocks = true);
+		void 	    timeout(bool useLocks = true);
+        long int    getTimeDiff() const;
 	};
 
 }

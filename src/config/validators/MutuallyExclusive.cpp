@@ -3,15 +3,26 @@
 //
 
 #include "config/validators/MutuallyExclusive.hpp"
+#include "utils/split.hpp"
 
 using namespace config;
 
-MutuallyExclusive::MutuallyExclusive(const std::string& one, const std::string& two) : AConfigValidator(true), _one(one), _two(two) {}
+MutuallyExclusive::MutuallyExclusive(const std::string& str) : AConfigValidator(true), _list() {
+	_list = utils::split(str, ";");
+}
 
 void MutuallyExclusive::test(const ConfigLine &line, const AConfigBlock &block) const {
-	(void)line;
-	if (block.hasKey(_one) && block.hasKey(_two))
-		ERROR_THROW(MutuallyExclusiveException(*(block.getKey(_one)), &block));
-	if (!block.hasKey(_one) && !block.hasKey(_two))
-		ERROR_THROW(MutuallyExclusiveMissingException(ConfigLine(_one, block.getLineNumber()), &block));
+    (void)line;
+	bool found = false;
+    for (std::vector<std::string>::const_iterator it = _list.begin(); it != _list.end(); ++it) {
+        bool hasKey = block.hasKey(*it);
+		if (!found && hasKey)
+			found = true;
+		else if (hasKey) {
+		    ERROR_THROW(MutuallyExclusiveException(line, &block, _list));
+		}
+    }
+	if (!found) {
+        ERROR_THROW(MutuallyExclusiveMissingException(ConfigLine(_list.front(), block.getLineNumber()), &block, _list));
+	}
 }

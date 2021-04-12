@@ -61,15 +61,24 @@ HTTPParser::ParseReturn		HTTPParser::parseRequestLine(HTTPParseData &data, const
 		data.parseStatusCode = 400;
 		return ERROR;
 	}
-
 	if (parts[1].find_first_not_of(allowedURIChars) != std::string::npos) {
 		globalLogger.logItem(logger::ERROR, "Invalid character in URI");
 		data.parseStatusCode = 400;
 		return ERROR;
 	}
+	std::vector<std::string> uriParts = utils::split(parts[1], "/");
+	for (std::vector<std::string>::iterator it = uriParts.begin(); it != uriParts.end(); ++it) {
+		if (*it == "..") {
+			globalLogger.logItem(logger::ERROR, "Directory traversal in URI");
+			data.parseStatusCode = 400;
+			return ERROR;
+		}
+	}
+
 	// set URI
 	data.uri = parts[1];
 
+	// check request protocol
 	if (parts[2] != "HTTP/1.1") {
 		globalLogger.logItem(logger::ERROR, "HTTP protocol not supported");
 		data.parseStatusCode = 505;
@@ -140,15 +149,19 @@ HTTPParser::ParseReturn		HTTPParser::parseHeaders(HTTPParseData &data, const std
 		data.headers[key] = value;
 
 		if (key == "TRANSFER-ENCODING") {
-			// TODO parse transfer encoding better (split on comma, trim whitespace, check parts for unsupported)
-			if (value.find("chunked") == std::string::npos) {
-				globalLogger.logItem(logger::ERROR, "Not supported transfer encoding");
-				data.parseStatusCode = 400;
-				// TODO accept-encoding header
-				return ERROR;
+			std::vector<std::string> headerValue = utils::split(value, ",");
+			for (std::vector<std::string>::iterator valueIt = headerValue.begin(); valueIt != headerValue.end(); ++valueIt) {
+				std::string::size_type start = (*valueIt).find_first_not_of(' ');
+				std::string::size_type end = (*valueIt).find_last_not_of(' ');
+				*valueIt = (*valueIt).substr(start, end+1 - start);
+				if (data._type != HTTPParseData::CGI_RESPONSE && *valueIt == "chunked")
+					data.isChunked = true;
+				else if (!(*valueIt).empty()){
+					globalLogger.logItem(logger::ERROR, "Not supported transfer encoding");
+					data.parseStatusCode = 400;
+					return ERROR;
+				}
 			}
-			if (data._type != HTTPParseData::CGI_RESPONSE && value.find("chunked") != std::string::npos)
-				data.isChunked = true;
 		}
 	}
 
@@ -190,7 +203,14 @@ HTTPParser::ParseReturn		HTTPParser::parseHeaders(HTTPParseData &data, const std
 			data.parseStatusCode = 500;
 			return ERROR;
 		}
-		if (server->getBodyLimit() != -1 && ( data.bodyLength == -1 || data.bodyLength > server->getBodyLimit()) ) {
+        std::string path = data.uri.path;
+        config::RouteBlock *route = server->findRoute(path);
+        if (route == 0) {
+            globalLogger.logItem(logger::ERROR, "No matching route block");
+            data.parseStatusCode = 400;
+            return ERROR;
+        }
+		if (route->getBodyLimit() != -1 && ( data.bodyLength == -1 || data.bodyLength > route->getBodyLimit()) ) {
 			globalLogger.logItem(logger::ERROR, "Body too large");
 			data.parseStatusCode = 413;
 			return ERROR;
@@ -262,6 +282,7 @@ HTTPParser::ParseReturn		HTTPParser::parseCgiHeaders(HTTPParseData &data, const 
 	}
 
 	std::map<std::string, std::string>::iterator it = data.headers.find("STATUS");
+	data.statusCode = 200;
 	if (it != data.headers.end()) {
 		std::string::size_type pos = it->second.find_first_of("12345");
 		if (pos == std::string::npos) {
@@ -273,8 +294,6 @@ HTTPParser::ParseReturn		HTTPParser::parseCgiHeaders(HTTPParseData &data, const 
 		data.reasonPhrase = it->second.substr(pos + 3);
 	}
 
-	// TODO location header
-
 	return OK;
 }
 
@@ -285,7 +304,7 @@ HTTPParser::ParseReturn		HTTPParser::parseBody(HTTPParseData &data, utils::DataL
 	return FINISHED;
 }
 
-HTTPParser::ParseReturn		HTTPParser::parseChunkedBody(HTTPParseData &data, utils::DataList::DataListIterator it) {
+HTTPParser::ParseReturn		HTTPParser::parseChunkedBody(HTTPClient *client, HTTPParseData &data, utils::DataList::DataListIterator it) {
 	data._pos = it;
 
 	while (true) {
@@ -306,6 +325,20 @@ HTTPParser::ParseReturn		HTTPParser::parseChunkedBody(HTTPParseData &data, utils
 			return ERROR;
 		}
 		size_t chunkSize = utils::stoh(tilEndl);
+
+		// check body limit
+        if (data._type == HTTPParseData::REQUEST) {
+            std::map<std::string,std::string>::iterator hostIt = data.headers.find("HOST");
+            config::ServerBlock *server = NotApache::configuration->findServerBlock(hostIt->second, client->getPort(), client->getHost());
+            std::string path = data.uri.path;
+            config::RouteBlock *route = server->findRoute(path);
+            if (route->getBodyLimit() != -1 && ( data.chunkedData.size() + chunkSize > (unsigned long)route->getBodyLimit()) ) {
+                globalLogger.logItem(logger::ERROR, "Body too large");
+                data.parseStatusCode = 413;
+                return ERROR;
+            }
+        }
+
 		std::advance(sizeEnd, 2);
 		if (data.data.size(sizeEnd) < chunkSize + 2) {
 			return OK; // unfinished
@@ -410,7 +443,7 @@ HTTPParser::ParseState		HTTPParser::parse(HTTPParseData &data, HTTPClient *clien
 	if (!data._gotBody) {
 		ParseReturn	ret;
 		if (data.isChunked)
-			ret = parseChunkedBody(data, data._pos);
+			ret = parseChunkedBody(client, data, data._pos);
 		else
 			ret = parseBody(data, data._pos);
 

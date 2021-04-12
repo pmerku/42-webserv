@@ -7,6 +7,7 @@
 
 #include <queue>
 #include "utils/mutex.hpp"
+#include "server/communication/ServerEventBus.hpp"
 
 namespace utils {
 
@@ -29,11 +30,12 @@ namespace utils {
 	template<class T>
 	class AThreadQueue: public AThread {
 	protected:
-		MutexLock		_queueMut;
-		Mutex<bool>		_isQueueRunning;
-		bool 			_shouldStop;
-		MutexLock		_queueWaitMut; // used for blocking until new task gets queued
-		std::queue<T *>	_queue;
+		MutexLock		            _queueMut;
+		Mutex<bool>		            _isQueueRunning;
+		bool 			            _shouldStop;
+		std::queue<T *>	            _queue;
+	    NotApache::ServerEventBus   _events;
+
 
 		virtual void 	runQueue(T *task) = 0;
 		virtual void 	disposeTask(T *task) {
@@ -52,8 +54,7 @@ namespace utils {
 				if (_queue.size() == 0) {
 					_isQueueRunning.set(false);
 					_queueMut.unlock();
-					// TODO possible race condition, main thread may unlock _queueWaitMut before being locked
-					_queueWaitMut.lock(); // blocking until main thread unlocks
+					_events.getPostedEvent(); // block until new item is added to the queue, doesnt matter what event it is
 					_isQueueRunning.set(true);
 					continue;
 				}
@@ -68,7 +69,7 @@ namespace utils {
 		}
 
 	public:
-		AThreadQueue(): AThread(), _isQueueRunning(false), _shouldStop(false), _queueWaitMut(true) {
+		AThreadQueue(): AThread(), _isQueueRunning(false), _shouldStop(false) {
 			start();
 		}
 
@@ -87,7 +88,7 @@ namespace utils {
 			// start queue if not running
 			_isQueueRunning.lock();
 			if (!*_isQueueRunning)
-				_queueWaitMut.unlock();
+                _events.postEvent(NotApache::ServerEventBus::START_QUEUE); // tell queue to start again
 			_isQueueRunning.unlock();
 
 			_queueMut.unlock();

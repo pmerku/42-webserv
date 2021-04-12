@@ -13,9 +13,12 @@
 
 namespace NotApache {
 
-#define EXECVE_ERROR 1
-#define CLOSE_ERROR 2
-#define DUP2_ERROR 3
+#define EXECVE_ERROR	1
+#define CLOSE_ERROR		2
+#define DUP2_ERROR		3
+#define CHDIR_ERROR		4
+#define GETCWD_ERROR	5
+#define MEMORY_ERROR	6
 
     class HTTPClient;
 
@@ -35,8 +38,8 @@ namespace NotApache {
 		explicit CgiClass();
 		~CgiClass();
 
-        void generateENV(HTTPClient& client, const utils::Uri& uri, const std::string &filePath, const std::string &execPath);
-	    const CGIenv::env &getEnvp() const;
+        void generateENV(HTTPClient& client, const utils::Uri& uri, const std::string &rewrittenUrl);
+	    CGIenv::env &getEnvp();
 
 	    class CGIException : public std::exception {
 		public:

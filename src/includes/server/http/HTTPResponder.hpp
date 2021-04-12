@@ -27,7 +27,7 @@ namespace NotApache {
 
 		static void generateAssociatedResponse(HTTPClient &client);
 
-		static void serveFile(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const std::string &file);
+		static void serveFile(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const std::string &file, const std::string &rewrittenUrl);
 
 		static void handleError(HTTPClient &client, config::ServerBlock *server, int code, bool doErrorPage = true);
 		static void handleError(HTTPClient &client, config::ServerBlock *server, config::RouteBlock *route, int code, bool doErrorPage = true);
@@ -39,7 +39,7 @@ namespace NotApache {
 
 		static void handleProxy(HTTPClient &client, config::ServerBlock *server, config::RouteBlock *route);
 
-		static void runCGI(HTTPClient& client, const std::string &filePath, const std::string& cgi);
+		static void runCGI(HTTPClient& client, config::RouteBlock &route, const std::string& cgi, const std::string &rewrittenUrl);
 		static bool checkCredentials(const std::string& authFile, const std::string& credentials);
 		
 		class ReadFail : public std::exception {
