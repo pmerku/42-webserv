@@ -84,7 +84,7 @@ void StandardHandler::handleAssociatedRead(HTTPClient &client) {
 	}
 	// handle proxy
 	else if (client.responseState == PROXY) {
-		IOReturn ret = doRead(client.getAssociatedFd(0).fd, client.data.response.getAssociatedDataRaw());
+		IOReturn ret = doRead(client.getAssociatedFd(0).fd, client.proxy->response.getResponse());
 		if (ret == IO_EOF) {
 			client.isHandled.lock();
 			client.connectionState = WRITING;

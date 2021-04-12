@@ -5,11 +5,10 @@
 #include "server/http/HTTPClient.hpp"
 #include "utils/intToString.hpp"
 #include <unistd.h>
-#include <sys/socket.h>
 
 using namespace NotApache;
 
-HTTPClient::HTTPClient(FD clientFd, int port, long host, sockaddr_in cli_addr): _fd(clientFd), _port(port), _host(host), _associatedFds(), _cli_addr(cli_addr), writeState(NO_RESPONSE), connectionState(READING), responseState(NONE), isHandled(false), proxy(), cgi(), concurrentFails(0) {
+HTTPClient::HTTPClient(FD clientFd, int port, long host, sockaddr_in cli_addr): _fd(clientFd), _port(port), _host(host), _associatedFds(), _cli_addr(cli_addr), writeState(NO_RESPONSE), connectionState(READING), responseState(NONE), isHandled(false), proxy(), cgi(), concurrentFails(0), serverBlock(0), routeBlock(0), replyStatus(0), hasErrored(false) {
 	static unsigned int clientIdCounter = 0;
 	timeval timeData;
 	::gettimeofday(&timeData, 0);

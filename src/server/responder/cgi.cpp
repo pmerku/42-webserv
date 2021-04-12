@@ -69,7 +69,6 @@ void	HTTPResponder::runCGI(HTTPClient& client, const std::string& cgiPath) {
 			*pathTranslated += client.rewrittenUrl;
 			pathTranslated->insert(0, "PATH_TRANSLATED=");
 			for (char **envp = client.cgi->getEnvp().getEnv(); *envp != NULL; envp++) {
-				std::cerr << *envp << std::endl;
 				std::string envStr = *envp;
 				if (envStr.find("PATH_TRANSLATED=") == 0) {
 					delete [] *envp;

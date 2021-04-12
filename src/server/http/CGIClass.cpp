@@ -119,5 +119,6 @@ void CgiClass::freeArgs() {
 		delete [] args[0];
 		delete [] args[1];
 		delete [] args;
+		args = 0;
 	}
 }
