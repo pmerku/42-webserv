@@ -102,13 +102,13 @@ SRC	=\
 	server/http/HTTPMimeTypes.cpp\
 	server/http/RequestBuilder.cpp\
 	server/http/ResponseBuilder.cpp\
-	server/http/responder/associatedFds.cpp\
-	server/http/responder/cgi.cpp\
-	server/http/responder/handleError.cpp\
-	server/http/responder/proxy.cpp\
-	server/http/responder/serving.cpp\
-	server/http/responder/unlink.cpp\
-	server/http/responder/upload.cpp\
+	server/responder/associatedFds.cpp\
+	server/responder/cgi.cpp\
+	server/responder/handleError.cpp\
+	server/responder/proxy.cpp\
+	server/responder/serving.cpp\
+	server/responder/unlink.cpp\
+	server/responder/upload.cpp\
 	server/terminal/TerminalClient.cpp\
 	server/terminal/TerminalResponder.cpp\
 	server/globals.cpp\
