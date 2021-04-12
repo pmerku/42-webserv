@@ -141,7 +141,6 @@ void Server::_clientCleanup() {
 
 		if (!isClosed)
 			continue;
-        (*i)->getCliAddr().sin_port;
         std::string start = "Client #";
 		if ((int)(*i)->getTimeDiff() > 5)
 			start = "Client (TIMEOUT) #";
