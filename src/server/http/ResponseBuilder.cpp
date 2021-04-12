@@ -6,7 +6,6 @@
 #include "server/http/ResponseBuilder.hpp"
 #include "utils/intToString.hpp"
 #include "utils/CreateMap.hpp"
-#include "utils/DataList.hpp"
 #include "utils/toUpper.hpp"
 
 using namespace NotApache;
@@ -172,7 +171,7 @@ std::string ResponseBuilder::convertTime(time_t time) {
 	char date[128];
 	tm	*currentTime;
 
-	currentTime = std::localtime(&time); // TODO calculate yourself
+	currentTime = std::localtime(&time);
 	int ret = strftime(date, sizeof(date), "%a, %d %B %Y %H:%M:%S ", currentTime);
 	return std::string(date, ret) + "GMT";
 }

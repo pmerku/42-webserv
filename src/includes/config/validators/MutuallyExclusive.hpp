@@ -7,37 +7,58 @@
 
 #include "config/AConfigValidator.hpp"
 #include "config/ConfigException.hpp"
+#include <vector>
+#include <string>
 
 namespace config {
 
 	class MutuallyExclusive : public AConfigValidator {
 	private:
-		const std::string _one;
-		const std::string _two;
+		std::vector<std::string> _list;
 
 	public:
-		MutuallyExclusive(const std::string& one, const std::string& two);
+		MutuallyExclusive(const std::string& str);
 
 		void test(const ConfigLine &line, const AConfigBlock &block) const;
 
 		class MutuallyExclusiveException : public ConfigException {
+        private:
+            const std::vector<std::string> &_list;
+
 		protected:
 			std::string getTemplate() const throw() {
-				return "Key {KEY} in block {BLOCK_NAME} is mutually exclusive with another key. Only one of them must exist";
+			    std::string out = "Key {KEY} in block {BLOCK_NAME} is mutually exclusive with another key. Only one of the following may exist in this block: ";
+			    for (std::vector<std::string>::const_iterator it = _list.begin(); it != _list.end();) {
+				    out += *it;
+				    ++it;
+				    if (it != _list.end())
+					    out += ", ";
+			    }
+				return out;
 			}
 
 		public:
-			MutuallyExclusiveException(const ConfigLine &line, const AConfigBlock *block): ConfigException(line, block) {};
+			MutuallyExclusiveException(const ConfigLine &line, const AConfigBlock *block, const std::vector<std::string> &list): ConfigException(line, block), _list(list) {};
 		};
 
 		class MutuallyExclusiveMissingException : public ConfigException {
-		protected:
+          private:
+            const std::vector<std::string> &_list;
+
+          protected:
 			std::string getTemplate() const throw() {
-				return "Key {KEY} in block {BLOCK_NAME} is mutually exclusive with another key. One of them is missing";
+                std::string out = "Key {KEY} in block {BLOCK_NAME} is mutually exclusive with another key. One of the following must exist: ";
+                for (std::vector<std::string>::const_iterator it = _list.begin(); it != _list.end();) {
+                    out += *it;
+				    ++it;
+                    if (it != _list.end())
+                        out += ", ";
+                }
+                return out;
 			}
 
 		public:
-			MutuallyExclusiveMissingException(const ConfigLine &line, const AConfigBlock *block): ConfigException(line, block) {};
+			MutuallyExclusiveMissingException(const ConfigLine &line, const AConfigBlock *block, const std::vector<std::string> &list): ConfigException(line, block), _list(list) {};
 		};
 	};
 

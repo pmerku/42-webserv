@@ -36,9 +36,11 @@ namespace config {
 		std::vector<std::string>	_plugins;
 		std::string					_root;
 		bool						_directoryListing;
+	    bool                        _cgiHandleInvalidFile;
 		std::string					_index;
 		std::string					_cgi;
 		std::string					_cgiExt;
+	    int							_bodyLimit;
 		std::string					_saveUploads;
 		std::string					_authBasic;
 		std::vector<std::string>	_authorized;
@@ -58,11 +60,18 @@ namespace config {
 		const std::vector<std::string> &getAcceptLanguage() const;
 		const std::vector<std::string> &getAuthorized() const;
 		const std::string &getAuthBasic() const;
+
+    // will also traverse parent block for body limit if not set
+    int getBodyLimit();
+    
 		/// return if it should serve files (if false -> proxy)
 		bool shouldDoFile() const;
+
 		/// return if it cgi is enabled
 		bool shouldDoCgi() const;
 
+	    // if cgi should handle invalid files
+	    bool shouldCgiHandleFile() const;
 		bool isAllowedMethod(const std::string &method) const;
 
 	};

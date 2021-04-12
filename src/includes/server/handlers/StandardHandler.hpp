@@ -18,7 +18,8 @@ namespace NotApache {
 		};
 
 		IOReturn		doRead(FD fd, utils::DataList &readable);
-		IOReturn		doWrite(FD fd, HTTPClientRequest &writable, utils::DataList &data);
+		template<typename HTTPClientType>
+		IOReturn 		doWrite(FD fd, HTTPClientType &writable, utils::DataList &data);
 
 		void handleAssociatedRead(HTTPClient &client);
 		void handleAssociatedWrite(HTTPClient &client);
@@ -31,7 +32,6 @@ namespace NotApache {
 
 		virtual void	read(HTTPClient &client);
 		virtual void	write(HTTPClient &client);
-
 	};
 }
 

@@ -99,6 +99,11 @@ ENVBuilder &ENVBuilder::REDIRECT_STATUS(const std::string& value) {
 	return *this;
 }
 
+ENVBuilder &ENVBuilder::EXPORT(const std::string &key, const std::string &value) {
+	_metaVariables[key] = value;
+	return *this;
+}
+
 char **ENVBuilder::build() {
 	char **envp = new char *[_metaVariables.size() + 1]();
 

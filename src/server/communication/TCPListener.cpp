@@ -5,6 +5,8 @@
 #include "server/communication/TCPListener.hpp"
 #include "server/global/GlobalLogger.hpp"
 #include "utils/ErrorThrow.hpp"
+#include <cstring>
+#include <cerrno>
 #include <unistd.h>
 #include <fcntl.h>
 
@@ -31,6 +33,7 @@ void TCPListener::start() {
 
 	// set socket options
 	setsockopt(_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(int)); // reuse local addresses on bind
+	setsockopt(_fd, SOL_SOCKET, SO_KEEPALIVE, &one, sizeof(int)); // reuse local addresses on bind
 	setsockopt(_fd, SOL_SOCKET, SO_OOBINLINE, &one, sizeof(int)); // receive urgent tcp data in normal queue (http doesnt work with urgent data)
 	svr_addr.sin_family = AF_INET;
 	svr_addr.sin_addr.s_addr = _host;
@@ -58,6 +61,7 @@ HTTPClient *TCPListener::acceptClient() {
 	int client_fd = accept(_fd, (struct sockaddr *) &cli_addr, &sin_len);
 	if (client_fd == -1) {
 		globalLogger.logItem(logger::ERROR, "Client not accepted");
+		std::cerr << std::strerror(errno) << std::endl;
 		ERROR_THROW(FailedToAccept());
 	}
 
