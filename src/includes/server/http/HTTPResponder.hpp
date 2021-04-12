@@ -41,6 +41,7 @@ namespace NotApache {
 
 		static bool checkCredentials(const std::vector<std::string>& authFile, const std::string& credentials);
 		static void runCGI(HTTPClient& client, config::RouteBlock &route, const std::string& cgi, const std::string &rewrittenUrl);
+		static void	closePipes(FD *pipefd0, FD *pipefd1, FD *bodyPipefd0, FD *bodyPipefd1, bool closeFail);
 
 		class AuthHeader : public std::exception {
 			public:

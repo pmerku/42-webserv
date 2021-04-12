@@ -498,7 +498,7 @@ void HTTPResponder::handleProxy(HTTPClient &client, config::ServerBlock *server,
 	}
 }
 
-void	closePipes(FD *pipefd0, FD *pipefd1, FD *bodyPipefd0, FD *bodyPipefd1, bool closeFail) {	
+void	HTTPResponder::closePipes(FD *pipefd0, FD *pipefd1, FD *bodyPipefd0, FD *bodyPipefd1, bool closeFail) {	
 	if (pipefd0) {
 		if (::close(*pipefd0) == -1)
 			closeFail = true;
