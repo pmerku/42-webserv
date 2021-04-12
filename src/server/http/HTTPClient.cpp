@@ -14,7 +14,7 @@ HTTPClient::HTTPClient(FD clientFd, int port, long host, sockaddr_in cli_addr): 
 	timeval timeData;
 	::gettimeofday(&timeData, 0);
 	_createdAt = timeData.tv_sec;
-	_timeoutAfter = 60; // timeout in seconds
+	_timeoutAfter = 180; // timeout in seconds TODO config option
     clientIdCounter++;
 	clientCount = clientIdCounter;
 }
@@ -81,7 +81,7 @@ std::vector<associatedFD>::size_type HTTPClient::getAssociatedFdLength() const {
 }
 
 void HTTPClient::timeout(bool useLocks) {
-	if (getTimeDiff() < _timeoutAfter) {
+	if (getTimeDiff() < getTimeoutAfter()) {
 		return; // not timed out, continue like normal
 	}
 	if (useLocks)
@@ -106,4 +106,8 @@ long int    HTTPClient::getTimeDiff() const {
     timeval timeData;
     ::gettimeofday(&timeData, 0);
 	return timeData.tv_sec - _createdAt;
+}
+
+long int	HTTPClient::getTimeoutAfter() const {
+	return _timeoutAfter;
 }

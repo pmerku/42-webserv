@@ -83,6 +83,7 @@ namespace NotApache {
 
 		void 	    timeout(bool useLocks = true);
         long int    getTimeDiff() const;
+        long int 	getTimeoutAfter() const;
 	};
 
 }

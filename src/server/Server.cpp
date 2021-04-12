@@ -142,7 +142,7 @@ void Server::_clientCleanup() {
 		if (!isClosed)
 			continue;
         std::string start = "Client #";
-		if ((int)(*i)->getTimeDiff() > 5)
+		if ((int)(*i)->getTimeDiff() >= (*i)->getTimeoutAfter())
 			start = "Client (TIMEOUT) #";
 		globalLogger.logItem(logger::INFO, start + utils::intToString((int)(*i)->clientCount) + " got served file: " + (*i)->data.request.data.uri.path + " (in " + utils::intToString((int)(*i)->getTimeDiff()) + "s)");
 		globalLogger.logItem(logger::DEBUG, "Closed client connection");
