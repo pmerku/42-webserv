@@ -487,6 +487,27 @@ void HTTPResponder::handleProxy(HTTPClient &client, config::ServerBlock *server,
 	}
 }
 
+void	closePipes(FD *pipefd0, FD *pipefd1, FD *bodyPipefd0, FD *bodyPipefd1, bool closeFail) {	
+	if (pipefd0) {
+		if (::close(*pipefd0) == -1)
+			closeFail = true;
+	}
+	if (pipefd1) {
+		if (::close(*pipefd1) == -1)
+			closeFail = true;
+	}
+	if (bodyPipefd0) {
+		if (::close(*bodyPipefd0) == -1)
+			closeFail = true;
+	}
+	if (bodyPipefd1) {
+		if (::close(*bodyPipefd1) == -1)
+			closeFail = true;
+	}
+	if (closeFail)
+        ERROR_THROW(CgiClass::CloseFail());
+}
+
 void	HTTPResponder::runCGI(HTTPClient& client, const std::string &filePath, const std::string& cgiPath) {
 	FD				pipefd[2];
 	FD				bodyPipefd[2];
@@ -504,16 +525,20 @@ void	HTTPResponder::runCGI(HTTPClient& client, const std::string &filePath, cons
 
 	if (::pipe(pipefd) == -1)
 		ERROR_THROW(CgiClass::PipeFail());
-    if (::pipe(bodyPipefd))
-        ERROR_THROW(CgiClass::PipeFail());
+    if (::pipe(bodyPipefd) == -1) {
+		closePipes(&pipefd[0], &pipefd[1], NULL, NULL, false);
+		ERROR_THROW(CgiClass::PipeFail());
+	}
 
 	if (client.data.request.data.bodyLength)
 		body = true;
 
     client.cgi->pid = ::fork();
 	client.cgi->hasExited = false;
-	if (client.cgi->pid == -1)
+	if (client.cgi->pid == -1) {
+		closePipes(&pipefd[0], &pipefd[1], &bodyPipefd[0], &bodyPipefd[1], false);
 		ERROR_THROW(CgiClass::ForkFail());
+	}
 	if (!client.cgi->pid) {
 		// set body pipes
         if (::dup2(bodyPipefd[0], STDIN_FILENO) == -1)
@@ -533,16 +558,19 @@ void	HTTPResponder::runCGI(HTTPClient& client, const std::string &filePath, cons
 		::execve(args[0], args, client.cgi->getEnvp().getEnv());
         ::exit(EXECVE_ERROR);
 	}
+	::free(args[0]);
+	::free(args[1]);
+	delete [] args;
 	if (::close(pipefd[1]) == -1)
-		ERROR_THROW(CgiClass::CloseFail());
+		closePipes(&pipefd[0], NULL, &bodyPipefd[0], &bodyPipefd[1], true);
     if (::close(bodyPipefd[0]) == -1)
-        ERROR_THROW(CgiClass::CloseFail());
+		closePipes(&pipefd[0], NULL, NULL, &bodyPipefd[1], true);
 
 	client.addAssociatedFd(pipefd[0]);
 	if (body)
 		client.addAssociatedFd(bodyPipefd[1], associatedFD::WRITE);
 	else if (::close(bodyPipefd[1]) == -1)
-        ERROR_THROW(CgiClass::CloseFail());
+		closePipes(&pipefd[0], NULL, NULL, NULL, true);
 
 	client.responseState = CGI;
 	client.connectionState = ASSOCIATED_FD;
