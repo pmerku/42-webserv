@@ -198,16 +198,6 @@ HTTPParser::ParseReturn		HTTPParser::parseHeaders(HTTPParseData &data, const std
 		}
 	}
 
-	// TODO only accept charset UTF-8
-	if (data._type == HTTPParseData::REQUEST) {
-		std::map<std::string,std::string>::iterator acceptCharsets = data.headers.find("ACCEPT-CHARSETS");
-		if (acceptCharsets != data.headers.end() && (acceptCharsets->second != "utf-8" || acceptCharsets->second != "*")) {
-			globalLogger.logItem(logger::ERROR, "Charset not accepted");
-			data.parseStatusCode = 406; // 406 not accepted
-			return ERROR;
-		}
-	}
-
 	// parse Accept-Language header
 	std::map<std::string,std::string>::iterator acceptLanguage = data.headers.find("ACCEPT-LANGUAGE");
 	if (data._type == HTTPParseData::REQUEST && acceptLanguage != data.headers.end()) {

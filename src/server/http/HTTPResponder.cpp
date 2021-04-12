@@ -194,7 +194,7 @@ void HTTPResponder::prepareFile(HTTPClient &client, config::ServerBlock &server,
 		return;
 	}
 
-	client.data.response.builder.setHeader("Content-Type", MimeTypes::getMimeType(file.getExt())); // TODOHEADERS + charset=utf-8 ?
+	client.data.response.builder.setHeader("Content-Type", MimeTypes::getMimeType(file.getExt()));
 	client.data.response.builder.setStatus(code);
 
 	// add OPTIONS specific header
@@ -261,11 +261,11 @@ void HTTPResponder::serveFile(HTTPClient &client, config::ServerBlock &server, c
 			if (!client.data.request.data.acceptLanguage.empty())
 				break ;
 		}
-	}
-	// error if no match was found
-	if (client.data.request.data.acceptLanguage.empty()) {
-		handleError(client, &server, &route, 406); // not acceptable
-		return ;
+		// error if no match was found
+		if (client.data.request.data.acceptLanguage.empty()) {
+			handleError(client, &server, &route, 406); // not acceptable
+			return ;
+		}
 	}
 	// if "*" set to first language in config
 	if (client.data.request.data.acceptLanguage == "*")
@@ -487,8 +487,6 @@ void HTTPResponder::handleProxy(HTTPClient &client, config::ServerBlock *server,
 	}
 }
 
-// TODO current working directory
-// TODO php not working
 void	HTTPResponder::runCGI(HTTPClient& client, const std::string &filePath, const std::string& cgiPath) {
 	FD				pipefd[2];
 	FD				bodyPipefd[2];
