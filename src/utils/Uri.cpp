@@ -4,14 +4,13 @@
 
 #include "utils/Uri.hpp"
 #include "utils/split.hpp"
-#include <list>
 #include <algorithm>
 
 using namespace utils;
 
-Uri::Uri(): path("/"), query(), identifier() {}
+Uri::Uri(): isWildcard(false), path("/"), query(), identifier() {}
 
-Uri::Uri(const std::string &in): path(), query(), identifier() {
+Uri::Uri(const std::string &in): isWildcard(false), path(), query(), identifier() {
 	std::string p = in;
 	std::string::size_type iPos = p.find('#');
 	if (iPos != std::string::npos) {

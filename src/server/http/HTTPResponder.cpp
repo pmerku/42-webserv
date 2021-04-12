@@ -205,7 +205,6 @@ void HTTPResponder::prepareFile(HTTPClient &client, config::ServerBlock &server,
 	client.data.response.builder.setStatus(code);
 
 	// add OPTIONS specific header
-	// TODO options for * uri
 	if (client.data.request.data.method == OPTIONS) {
 		client.data.response.builder.setAllowedMethods(route.getAllowedMethods());
 	}
@@ -420,6 +419,11 @@ void HTTPResponder::generateResponse(HTTPClient &client) {
 	config::ServerBlock	*server = configuration->findServerBlock(domain, client.getPort(), client.getHost());
 	if (server == 0) {
 		handleError(client, server, 400);
+		return;
+	}
+
+	if (client.data.request.data.uri.isWildcard) {
+		client.data.response.setResponse(ResponseBuilder().build());
 		return;
 	}
 

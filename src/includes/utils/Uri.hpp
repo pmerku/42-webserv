@@ -12,6 +12,7 @@ namespace utils {
 
 	class Uri {
 	public:
+		bool		isWildcard;
 		std::string path;
 		std::string	query;
 		std::string identifier;
