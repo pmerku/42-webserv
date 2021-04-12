@@ -47,10 +47,6 @@ namespace config {
 
 	public:
 		InvalidNestedBlockException(const std::string &key, int lineNumber, AConfigBlock *parent): ConfigException(ConfigLine(key, lineNumber), parent) {};
-
-		virtual ~InvalidNestedBlockException() throw() {
-			delete _block;
-		}
 	};
 }
 

@@ -86,9 +86,8 @@ RootBlock		*ConfigParser::parseFile(const std::string &path) const {
 				AConfigBlock	*newBlock = _makeBlockFromLine(parsedLine, lineCount, currentBlock);
 				try {
 					currentBlock->addBlock(newBlock);
-				} catch (std::exception &e) {
+				} catch (const ConfigException &e) {
 					delete newBlock;
-					delete rootBlock;
 					throw;
 				}
 				currentBlock = newBlock;
@@ -98,7 +97,6 @@ RootBlock		*ConfigParser::parseFile(const std::string &path) const {
 				AConfigBlock::validateEndBlock(parsedLine);
 				currentBlock = currentBlock->getParent();
 				if (currentBlock == 0) {
-					delete rootBlock;
 					ERROR_THROW(UnbalancedBracketsException(parsedLine, 0));
 				}
 				blockDepth--;
@@ -118,7 +116,6 @@ RootBlock		*ConfigParser::parseFile(const std::string &path) const {
 
 	try {
 		if (blockDepth != 0) {
-			delete rootBlock;
 			ERROR_THROW(UnbalancedBracketsException(ConfigLine("<3", lineCount), 0));
 		}
 		rootBlock->runPostValidators();
