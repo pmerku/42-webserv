@@ -11,6 +11,8 @@
 #include "server/http/Proxy.hpp"
 #include "server/http/CGIClass.hpp"
 #include "netinet/in.h"
+#include "config/blocks/ServerBlock.hpp"
+#include "config/blocks/RouteBlock.hpp"
 #include <vector>
 #include <netinet/in.h>
 
@@ -65,6 +67,14 @@ namespace NotApache {
 		CgiClass				*cgi;
 	    unsigned int            clientCount;
 	    int                     concurrentFails;
+
+	    // responder data
+		config::ServerBlock		*serverBlock;
+		config::RouteBlock		*routeBlock;
+		int 					replyStatus;
+		std::string				rewrittenUrl;
+		utils::Uri				file;
+		bool 					hasErrored;
 
 		HTTPClient(FD clientFd, int port, long host, sockaddr_in cli_addr);
 		~HTTPClient();

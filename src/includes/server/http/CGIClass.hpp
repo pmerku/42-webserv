@@ -27,6 +27,10 @@ namespace NotApache {
         CGIenv::env         _envp;
 
 	public:
+		char 				**args;
+		FD					pipefd[2];
+		FD					bodyPipefd[2];
+		bool 				body;
         pid_t               pid;
 	    int                 status;
 
@@ -40,6 +44,9 @@ namespace NotApache {
 
         void generateENV(HTTPClient& client, const utils::Uri& uri, const std::string &rewrittenUrl);
 	    CGIenv::env &getEnvp();
+
+	    void closePipes(FD *pipefd0, FD *pipefd1, FD *bodyPipefd0, FD *bodyPipefd1);
+	    void freeArgs();
 
 	    class CGIException : public std::exception {
 		public:
