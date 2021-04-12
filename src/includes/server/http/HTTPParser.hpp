@@ -60,7 +60,6 @@ namespace NotApache {
 
 	private:
 		static const std::string 								allowedURIChars;
-		static const std::string 								acceptedCharset; // TODO in config?
 	};
 }
 

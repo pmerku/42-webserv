@@ -12,7 +12,6 @@ using namespace NotApache;
 
 const std::string HTTPParser::allowedURIChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_.~!#$&'()*+,/:;=?@[]";
 const int HTTPParser::maxHeaderSize = 8000;
-const std::string HTTPParser::acceptedCharset = "utf-8";
 
 const std::map<std::string, e_method> HTTPParser::methodMap_StoE =
 		utils::CreateMap<std::string, e_method>
