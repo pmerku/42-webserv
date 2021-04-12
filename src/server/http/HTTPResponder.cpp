@@ -240,7 +240,7 @@ void HTTPResponder::serveFile(HTTPClient &client, config::ServerBlock &server, c
 		}
 		else {
 			try {
-				if (!checkCredentials(route.getAuthBasicUserFile(), it->second)) {
+				if (!checkCredentials(route.getAuthorized(), it->second)) {
 					handleError(client, &server, &route, 403);
 					return ;
 				}
@@ -251,6 +251,32 @@ void HTTPResponder::serveFile(HTTPClient &client, config::ServerBlock &server, c
 			}
 		}
 	}
+
+	// set accepted language with highest quality rating (=> start at the end of map)
+	if (!route.getAcceptLanguage().empty()) {
+		std::map<std::string, std::string>::reverse_iterator requestLanguages = client.data.request.data.languageMap.rbegin();
+		std::map<std::string, std::string>::reverse_iterator notFound = client.data.request.data.languageMap.rend();
+
+		for (; requestLanguages != notFound; ++requestLanguages) {
+			std::vector<std::string>::const_iterator acceptedLanguages = route.getAcceptLanguage().begin();
+			for (; acceptedLanguages != route.getAcceptLanguage().end(); ++acceptedLanguages) {
+				if (requestLanguages->second == *acceptedLanguages) {
+					client.data.request.data.acceptLanguage = requestLanguages->second;
+					break ;
+				}
+			}
+			if (!client.data.request.data.acceptLanguage.empty())
+				break ;
+		}
+		// error if no match was found
+		if (client.data.request.data.acceptLanguage.empty()) {
+			handleError(client, &server, &route, 406); // not acceptable
+			return ;
+		}
+	}
+	// if "*" set to first language in config
+	if (client.data.request.data.acceptLanguage == "*")
+		client.data.request.data.acceptLanguage = route.getAcceptLanguage()[0];
 
 	// get file data
 	// TODO cgi needs magic path parsing -> https://tools.ietf.org/html/rfc3875#section-3.2
@@ -291,35 +317,14 @@ void HTTPResponder::serveFile(HTTPClient &client, config::ServerBlock &server, c
 	prepareFile(client, server, route, buf, file);
 }
 
-bool HTTPResponder::checkCredentials(const std::string& authFile, const std::string& credentials) {
-	FD fd;
-	int ret = 1;
-	char buf[255];
-	std::string fileContent; // TODO parse file?
-
-	// open and read from "password database"
-	fd = ::open(authFile.c_str(), O_RDONLY);
-	if (fd == -1)
-		ERROR_THROW(OpenFail());
-	while ((ret = ::read(fd, &buf, sizeof(buf))) > 0) {
-		buf[ret] = '\0';
-		fileContent += buf;
-		if (fileContent.size() > 10000)
-			ERROR_THROW(MaxFileSize());
-	}
-	if (ret == -1)
-		ERROR_THROW(ReadFail());
-
-	// split per user
-	std::vector<std::string> userPasswordPair = utils::split(fileContent, "\n");
-	
+bool HTTPResponder::checkCredentials(const std::vector<std::string>& authorizedUsers, const std::string& requestUser) {
 	// Check header
-	if (credentials.find("Basic ", 0, 6) != 0)
+	if (requestUser.find("Basic ", 0, 6) != 0)
 		ERROR_THROW(AuthHeader());
 
 	// Find match
-	for (size_t i = 0; i < userPasswordPair.size(); ++i) {
-		if (utils::base64_decode(credentials.substr(6)) == userPasswordPair[i])
+	for (size_t i = 0; i < authorizedUsers.size(); ++i) {
+		if (utils::base64_decode(requestUser.substr(6)) == authorizedUsers[i])
 			return true;
 	}
 	return false;

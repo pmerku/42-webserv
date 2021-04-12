@@ -12,6 +12,7 @@ using namespace NotApache;
 
 const std::string HTTPParser::allowedURIChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_.~!#$&'()*+,/:;=?@[]";
 const int HTTPParser::maxHeaderSize = 8000;
+const std::string HTTPParser::acceptedCharset = "utf-8";
 
 const std::map<std::string, e_method> HTTPParser::methodMap_StoE =
 		utils::CreateMap<std::string, e_method>
@@ -217,6 +218,36 @@ HTTPParser::ParseReturn		HTTPParser::parseHeaders(HTTPParseData &data, const std
 		}
 	}
 
+	// parse Accept-Language header
+	std::map<std::string,std::string>::iterator acceptLanguage = data.headers.find("ACCEPT-LANGUAGE");
+	if (data._type == HTTPParseData::REQUEST && acceptLanguage != data.headers.end()) {
+		std::vector<std::string> languages = utils::split(acceptLanguage->second, ",");
+		
+		for (size_t i = 0; i < languages.size(); ++i) {
+			std::vector<std::string> languageQualityPair = utils::split(languages[i], ";");
+			
+			// the quality value defaults to "q=1"
+			if (languageQualityPair.size() == 1)
+				languageQualityPair.push_back("q=1");
+			else if (languageQualityPair[1].find("q=") != 0) {
+				globalLogger.logItem(logger::ERROR, "Invalid Accept-Language header");
+				data.parseStatusCode = 400;
+				return ERROR;
+			}
+
+			// check quality rating
+			std::string quality = languageQualityPair[1].substr(2);
+			//			has to be a double		||	 max 3 decimals	  ||  max value 1  || can't have languages with the same quality rating
+			if (!utils::stringIsDouble(quality) || quality.size() > 5 || quality > "1" || data.languageMap.find(quality) != data.languageMap.end()) {
+				globalLogger.logItem(logger::ERROR, "Invalid Accept-Language header");
+				data.parseStatusCode = 400;
+				return ERROR;
+			}
+			
+			// add language-quality pair to map
+			data.languageMap.insert(std::make_pair(quality, languageQualityPair[0]));
+		}
+	}
 	return OK;
 }
 

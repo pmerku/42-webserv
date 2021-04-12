@@ -39,22 +39,10 @@ namespace NotApache {
 
 		static void handleProxy(HTTPClient &client, config::ServerBlock *server, config::RouteBlock *route);
 
+		static bool checkCredentials(const std::vector<std::string>& authFile, const std::string& credentials);
 		static void runCGI(HTTPClient& client, config::RouteBlock &route, const std::string& cgi, const std::string &rewrittenUrl);
-		static bool checkCredentials(const std::string& authFile, const std::string& credentials);
-		
-		class ReadFail : public std::exception {
-			public:
-				virtual const char *what() const throw() { return "Read fail"; }
-		};
-		class OpenFail : public ReadFail {
-			public:
-				virtual const char *what() const throw() { return "Open fail"; }
-		};
-		class MaxFileSize : public ReadFail {
-			public:
-				virtual const char *what() const throw() { return "Reached max file size"; }
-		};
-		class AuthHeader : public ReadFail {
+
+		class AuthHeader : public std::exception {
 			public:
 				virtual const char *what() const throw() { return "Invalid authentication header"; }
 		};

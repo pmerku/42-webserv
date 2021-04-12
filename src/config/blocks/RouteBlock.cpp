@@ -81,12 +81,15 @@ const AConfigBlock::validatorsMapType	RouteBlock::_validators =
 		  .build())
 		.addKey("auth_basic", ConfigValidatorListBuilder()
 		  .add(new ArgumentLength(1))
+		  .add(new RequiredKey("authorized", true))
 		  .add(new Unique())
 		  .build())
-		.addKey("auth_basic_user_file", ConfigValidatorListBuilder()
-		  .add(new ArgumentLength(1))
+		.addKey("authorized", ConfigValidatorListBuilder()
 		  .add(new Unique())
-		  .add(new IsFile(0))
+		  .add(new RequiredKey("auth_basic", true))
+		  .build())
+		.addKey("accept_language", ConfigValidatorListBuilder()
+		  .add(new Unique())
 		  .build())
         .addKey("body_limit", ConfigValidatorListBuilder()
           .add(new ArgumentLength(1))
@@ -152,9 +155,8 @@ void RouteBlock::parseData() {
 	_saveUploads = "";
 	_cgiExt = "";
 	_cgi = "";
-    _bodyLimit = -1;
-    _authBasic = "";
-	_authBasicUserFile = "";
+	_authBasic = "";
+  _bodyLimit = -1;
 	_plugins.clear();
 	_allowedMethods.clear();
 	_allowedMethods.push_back("GET");
@@ -162,38 +164,44 @@ void RouteBlock::parseData() {
 	_allowedMethods.push_back("OPTIONS");
 	_allowedMethods.push_back("HEAD");
 
-    if (hasKey("root"))
-        _root = getKey("root")->getArg(0);
-    if (hasKey("directory_listing"))
-        _directoryListing = getKey("directory_listing")->getArg(0) == "true";
-    if (hasKey("cgi_handle_invalid_file"))
-        _cgiHandleInvalidFile = getKey("cgi_handle_invalid_file")->getArg(0) == "true";
-    if (hasKey("index"))
-        _index = getKey("index")->getArg(0);
-    if (hasKey("save_uploads"))
-        _saveUploads = getKey("save_uploads")->getArg(0);
-    if (hasKey("proxy_url"))
-        _proxyUrl = UrlValidator::parseUrl(getKey("proxy_url")->getArg(0));
-    if (hasKey("cgi"))
-        _cgi = getKey("cgi")->getArg(0);
-    if (hasKey("cgi_ext"))
-        _cgiExt = getKey("cgi_ext")->getArg(0);
-    if (hasKey("body_limit"))
-        _bodyLimit = utils::stoi(getKey("body_limit")->getArg(0));
-    if (hasKey("allowed_methods")) {
-        _allowedMethods.clear();
-        for (ConfigLine::arg_size i = 0; i < getKey("allowed_methods")->getArgLength(); i++)
-            _allowedMethods.push_back(getKey("allowed_methods")->getArg(i));
-    }
-    if (hasKey("auth_basic"))
-        _authBasic = getKey("auth_basic")->getArg(0);
-    if (hasKey("auth_basic_user_file"))
-        _authBasicUserFile = getKey("auth_basic_user_file")->getArg(0);
-    for (std::vector<ConfigLine>::const_iterator i = _lines.begin(); i != _lines.end(); ++i) {
-        if (i->getKey() != "use_plugin") continue;
-        _plugins.push_back(i->getArg(0));
-    }
-    _isParsed = true;
+  if (hasKey("root"))
+      _root = getKey("root")->getArg(0);
+  if (hasKey("directory_listing"))
+      _directoryListing = getKey("directory_listing")->getArg(0) == "true";
+  if (hasKey("cgi_handle_invalid_file"))
+      _cgiHandleInvalidFile = getKey("cgi_handle_invalid_file")->getArg(0) == "true";
+  if (hasKey("index"))
+      _index = getKey("index")->getArg(0);
+  if (hasKey("save_uploads"))
+      _saveUploads = getKey("save_uploads")->getArg(0);
+  if (hasKey("proxy_url"))
+      _proxyUrl = UrlValidator::parseUrl(getKey("proxy_url")->getArg(0));
+  if (hasKey("cgi"))
+      _cgi = getKey("cgi")->getArg(0);
+  if (hasKey("cgi_ext"))
+      _cgiExt = getKey("cgi_ext")->getArg(0);
+  if (hasKey("body_limit"))
+      _bodyLimit = utils::stoi(getKey("body_limit")->getArg(0));
+  if (hasKey("allowed_methods")) {
+      _allowedMethods.clear();
+      for (ConfigLine::arg_size i = 0; i < getKey("allowed_methods")->getArgLength(); i++)
+          _allowedMethods.push_back(getKey("allowed_methods")->getArg(i));
+  }
+  if (hasKey("auth_basic"))
+    _authBasic = getKey("auth_basic")->getArg(0);
+  if (hasKey("authorized")) {
+    for (ConfigLine::arg_size i = 0; i < getKey("authorized")->getArgLength(); i++)
+      _authorized.push_back(getKey("authorized")->getArg(i));
+  }
+  if (hasKey("accept_language")) {
+    for (ConfigLine::arg_size i = 0; i < getKey("accept_language")->getArgLength(); i++)
+      _acceptLanguage.push_back(getKey("accept_language")->getArg(i));
+  }
+  for (std::vector<ConfigLine>::const_iterator i = _lines.begin(); i != _lines.end(); ++i) {
+      if (i->getKey() != "use_plugin") continue;
+      _plugins.push_back(i->getArg(0));
+  }
+  _isParsed = true;
 }
 
 regex::Regex &RouteBlock::getLocation() {
@@ -251,9 +259,14 @@ const std::string &RouteBlock::getAuthBasic() const {
 	return _authBasic;
 }
 
-const std::string &RouteBlock::getAuthBasicUserFile() const {
+const std::vector<std::string> &RouteBlock::getAuthorized() const {
 	throwNotParsed();
-	return _authBasicUserFile;
+	return _authorized;
+}
+
+const std::vector<std::string> &RouteBlock::getAcceptLanguage() const {
+	throwNotParsed();
+	return _acceptLanguage;
 }
 
 bool RouteBlock::isAllowedMethod(const std::string &method) const {
