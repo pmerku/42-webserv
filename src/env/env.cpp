@@ -16,7 +16,7 @@ env::~env() {
 	}
 }
 
-char **env::getEnv() const {
+char **env::getEnv() {
 	return _envp;
 }
 

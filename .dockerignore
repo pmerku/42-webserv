@@ -1,0 +1,8 @@
+*.o
+not-apache
+*.out
+
+build
+cmake-*
+.idea
+.DS_Store

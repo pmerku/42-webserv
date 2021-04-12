@@ -53,12 +53,18 @@ void HTTPResponder::generateAssociatedResponse(HTTPClient &client) {
 
 		// child process exit codes
 		if (client.cgi->status != 0) {
-            if (client.cgi->status == EXECVE_ERROR)
-                globalLogger.logItem(logger::ERROR, "CGI error: execve");
-            else if (client.cgi->status == CLOSE_ERROR)
-                globalLogger.logItem(logger::ERROR, "CGI error: close");
-            else if (client.cgi->status == DUP2_ERROR)
-                globalLogger.logItem(logger::ERROR, "CGI error: dup2");
+			if (client.cgi->status == EXECVE_ERROR)
+				globalLogger.logItem(logger::ERROR, "CGI error: execve");
+			else if (client.cgi->status == CLOSE_ERROR)
+				globalLogger.logItem(logger::ERROR, "CGI error: close");
+			else if (client.cgi->status == DUP2_ERROR)
+				globalLogger.logItem(logger::ERROR, "CGI error: dup2");
+			else if (client.cgi->status == CHDIR_ERROR)
+				globalLogger.logItem(logger::ERROR, "CGI error: chdir");
+			else if (client.cgi->status == GETCWD_ERROR)
+				globalLogger.logItem(logger::ERROR, "CGI error: getcdw");
+			else if (client.cgi->status == MEMORY_ERROR)
+				globalLogger.logItem(logger::ERROR, "CGI error: memory");
             handleError(client, server, 500, false);
 			return;
 		}
@@ -128,6 +134,7 @@ void HTTPResponder::serveDirectory(HTTPClient &client, config::ServerBlock &serv
 
 		// index file exists, serve it
 		if (S_ISREG(indexData.st_mode)) {
+			// TODO index files need cgi too
 			prepareFile(client, server, route, indexData, indexFile);
 			return;
 		}
@@ -221,7 +228,7 @@ void HTTPResponder::prepareFile(HTTPClient &client, config::ServerBlock &server,
 	prepareFile(client, server, route, file, code);
 }
 
-void HTTPResponder::serveFile(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const std::string &f) {
+void HTTPResponder::serveFile(HTTPClient &client, config::ServerBlock &server, config::RouteBlock &route, const std::string &f, const std::string &rewrittenUrl) {
 	struct ::stat buf = {};
 
 	// check autorization
@@ -272,31 +279,35 @@ void HTTPResponder::serveFile(HTTPClient &client, config::ServerBlock &server, c
 		client.data.request.data.acceptLanguage = route.getAcceptLanguage()[0];
 
 	// get file data
+	// TODO cgi needs magic path parsing -> https://tools.ietf.org/html/rfc3875#section-3.2
 	utils::Uri file = f;
-	if (::stat(file.path.c_str(), &buf) == -1) {
-		if (errno == ENOENT || errno == ENOTDIR)
-			handleError(client, &server, &route, 404);
-		else
-			handleError(client, &server, &route, 500);
-		return;
-	}
+	bool shouldCgi = route.shouldDoCgi() && !route.getCgiExt().empty() && file.getExt() == route.getCgiExt();
+	if (!shouldCgi || !route.shouldCgiHandleFile()) {
+        if (::stat(file.path.c_str(), &buf) == -1) {
+            if (errno == ENOENT || errno == ENOTDIR)
+                handleError(client, &server, &route, 404);
+            else
+                handleError(client, &server, &route, 500);
+            return;
+        }
 
-	// check for directory
-	if (S_ISDIR(buf.st_mode)) {
-		serveDirectory(client, server, route, buf, file.path);
-		return;
-	}
-	else if (!S_ISREG(buf.st_mode)) {
-		handleError(client, &server, &route, 403);
-		return;
+        // check for directory
+        if (S_ISDIR(buf.st_mode)) {
+            serveDirectory(client, server, route, buf, file.path);
+            return;
+        }
+        else if (!S_ISREG(buf.st_mode)) {
+            handleError(client, &server, &route, 403);
+            return;
+        }
 	}
 
 	// serve the file
-	if (route.shouldDoCgi() && !route.getCgiExt().empty() && file.getExt() == route.getCgiExt()) {
+	if (shouldCgi) {
 		globalLogger.logItem(logger::DEBUG, "Handling cgi request");
 		// handle cgi
 		try {
-			runCGI(client, file.path, route.getCgi());
+			runCGI(client, route, route.getCgi(), rewrittenUrl);
 		} catch (std::exception &e) {
 			globalLogger.logItem(logger::ERROR, std::string("CGI error: ") + e.what());
 			handleError(client, &server, &route, 500);
@@ -335,11 +346,12 @@ void HTTPResponder::uploadFile(HTTPClient &client, config::ServerBlock &server, 
 		}
 		message = "Successfully created file!";
 	}
-
-	// 403 on anything that isnt a regular file
-	if (!S_ISREG(buf.st_mode)) {
-		handleError(client, &server, 403);
-		return;
+	else {
+        // 403 on anything that isnt a regular file
+        if (!S_ISREG(buf.st_mode)) {
+            handleError(client, &server, 403);
+            return;
+        }
 	}
 
 	// create the file
@@ -428,18 +440,17 @@ void HTTPResponder::generateResponse(HTTPClient &client) {
 
 	if (route->shouldDoFile()) {
 		utils::Uri file = route->getRoot();
-		file.appendPath(rewrittenUrl);
 
 		// use upload directory instead for upload modifications
 		if (client.data.request.data.method == DELETE || client.data.request.data.method == PUT)
 			file = utils::Uri(route->getSaveUploads());
-		file.appendPath(uri.path);
+		file.appendPath(rewrittenUrl);
 		if (client.data.request.data.method == DELETE)
 			deleteFile(client, *server, *route, file.path);
 		else if (client.data.request.data.method == PUT)
 			uploadFile(client, *server, *route, file.path);
 		else
-			serveFile(client, *server, *route, file.path);
+			serveFile(client, *server, *route, file.path, rewrittenUrl);
 		return;
 	}
 	else {
@@ -508,17 +519,27 @@ void	closePipes(FD *pipefd0, FD *pipefd1, FD *bodyPipefd0, FD *bodyPipefd1, bool
         ERROR_THROW(CgiClass::CloseFail());
 }
 
-void	HTTPResponder::runCGI(HTTPClient& client, const std::string &filePath, const std::string& cgiPath) {
+// TODO fix close issues (if one doesnt get closed, the others dont get closed either which makes it a fd leak)
+void	HTTPResponder::runCGI(HTTPClient& client, config::RouteBlock &route, const std::string& cgiPath, const std::string &rewrittenUrl) {
 	FD				pipefd[2];
 	FD				bodyPipefd[2];
 	struct stat 	sb;
 	bool 			body = false;
 	client.cgi = new CgiClass;
 
-	client.cgi->generateENV(client, client.data.request.data.uri, filePath, cgiPath);
+    char curCwd[1024];
+    if (::getcwd(curCwd, 1023) == NULL)
+        ERROR_THROW(CgiClass::NotFound());
+	utils::Uri curCwdUri(curCwd);
+	if (cgiPath[0] == '/')
+		curCwdUri = utils::Uri(cgiPath);
+	else
+		curCwdUri.appendPath(cgiPath, true);
+
+	client.cgi->generateENV(client, client.data.request.data.uri, rewrittenUrl);
 	char** args = new char *[3]();
-	args[0] = utils::strdup(cgiPath);
-	args[1] = utils::strdup(filePath);
+	args[0] = utils::strdup(curCwdUri.path);
+	args[1] = utils::strdup(rewrittenUrl.substr(1));
 
 	if (::stat(args[0], &sb) == -1)
 		ERROR_THROW(CgiClass::NotFound());
@@ -530,7 +551,8 @@ void	HTTPResponder::runCGI(HTTPClient& client, const std::string &filePath, cons
 		ERROR_THROW(CgiClass::PipeFail());
 	}
 
-	if (client.data.request.data.bodyLength)
+	long int bodyLen = client.data.request.data.isChunked ? client.data.request.data.chunkedData.size() : client.data.request.data.data.size();
+	if (bodyLen > 0)
 		body = true;
 
     client.cgi->pid = ::fork();
@@ -540,6 +562,36 @@ void	HTTPResponder::runCGI(HTTPClient& client, const std::string &filePath, cons
 		ERROR_THROW(CgiClass::ForkFail());
 	}
 	if (!client.cgi->pid) {
+		char buf[1024];
+
+		// CHILD PROCESS
+		// change directory to document root
+		// TODO is this is the right dir?
+		// TODO check with -> https://www.w3schools.com/php/php_includes.asp
+		// TODO use DOCUMENT_ROOT
+		if (::chdir(route.getRoot().c_str()) == -1)
+			::exit(CHDIR_ERROR);
+
+		if (::getcwd(buf, 1023) == NULL)
+			::exit(GETCWD_ERROR);
+
+		try {
+			std::string *pathTranslated = new std::string(buf);
+			*pathTranslated += rewrittenUrl;
+			pathTranslated->insert(0, "PATH_TRANSLATED=");
+			for (char **envp = client.cgi->getEnvp().getEnv(); *envp != NULL; envp++) {
+				std::cerr << *envp << std::endl;
+				std::string envStr = *envp;
+				if (envStr.find("PATH_TRANSLATED=") == 0) {
+					delete [] *envp;
+					*envp = const_cast<char *>(pathTranslated->c_str());
+					break;
+				}
+			}
+		} catch (std::exception &e) {
+			::exit(MEMORY_ERROR);
+		}
+
 		// set body pipes
         if (::dup2(bodyPipefd[0], STDIN_FILENO) == -1)
             ::exit(DUP2_ERROR);
@@ -555,12 +607,14 @@ void	HTTPResponder::runCGI(HTTPClient& client, const std::string &filePath, cons
 			::exit(CLOSE_ERROR);
 
 		// run cgi
-		::execve(args[0], args, client.cgi->getEnvp().getEnv());
+		::execve(curCwdUri.path.c_str(), args, client.cgi->getEnvp().getEnv());
         ::exit(EXECVE_ERROR);
 	}
 	::free(args[0]);
 	::free(args[1]);
 	delete [] args;
+
+	// CURRENT PROCESS
 	if (::close(pipefd[1]) == -1)
 		closePipes(&pipefd[0], NULL, &bodyPipefd[0], &bodyPipefd[1], true);
     if (::close(bodyPipefd[0]) == -1)
