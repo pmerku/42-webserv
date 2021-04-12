@@ -139,8 +139,20 @@ void HTTPResponder::serveDirectory(HTTPClient &client, const struct ::stat &dire
 
 		// index file exists, serve it
 		if (S_ISREG(indexData.st_mode)) {
-			// TODO index files need cgi too
 			client.file = indexFile;
+			utils::Uri rewrittenUrl = client.rewrittenUrl;
+			rewrittenUrl.appendPath(client.routeBlock->getIndex());
+			client.rewrittenUrl = rewrittenUrl.path;
+			if (client.routeBlock->shouldDoCgi() && !client.routeBlock->getCgiExt().empty() && client.file.getExt() == client.routeBlock->getCgiExt()) {
+				globalLogger.logItem(logger::DEBUG, "Handling cgi request");
+				try {
+					runCGI(client, client.routeBlock->getCgi());
+				} catch (std::exception &e) {
+					globalLogger.logItem(logger::ERROR, std::string("CGI error: ") + e.what());
+					handleError(client, 500);
+				}
+				return;
+			}
 			prepareFile(client, indexData, 200);
 			return;
 		}
