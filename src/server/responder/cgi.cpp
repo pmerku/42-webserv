@@ -38,7 +38,7 @@ void	HTTPResponder::runCGI(HTTPClient& client, const std::string& cgiPath) {
 	}
 	if (::pipe(client.cgi->bodyPipefd)) {
 		client.cgi->freeArgs();
-		client.cgi->closePipes(client.cgi->pipefd[0], client.cgi->pipefd[]);
+		client.cgi->closePipes(&client.cgi->pipefd[0], &client.cgi->pipefd[1], NULL, NULL);
 		ERROR_THROW(CgiClass::PipeFail());
 	}
 

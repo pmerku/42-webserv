@@ -11,7 +11,7 @@ using namespace NotApache;
 void HTTPResponder::handleError(HTTPClient &client, int code) {
 	// Request authentication
 	if (code == 401 && client.routeBlock)
-		client.data.response.builder.setHeader("WWW-AUTHENTICATE", "Basic realm=\"Not-Apache\"");
+		client.data.response.builder.setHeader("WWW-AUTHENTICATE", std::string("Basic realm=\"") + client.routeBlock->getAuthBasic() + "\"");
 
 	// allow header in 405
 	if (code == 405 && client.routeBlock)

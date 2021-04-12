@@ -41,6 +41,10 @@ void HTTPResponder::generateResponse(HTTPClient &client) {
 		return;
 	}
 
+	// set correct timeout
+	if (client.routeBlock->getTimeout() > 0)
+		client.setTimeout(client.routeBlock->getTimeout());
+
 	// check allowed methods
 	if (!client.routeBlock->isAllowedMethod(HTTPParser::methodMap_EtoS.find(client.data.request.data.method)->second)) {
 		handleError(client, 405);

@@ -41,6 +41,7 @@ namespace config {
 		std::string					_cgi;
 		std::string					_cgiExt;
 	    int							_bodyLimit;
+	    int							_timeout;
 		std::string					_saveUploads;
 		std::string					_authBasic;
 		std::vector<std::string>	_authorized;
@@ -53,6 +54,7 @@ namespace config {
 		const std::string &getRoot() const;
 		bool isDirectoryListing() const;
 		const std::string &getIndex() const;
+		int 			  getTimeout() const;
 		const std::string &getCgi() const;
 		const std::string &getCgiExt() const;
 		const std::string &getSaveUploads() const;

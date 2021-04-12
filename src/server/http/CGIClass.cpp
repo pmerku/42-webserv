@@ -121,30 +121,3 @@ void CgiClass::freeArgs() {
 		delete [] args;
 	}
 }
-
-void CgiClass::closePipes(FD *pipefd0, FD *pipefd1, FD *bodyPipefd0, FD *bodyPipefd1, bool closeFail) {
-	if (pipefd0) {
-		if (::close(*pipefd0) == -1)
-			closeFail = true;
-	}
-	if (pipefd1) {
-		if (::close(*pipefd1) == -1)
-			closeFail = true;
-	}
-	if (bodyPipefd0) {
-		if (::close(*bodyPipefd0) == -1)
-			closeFail = true;
-	}
-	if (bodyPipefd1) {
-		if (::close(*bodyPipefd1) == -1)
-			closeFail = true;
-	}
-	if (closeFail)
-		ERROR_THROW(CgiClass::CloseFail());
-}
-
-void CgiClass::freeArgs() {
-	delete [] args[0];
-	delete [] args[1];
-	delete [] args;
-}

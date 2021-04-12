@@ -14,7 +14,7 @@ HTTPClient::HTTPClient(FD clientFd, int port, long host, sockaddr_in cli_addr): 
 	timeval timeData;
 	::gettimeofday(&timeData, 0);
 	_createdAt = timeData.tv_sec;
-	_timeoutAfter = 180; // timeout in seconds TODO config option
+	_timeoutAfter = 60; // timeout in seconds
     clientIdCounter++;
 	clientCount = clientIdCounter;
 }
@@ -110,4 +110,8 @@ long int    HTTPClient::getTimeDiff() const {
 
 long int	HTTPClient::getTimeoutAfter() const {
 	return _timeoutAfter;
+}
+
+void HTTPClient::setTimeout(int timeout) {
+	_timeoutAfter = timeout;
 }
