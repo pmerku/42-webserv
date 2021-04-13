@@ -32,7 +32,7 @@ endif
 SRC_DIR			= src
 BUILD_DIR		= build
 OUT_DIR			= build/out
-INC_DIR			= src/includes
+INC_DIR			= src/_includes
 
 SRC	=\
 	main.cpp\
@@ -102,6 +102,13 @@ SRC	=\
 	server/http/HTTPMimeTypes.cpp\
 	server/http/RequestBuilder.cpp\
 	server/http/ResponseBuilder.cpp\
+	server/responder/associatedFds.cpp\
+	server/responder/cgi.cpp\
+	server/responder/handleError.cpp\
+	server/responder/proxy.cpp\
+	server/responder/serving.cpp\
+	server/responder/unlink.cpp\
+	server/responder/upload.cpp\
 	server/terminal/TerminalClient.cpp\
 	server/terminal/TerminalResponder.cpp\
 	server/globals.cpp\

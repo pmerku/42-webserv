@@ -14,7 +14,6 @@ using namespace config;
 
 const std::string	ConfigParser::possibleBlocks[] = { "server", "route", "" };
 
-// TODO unbalanced brackets cause segfaults and other errors
 std::string		ConfigParser::_readFile(const std::string &path) {
 	char		buf[1024];
 	::ssize_t	len = sizeof(buf)-1;
@@ -86,9 +85,8 @@ RootBlock		*ConfigParser::parseFile(const std::string &path) const {
 				AConfigBlock	*newBlock = _makeBlockFromLine(parsedLine, lineCount, currentBlock);
 				try {
 					currentBlock->addBlock(newBlock);
-				} catch (std::exception &e) {
+				} catch (const ConfigException &e) {
 					delete newBlock;
-					delete rootBlock;
 					throw;
 				}
 				currentBlock = newBlock;
@@ -98,7 +96,6 @@ RootBlock		*ConfigParser::parseFile(const std::string &path) const {
 				AConfigBlock::validateEndBlock(parsedLine);
 				currentBlock = currentBlock->getParent();
 				if (currentBlock == 0) {
-					delete rootBlock;
 					ERROR_THROW(UnbalancedBracketsException(parsedLine, 0));
 				}
 				blockDepth--;
@@ -118,7 +115,6 @@ RootBlock		*ConfigParser::parseFile(const std::string &path) const {
 
 	try {
 		if (blockDepth != 0) {
-			delete rootBlock;
 			ERROR_THROW(UnbalancedBracketsException(ConfigLine("<3", lineCount), 0));
 		}
 		rootBlock->runPostValidators();

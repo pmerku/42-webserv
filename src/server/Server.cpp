@@ -143,8 +143,8 @@ void Server::_clientCleanup() {
 			continue;
         std::string start = "Client #";
 		if ((int)(*i)->getTimeDiff() >= (*i)->getTimeoutAfter())
-			start = "Client (TIMEOUT) #";
-		globalLogger.logItem(logger::INFO, start + utils::intToString((int)(*i)->clientCount) + " got served file: " + (*i)->data.request.data.uri.path + " (in " + utils::intToString((int)(*i)->getTimeDiff()) + "s)");
+			start = "Client (timed out) #";
+		globalLogger.logItem(logger::INFO, start + utils::intToString((int)(*i)->clientCount) + " got served file: " + (*i)->data.request.data.uri.path + " (in " + utils::intToString((int)(*i)->getTimeDiff()) + "s) " + "(" + utils::intToString((*i)->replyStatus) + ")");
 		globalLogger.logItem(logger::DEBUG, "Closed client connection");
 		close((*i)->getFd());
 		delete *i;
