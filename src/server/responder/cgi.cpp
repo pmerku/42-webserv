@@ -36,7 +36,7 @@ void	HTTPResponder::runCGI(HTTPClient& client, const std::string& cgiPath) {
 		client.cgi->freeArgs();
 		ERROR_THROW(CgiClass::PipeFail());
 	}
-	if (::pipe(client.cgi->bodyPipefd)) {
+	if (::pipe(client.cgi->bodyPipefd) == -1) {
 		client.cgi->freeArgs();
 		client.cgi->closePipes(&client.cgi->pipefd[0], &client.cgi->pipefd[1], NULL, NULL);
 		ERROR_THROW(CgiClass::PipeFail());
@@ -48,16 +48,16 @@ void	HTTPResponder::runCGI(HTTPClient& client, const std::string& cgiPath) {
 
 	client.cgi->pid = ::fork();
 	client.cgi->hasExited = false;
-	if (client.cgi->pid == -1)
+	if (client.cgi->pid == -1) {
+		client.cgi->freeArgs();
+		client.cgi->closePipes(&client.cgi->pipefd[0], &client.cgi->pipefd[1], &client.cgi->bodyPipefd[0], &client.cgi->bodyPipefd[1]);
 		ERROR_THROW(CgiClass::ForkFail());
+	}
 	if (!client.cgi->pid) {
 		char buf[1024];
 
 		// CHILD PROCESS
 		// change directory to document root
-		// TODO is this is the right dir?
-		// TODO check with -> https://www.w3schools.com/php/php_includes.asp
-		// TODO use DOCUMENT_ROOT
 		if (::chdir(client.routeBlock->getRoot().c_str()) == -1)
 			::exit(CHDIR_ERROR);
 
@@ -65,15 +65,21 @@ void	HTTPResponder::runCGI(HTTPClient& client, const std::string& cgiPath) {
 			::exit(GETCWD_ERROR);
 
 		try {
-			std::string *pathTranslated = new std::string(buf);
-			*pathTranslated += client.rewrittenUrl;
-			pathTranslated->insert(0, "PATH_TRANSLATED=");
+			std::string documentRoot = buf;
+			std::string pathTranslated = documentRoot + client.rewrittenUrl;
 			for (char **envp = client.cgi->getEnvp().getEnv(); *envp != NULL; envp++) {
 				std::string envStr = *envp;
-				if (envStr.find("PATH_TRANSLATED=") == 0) {
+				if (envStr.find("DOCUMENT_ROOT=") == 0) {
+					envStr += documentRoot;
 					delete [] *envp;
-					*envp = const_cast<char *>(pathTranslated->c_str());
-					break;
+					*envp = utils::strdup(const_cast<char *>(envStr.c_str()));
+					continue;
+				}
+				if (envStr.find("PATH_TRANSLATED=") == 0) {
+					envStr += pathTranslated;
+					delete [] *envp;
+					*envp = utils::strdup(const_cast<char *>(envStr.c_str()));
+					continue;
 				}
 			}
 		} catch (std::exception &e) {
@@ -99,17 +105,15 @@ void	HTTPResponder::runCGI(HTTPClient& client, const std::string& cgiPath) {
 		::exit(EXECVE_ERROR);
 	}
 
-	client.cgi->freeArgs();
-
 	// CURRENT PROCESS
-	int fails = 0;
-	fails += ::close(client.cgi->pipefd[1]) == -1;
-	fails += ::close(client.cgi->bodyPipefd[0]) == -1;
-	if (!client.cgi->body)
-		fails += ::close(client.cgi->bodyPipefd[1]) == -1;
-	if (fails > 0) {
-		client.cgi->closePipes(&client.cgi->pipefd[0], &client.cgi->pipefd[1], &client.cgi->bodyPipefd[0], &client.cgi->bodyPipefd[1]);
-		ERROR_THROW(CgiClass::CloseFail());
+	client.cgi->freeArgs();
+	try {
+		FD *bodyPipe = client.cgi->body ? 0 : &client.cgi->bodyPipefd[1];
+		client.cgi->closePipes(0, &client.cgi->pipefd[1], &client.cgi->bodyPipefd[0], bodyPipe);
+	} catch (std::exception &e) {
+		FD *bodyPipe = client.cgi->body ? &client.cgi->bodyPipefd[1] : 0;
+		client.cgi->closePipes(&client.cgi->pipefd[0], 0, 0, bodyPipe);
+		throw;
 	}
 
 	client.addAssociatedFd(client.cgi->pipefd[0]);
