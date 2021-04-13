@@ -220,6 +220,8 @@ HTTPParser::ParseReturn		HTTPParser::parseHeaders(HTTPParseData &data, const std
 				data.parseStatusCode = 400;
 				return ERROR;
 			}
+			if (client && route->getTimeout() > 0)
+				client->setTimeout(route->getTimeout());
 			if (route->getBodyLimit() != -1 && ( data.bodyLength == -1 || data.bodyLength > route->getBodyLimit()) ) {
 				globalLogger.logItem(logger::ERROR, "Body too large");
 				data.parseStatusCode = 413;
