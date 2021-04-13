@@ -9,7 +9,7 @@
 
 using namespace NotApache;
 
-const int	StandardHandler::_bufferSize = 1024;
+const int	StandardHandler::_bufferSize = 4096;
 
 void StandardHandler::stopHandle(HTTPClient &client, bool shouldLock) {
 	if (shouldLock) client.isHandled.lock();
