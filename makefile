@@ -32,7 +32,7 @@ endif
 SRC_DIR			= src
 BUILD_DIR		= build
 OUT_DIR			= build/out
-INC_DIR			= src/includes
+INC_DIR			= src/_includes
 
 SRC	=\
 	main.cpp\
