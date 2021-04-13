@@ -24,6 +24,11 @@ ENVBuilder &ENVBuilder::CONTENT_TYPE(const std::string &value) {
 	return *this;
 }
 
+ENVBuilder &ENVBuilder::DOCUMENT_ROOT(const std::string &value) {
+	_metaVariables["DOCUMENT_ROOT"] = value;
+	return *this;
+}
+
 ENVBuilder &ENVBuilder::GATEWAY_INTERFACE(const std::string &value) {
 	_metaVariables["GATEWAY_INTERFACE"] = value;
 	return *this;
@@ -109,7 +114,7 @@ char **ENVBuilder::build() {
 
 	int i = 0;
 	for (std::map<std::string, std::string>::iterator it = _metaVariables.begin(); it != _metaVariables.end(); it++) {
-		if (it->first.empty() || it->second.empty())
+		if (it->first.empty())
 			continue;
 
 		std::string str = it->first + "=" + it->second;

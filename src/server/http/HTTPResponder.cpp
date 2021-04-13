@@ -65,7 +65,7 @@ void HTTPResponder::generateAssociatedResponse(HTTPClient &client) {
 				globalLogger.logItem(logger::ERROR, "CGI error: getcdw");
 			else if (client.cgi->status == MEMORY_ERROR)
 				globalLogger.logItem(logger::ERROR, "CGI error: memory");
-            handleError(client, server, 500, false);
+			handleError(client, server, 500, false);
 			return;
 		}
 
@@ -283,23 +283,23 @@ void HTTPResponder::serveFile(HTTPClient &client, config::ServerBlock &server, c
 	utils::Uri file = f;
 	bool shouldCgi = route.shouldDoCgi() && !route.getCgiExt().empty() && file.getExt() == route.getCgiExt();
 	if (!shouldCgi || !route.shouldCgiHandleFile()) {
-        if (::stat(file.path.c_str(), &buf) == -1) {
-            if (errno == ENOENT || errno == ENOTDIR)
-                handleError(client, &server, &route, 404);
-            else
-                handleError(client, &server, &route, 500);
-            return;
-        }
+		if (::stat(file.path.c_str(), &buf) == -1) {
+			if (errno == ENOENT || errno == ENOTDIR)
+				handleError(client, &server, &route, 404);
+			else
+				handleError(client, &server, &route, 500);
+			return;
+		}
 
-        // check for directory
-        if (S_ISDIR(buf.st_mode)) {
-            serveDirectory(client, server, route, buf, file.path);
-            return;
-        }
-        else if (!S_ISREG(buf.st_mode)) {
-            handleError(client, &server, &route, 403);
-            return;
-        }
+		// check for directory
+		if (S_ISDIR(buf.st_mode)) {
+			serveDirectory(client, server, route, buf, file.path);
+			return;
+		}
+		else if (!S_ISREG(buf.st_mode)) {
+			handleError(client, &server, &route, 403);
+			return;
+		}
 	}
 
 	// serve the file
@@ -347,11 +347,11 @@ void HTTPResponder::uploadFile(HTTPClient &client, config::ServerBlock &server, 
 		message = "Successfully created file!";
 	}
 	else {
-        // 403 on anything that isnt a regular file
-        if (!S_ISREG(buf.st_mode)) {
-            handleError(client, &server, 403);
-            return;
-        }
+		// 403 on anything that isnt a regular file
+		if (!S_ISREG(buf.st_mode)) {
+			handleError(client, &server, 403);
+			return;
+		}
 	}
 
 	// create the file
@@ -516,7 +516,7 @@ void	HTTPResponder::closePipes(FD *pipefd0, FD *pipefd1, FD *bodyPipefd0, FD *bo
 			closeFail = true;
 	}
 	if (closeFail)
-        ERROR_THROW(CgiClass::CloseFail());
+		ERROR_THROW(CgiClass::CloseFail());
 }
 
 // TODO fix close issues (if one doesnt get closed, the others dont get closed either which makes it a fd leak)
@@ -527,15 +527,15 @@ void	HTTPResponder::runCGI(HTTPClient& client, config::RouteBlock &route, const 
 	bool 			body = false;
 	client.cgi = new CgiClass;
 
-    char curCwd[1024];
-    if (::getcwd(curCwd, 1023) == NULL)
-        ERROR_THROW(CgiClass::NotFound());
+	char curCwd[1024];
+	if (::getcwd(curCwd, 1023) == NULL)
+		ERROR_THROW(CgiClass::NotFound());
 	utils::Uri curCwdUri(curCwd);
 	if (cgiPath[0] == '/')
 		curCwdUri = utils::Uri(cgiPath);
 	else
 		curCwdUri.appendPath(cgiPath, true);
-
+	
 	client.cgi->generateENV(client, client.data.request.data.uri, rewrittenUrl);
 	char** args = new char *[3]();
 	args[0] = utils::strdup(curCwdUri.path);
@@ -546,7 +546,7 @@ void	HTTPResponder::runCGI(HTTPClient& client, config::RouteBlock &route, const 
 
 	if (::pipe(pipefd) == -1)
 		ERROR_THROW(CgiClass::PipeFail());
-    if (::pipe(bodyPipefd) == -1) {
+	if (::pipe(bodyPipefd) == -1) {
 		closePipes(&pipefd[0], &pipefd[1], NULL, NULL, false);
 		ERROR_THROW(CgiClass::PipeFail());
 	}
@@ -555,7 +555,7 @@ void	HTTPResponder::runCGI(HTTPClient& client, config::RouteBlock &route, const 
 	if (bodyLen > 0)
 		body = true;
 
-    client.cgi->pid = ::fork();
+	client.cgi->pid = ::fork();
 	client.cgi->hasExited = false;
 	if (client.cgi->pid == -1) {
 		closePipes(&pipefd[0], &pipefd[1], &bodyPipefd[0], &bodyPipefd[1], false);
@@ -564,11 +564,6 @@ void	HTTPResponder::runCGI(HTTPClient& client, config::RouteBlock &route, const 
 	if (!client.cgi->pid) {
 		char buf[1024];
 
-		// CHILD PROCESS
-		// change directory to document root
-		// TODO is this is the right dir?
-		// TODO check with -> https://www.w3schools.com/php/php_includes.asp
-		// TODO use DOCUMENT_ROOT
 		if (::chdir(route.getRoot().c_str()) == -1)
 			::exit(CHDIR_ERROR);
 
@@ -576,29 +571,37 @@ void	HTTPResponder::runCGI(HTTPClient& client, config::RouteBlock &route, const 
 			::exit(GETCWD_ERROR);
 
 		try {
-			std::string *pathTranslated = new std::string(buf);
-			*pathTranslated += rewrittenUrl;
-			pathTranslated->insert(0, "PATH_TRANSLATED=");
+			std::string pathTranslated = std::string(buf);
 			for (char **envp = client.cgi->getEnvp().getEnv(); *envp != NULL; envp++) {
-				std::cerr << *envp << std::endl;
+				std::string envStr = *envp;
+				if (envStr.find("DOCUMENT_ROOT=") == 0) {
+					envStr += pathTranslated;
+					delete [] *envp;
+					*envp = utils::strdup(const_cast<char *>(envStr.c_str()));
+					break ;
+				}
+			}
+			pathTranslated += rewrittenUrl;
+			pathTranslated.insert(0, "PATH_TRANSLATED=");
+			for (char **envp = client.cgi->getEnvp().getEnv(); *envp != NULL; envp++) {
 				std::string envStr = *envp;
 				if (envStr.find("PATH_TRANSLATED=") == 0) {
 					delete [] *envp;
-					*envp = const_cast<char *>(pathTranslated->c_str());
-					break;
+					*envp = utils::strdup(const_cast<char *>(pathTranslated.c_str()));
+					break ;
 				}
 			}
 		} catch (std::exception &e) {
 			::exit(MEMORY_ERROR);
 		}
-
+		
 		// set body pipes
-        if (::dup2(bodyPipefd[0], STDIN_FILENO) == -1)
-            ::exit(DUP2_ERROR);
-        if (::close(bodyPipefd[0]) == -1)
-            ::exit(CLOSE_ERROR);
-        if (::close(bodyPipefd[1]) == -1)
-            ::exit(CLOSE_ERROR);
+		if (::dup2(bodyPipefd[0], STDIN_FILENO) == -1)
+			::exit(DUP2_ERROR);
+		if (::close(bodyPipefd[0]) == -1)
+			::exit(CLOSE_ERROR);
+		if (::close(bodyPipefd[1]) == -1)
+			::exit(CLOSE_ERROR);
 
 		// set output pipes
 		if (::dup2(pipefd[1], STDOUT_FILENO) == -1)
@@ -608,16 +611,16 @@ void	HTTPResponder::runCGI(HTTPClient& client, config::RouteBlock &route, const 
 
 		// run cgi
 		::execve(curCwdUri.path.c_str(), args, client.cgi->getEnvp().getEnv());
-        ::exit(EXECVE_ERROR);
+		::exit(EXECVE_ERROR);
 	}
-	::free(args[0]);
-	::free(args[1]);
+	delete args[0];
+	delete args[1];
 	delete [] args;
 
 	// CURRENT PROCESS
 	if (::close(pipefd[1]) == -1)
 		closePipes(&pipefd[0], NULL, &bodyPipefd[0], &bodyPipefd[1], true);
-    if (::close(bodyPipefd[0]) == -1)
+	if (::close(bodyPipefd[0]) == -1)
 		closePipes(&pipefd[0], NULL, NULL, &bodyPipefd[1], true);
 
 	client.addAssociatedFd(pipefd[0]);

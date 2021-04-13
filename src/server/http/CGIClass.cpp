@@ -36,7 +36,8 @@ void CgiClass::generateENV(HTTPClient& client, const utils::Uri& uri, const std:
 	builder
 		.GATEWAY_INTERFACE("CGI/1.1") // which gateway version
         .PATH_INFO(uri.path)
-        .PATH_TRANSLATED("") // will be set on fork
+        .PATH_TRANSLATED("")
+        .DOCUMENT_ROOT("")
         .QUERY_STRING(uri.query)
         .REMOTE_ADDR(client.getIp())
         .REMOTE_IDENT("")

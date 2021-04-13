@@ -20,6 +20,7 @@ namespace CGIenv {
 		ENVBuilder	&AUTH_TYPE(const std::string &value);
 		ENVBuilder	&CONTENT_LENGTH(const std::string &value);
 		ENVBuilder	&CONTENT_TYPE(const std::string &value);
+		ENVBuilder	&DOCUMENT_ROOT(const std::string &value);
 		ENVBuilder	&GATEWAY_INTERFACE(const std::string &value);
 		ENVBuilder	&PATH_INFO(const std::string &value);
 		ENVBuilder	&PATH_TRANSLATED(const std::string &value);
