@@ -3,22 +3,19 @@
 //
 
 #include "server/http/HTTPResponder.hpp"
+#include "server/global/GlobalPlugins.hpp"
 
 using namespace NotApache;
 
 void HTTPResponder::generateAssociatedResponse(HTTPClient &client) {
 	// if file, build body and send
 	if (client.responseState == FILE) {
-		// handle javascript execution for plugin
-		if (client.file.getExt() == "jsexec") {
-			try {
-				runJs(client);
-			} catch (std::exception &e) {
-				globalLogger.logItem(logger::ERROR, std::string("JSExec error: ") + e.what());
-				handleError(client, 500);
-			}
-			return;
+		// loops through plugins and executes if plugin is loaded
+		for (plugin::PluginContainer::pluginIterator it = globalPlugins.begin(); it != globalPlugins.end(); ++it) {
+			if (it->second && it->first->onSendFile(client))
+				return;
 		}
+
 		client.data.response.setResponse(
 			client.data.response.builder
 				.setBody(client.data.response.getAssociatedDataRaw())

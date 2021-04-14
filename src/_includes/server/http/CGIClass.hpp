@@ -13,12 +13,13 @@
 
 namespace NotApache {
 
-#define EXECVE_ERROR	1
-#define CLOSE_ERROR		2
-#define DUP2_ERROR		3
-#define CHDIR_ERROR		4
-#define GETCWD_ERROR	5
-#define MEMORY_ERROR	6
+	// defines start are 128 because they arent reserved exit codes
+	#define EXECVE_ERROR	129
+	#define CLOSE_ERROR		130
+	#define DUP2_ERROR		131
+	#define CHDIR_ERROR		132
+	#define GETCWD_ERROR	133
+	#define MEMORY_ERROR	134
 
     class HTTPClient;
 
