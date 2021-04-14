@@ -20,6 +20,11 @@ bool Plugin::onHandleError(NotApache::HTTPClient &client, int code) {
 	return false;
 }
 
+bool Plugin::onBeforeFileServing(NotApache::HTTPClient &client) {
+	(void)client;
+	return false;
+}
+
 bool Plugin::operator==(const std::string &name) const {
 	return _id == name;
 }

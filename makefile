@@ -40,6 +40,7 @@ SRC	=\
 	log/Logger.cpp\
 	log/LogItem.cpp\
 	plugins/PageGenerator.cpp\
+	plugins/JsonStatAPI.cpp\
 	plugins/Plugin.cpp\
 	regex/Regex.cpp\
 	config/ConfigValidatorBuilder.cpp\
@@ -104,6 +105,7 @@ SRC	=\
 	server/http/HTTPMimeTypes.cpp\
 	server/http/RequestBuilder.cpp\
 	server/http/ResponseBuilder.cpp\
+	server/http/BodyBuilder.cpp\
 	server/responder/associatedFds.cpp\
 	server/responder/cgi.cpp\
 	server/responder/handleError.cpp\
@@ -121,6 +123,7 @@ HEADERS	=\
 	log/Logger.hpp\
 	log/LogItem.hpp\
 	plugins/PageGenerator.hpp\
+	plugins/JsonStatAPI.hpp\
 	plugins/Plugin.hpp\
 	regex/Regex.hpp\
 	config/ConfigValidatorBuilder.hpp\
@@ -190,6 +193,7 @@ HEADERS	=\
 	server/http/HTTPMimeTypes.hpp\
 	server/http/RequestBuilder.hpp\
 	server/http/ResponseBuilder.hpp\
+	server/http/BodyBuilder.hpp\
 	server/terminal/TerminalClient.hpp\
 	server/terminal/TerminalResponder.hpp\
 	server/global/GlobalConfig.hpp\

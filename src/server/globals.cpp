@@ -7,6 +7,7 @@
 #include "server/global/GlobalPlugins.hpp"
 #include "utils/CreateMap.hpp"
 #include "plugins/PageGenerator.hpp"
+#include "plugins/JsonStatAPI.hpp"
 
 namespace NotApache {
 	config::RootBlock	*configuration = 0;
@@ -14,7 +15,7 @@ namespace NotApache {
 
 	plugin::PluginContainer globalPlugins(utils::CreateMap<plugin::Plugin*, bool>
 	        (new plugin::PageGenerator(), false)
-	        (new plugin::Plugin("json_stat_api"), false)
+	        (new plugin::JsonStatAPI(), true) // TODO set back to false
 	        (new plugin::Plugin("fuck_brainfuck"), false)
 	        (new plugin::Plugin("replace_text"), false)
 	        (new plugin::Plugin("js_executer"), false)

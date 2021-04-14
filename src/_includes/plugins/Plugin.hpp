@@ -20,6 +20,7 @@ namespace plugin {
 		virtual ~Plugin();
 
 		virtual bool onHandleError(NotApache::HTTPClient &client, int code);
+		virtual bool onBeforeFileServing(NotApache::HTTPClient &client);
 
 		const std::string &getId() const;
 

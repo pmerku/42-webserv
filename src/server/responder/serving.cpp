@@ -4,6 +4,8 @@
 
 #include "server/http/HTTPResponder.hpp"
 #include "server/http/HTTPMimeTypes.hpp"
+#include "plugins/JsonStatAPI.hpp"
+#include "server/global/GlobalPlugins.hpp"
 #include "utils/base64.hpp"
 #include <fcntl.h>
 #include <cerrno>
@@ -86,6 +88,15 @@ void HTTPResponder::serveFile(HTTPClient &client) {
 	// if "*" set to first language in config
 	if (client.data.request.data.acceptLanguage == "*")
 		client.data.request.data.acceptLanguage = client.routeBlock->getAcceptLanguage()[0];
+	
+	// loops through plugins and executes if plugin is loaded
+	for (plugin::PluginContainer::pluginIterator it = globalPlugins.begin(); it != globalPlugins.end(); ++it) {
+		// std::cout << "=====>>>>> HEEEEERRREEEEE <<<<<<=========" << std::endl;
+		if (it->second && it->first->onBeforeFileServing(client)) {
+			client.data.response.setResponse(client.data.response.builder.build());
+			return;
+		}
+	}
 
 	// get file data
 	bool shouldCgi = client.routeBlock->shouldDoCgi() && !client.routeBlock->getCgiExt().empty() && client.file.getExt() == client.routeBlock->getCgiExt();
