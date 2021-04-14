@@ -39,6 +39,8 @@ SRC	=\
 	log/Loggable.cpp\
 	log/Logger.cpp\
 	log/LogItem.cpp\
+	plugins/PageGenerator.cpp\
+	plugins/Plugin.cpp\
 	regex/Regex.cpp\
 	config/ConfigValidatorBuilder.cpp\
 	config/ConfigParser.cpp\
@@ -118,6 +120,8 @@ HEADERS	=\
 	log/Loggable.hpp\
 	log/Logger.hpp\
 	log/LogItem.hpp\
+	plugins/PageGenerator.hpp\
+	plugins/Plugin.hpp\
 	regex/Regex.hpp\
 	config/ConfigValidatorBuilder.hpp\
 	config/ConfigParser.hpp\
@@ -190,6 +194,7 @@ HEADERS	=\
 	server/terminal/TerminalResponder.hpp\
 	server/global/GlobalConfig.hpp\
 	server/global/GlobalLogger.hpp\
+	server/global/GlobalPlugins.hpp\
 	server/ServerTypes.hpp\
 	server/Server.hpp
 
@@ -236,10 +241,10 @@ re:
 
 exec:
 	$(MAKE) all
-	./$(NAME)
+	cd build && ./not-apache -f ../tests/provided/test.conf -c
 
 valgrind:
-	valgrind --undef-value-errors=no --leak-check=full ./$(NAME)
+	cd build && valgrind --undef-value-errors=no --leak-check=full ./not-apache -f ../tests/provided/test.conf -c
 
 debug:
 	$(MAKE) BUILD_DEBUG=1 all
