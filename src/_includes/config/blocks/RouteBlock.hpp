@@ -63,9 +63,10 @@ namespace config {
 		const std::vector<std::string> &getAcceptLanguage() const;
 		const std::vector<std::string> &getAuthorized() const;
 		const std::string &getAuthBasic() const;
+		const std::vector<std::string> &getPlugins() const;
 
-    // will also traverse parent block for body limit if not set
-    int getBodyLimit();
+		// will also traverse parent block for body limit if not set
+		int getBodyLimit();
     
 		/// return if it should serve files (if false -> proxy)
 		bool shouldDoFile() const;

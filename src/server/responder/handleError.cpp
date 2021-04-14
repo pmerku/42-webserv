@@ -4,6 +4,7 @@
 
 #include "server/http/HTTPResponder.hpp"
 #include "utils/intToString.hpp"
+#include "server/global/GlobalPlugins.hpp"
 #include <cerrno>
 
 using namespace NotApache;
@@ -16,6 +17,12 @@ void HTTPResponder::handleError(HTTPClient &client, int code) {
 	// allow header in 405
 	if (code == 405 && client.routeBlock)
 		client.data.response.builder.setAllowedMethods(client.routeBlock->getAllowedMethods());
+
+	// loops through plugins and executes if plugin is loaded
+	for (plugin::PluginContainer::pluginIterator it = globalPlugins.begin(); it != globalPlugins.end(); ++it) {
+		if (it->second && it->first->onHandleError(client, code))
+			return;
+	}
 
 	// handle error pages
 	if (!client.hasErrored && client.serverBlock != 0 && !client.serverBlock->getErrorPage(code).empty()) {
