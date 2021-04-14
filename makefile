@@ -3,9 +3,11 @@ NAME			= not-apache
 NAME			:= $(addprefix ./build/,$(NAME))
 
 # Compiler
+CC				= clang
 CXX				= clang++
 CC				= clang
 
+CC_FLAGS		= -Wall -Werror -Wextra -std=c99 -pedantic-errors
 CXX_FLAGS		= -Wall -Werror -Wextra -std=c++98 -pedantic-errors
 CC_FLAGS		= -Wall -Werror -Wextra -pedantic-errors
 DEBUG_FLAGS		=
@@ -13,12 +15,17 @@ BUILD_FLAGS		= -O3 -pthread
 
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Linux)
+	ifeq ($(CC),gcc)
+		CC_FLAGS += -fPIE
+	endif
 	ifeq ($(CXX),g++)
 		CXX_FLAGS += -fPIE
 	endif
+	CC_FLAGS += -DBUILD_LINUX=1
 	CXX_FLAGS += -DBUILD_LINUX=1
 else ifeq ($(UNAME_S),Darwin)
-    CXX_FLAGS += -DBUILD_APPLE=1
+	CC_FLAGS += -DBUILD_APPLE=1
+	CXX_FLAGS += -DBUILD_APPLE=1
 endif
 
 ifdef BUILD_DEBUG
@@ -201,7 +208,7 @@ HEADERS	=\
 	server/Server.hpp
 
 # Fix sources and headers
-OBJ				= $(patsubst %.cpp,%.o,$(SRC))
+OBJ				= $(patsubst %,%.o,$(SRC))
 HEADERS			:= $(addprefix $(INC_DIR)/,$(HEADERS))
 
 # Colours
@@ -224,7 +231,12 @@ $(NAME): $(addprefix $(OUT_DIR)/,$(OBJ))
 	@echo "BUILD $(NAME) $(CXX_FLAGS) $(DEBUG_FLAGS) $(BUILD_FLAGS)"
 	@$(CXX) $(CXX_FLAGS) $(DEBUG_FLAGS) $(BUILD_FLAGS) -I$(INC_DIR) -o $@ $(addprefix $(OUT_DIR)/,$(OBJ))
 
-$(OUT_DIR)/%.o: $(SRC_DIR)/%.cpp $(HEADERS)
+$(OUT_DIR)/%.c.o: $(SRC_DIR)/%.c $(HEADERS)
+	@echo "$(PREFIX)$(GREEN) Compiling file $(END)$(notdir $<) $(GREEN)to $(END)$(notdir $@)"
+	@mkdir -p $(dir $@)
+	@$(CC) $(CC_FLAGS) $(DEBUG_FLAGS) -I$(INC_DIR) -o $@ -c $<
+
+$(OUT_DIR)/%.cpp.o: $(SRC_DIR)/%.cpp $(HEADERS)
 	@echo "$(PREFIX)$(GREEN) Compiling file $(END)$(notdir $<) $(GREEN)to $(END)$(notdir $@)"
 	@mkdir -p $(dir $@)
 	@$(CXX) $(CXX_FLAGS) $(DEBUG_FLAGS) -I$(SRC_DIR) -I$(INC_DIR) -o $@ -c $<
