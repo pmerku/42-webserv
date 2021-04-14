@@ -29,12 +29,11 @@ PluginContainer::~PluginContainer() {
 	for (pluginIterator it = _plugin.begin(); it != _plugin.end(); ++it) {
 		delete it->first;
 	}
-	_plugin.clear();
 }
 
 PluginContainer::pluginIterator PluginContainer::find(const std::string &name) {
 	for (pluginIterator it = _plugin.begin(); it != _plugin.end(); ++it) {
-		if (it->first->getId() == name)
+		if (*(it->first) == name)
 			return it;
 	}
 	return _plugin.end();
