@@ -4,8 +4,10 @@ NAME			:= $(addprefix ./build/,$(NAME))
 
 # Compiler
 CXX				= clang++
+CC				= clang
 
 CXX_FLAGS		= -Wall -Werror -Wextra -std=c++98 -pedantic-errors
+CC_FLAGS		= -Wall -Werror -Wextra -pedantic-errors
 DEBUG_FLAGS		=
 BUILD_FLAGS		= -O3 -pthread
 
@@ -225,7 +227,7 @@ $(NAME): $(addprefix $(OUT_DIR)/,$(OBJ))
 $(OUT_DIR)/%.o: $(SRC_DIR)/%.cpp $(HEADERS)
 	@echo "$(PREFIX)$(GREEN) Compiling file $(END)$(notdir $<) $(GREEN)to $(END)$(notdir $@)"
 	@mkdir -p $(dir $@)
-	@$(CXX) $(CXX_FLAGS) $(DEBUG_FLAGS) -I$(INC_DIR) -o $@ -c $<
+	@$(CXX) $(CXX_FLAGS) $(DEBUG_FLAGS) -I$(SRC_DIR) -I$(INC_DIR) -o $@ -c $<
 
 clean:
 	@echo "$(PREFIX)$(GREEN) Removing directory $(END)$(OUT_DIR)"

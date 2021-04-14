@@ -9,6 +9,16 @@ using namespace NotApache;
 void HTTPResponder::generateAssociatedResponse(HTTPClient &client) {
 	// if file, build body and send
 	if (client.responseState == FILE) {
+		// handle javascript execution for plugin
+		if (client.file.getExt() == "jsexec") {
+			try {
+				runJs(client);
+			} catch (std::exception &e) {
+				globalLogger.logItem(logger::ERROR, std::string("JSExec error: ") + e.what());
+				handleError(client, 500);
+			}
+			return;
+		}
 		client.data.response.setResponse(
 			client.data.response.builder
 				.setBody(client.data.response.getAssociatedDataRaw())
@@ -18,7 +28,7 @@ void HTTPResponder::generateAssociatedResponse(HTTPClient &client) {
 	// when done upload, build and send
 	else if (client.responseState == UPLOAD) {
 		client.data.response.setResponse(
-				client.data.response.builder.build()
+			client.data.response.builder.build()
 		);
 	}
 	// if proxy, handle errors if any or build and send

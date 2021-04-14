@@ -19,10 +19,12 @@ endif ()
 
 # library files
 file(GLOB_RECURSE SOURCE_FILES
-	${CMAKE_SOURCE_DIR}/src/**.cpp)
+	${CMAKE_SOURCE_DIR}/src/**.cpp
+	${CMAKE_SOURCE_DIR}/src/**.c)
 
 file(GLOB_RECURSE HEADER_FILES
-	${CMAKE_SOURCE_DIR}/src/**.hpp)
+	${CMAKE_SOURCE_DIR}/src/**.hpp
+	${CMAKE_SOURCE_DIR}/src/**.h)
 
 # set the include directory
 include_directories(src/_includes)
