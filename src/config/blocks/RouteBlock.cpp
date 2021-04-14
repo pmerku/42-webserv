@@ -95,6 +95,10 @@ const AConfigBlock::validatorsMapType	RouteBlock::_validators =
           .add(new ArgumentLength(1))
           .add(new IntValidator(0, 0))
           .build())
+        .addKey("timeout", ConfigValidatorListBuilder()
+          .add(new ArgumentLength(1))
+          .add(new IntValidator(0, 1))
+          .build())
         .addKey("cgi_handle_invalid_file", ConfigValidatorListBuilder()
           .add(new ArgumentLength(1))
           .add(new BooleanValidator(0))
@@ -119,7 +123,7 @@ const std::string						*RouteBlock::getAllowedBlocks() const {
 	return RouteBlock::_allowedBlocks;
 }
 
-RouteBlock::RouteBlock(const ConfigLine &line, int lineNumber, AConfigBlock *parent): AConfigBlock(line, lineNumber, parent), _location("/"), _directoryListing() {}
+RouteBlock::RouteBlock(const ConfigLine &line, int lineNumber, AConfigBlock *parent): AConfigBlock(line, lineNumber, parent), _location(0), _directoryListing() {}
 
 std::string RouteBlock::getType() const {
 	return "route";
@@ -147,7 +151,7 @@ void RouteBlock::parseData() {
     _shouldRewrite = loc.length() >= 1 && loc.compare(loc.length() - 1, 1, "/") == 0; // ends with slash
 	if (loc.length() > 1 && _shouldRewrite) // remove slash from end if it exists
 		loc = loc.substr(0, loc.length()-1);
-	_location = regex::Regex(loc);
+	_location = new regex::Regex(loc);
 	_root = "";
 	_directoryListing = false;
 	_cgiHandleInvalidFile = false;
@@ -156,7 +160,8 @@ void RouteBlock::parseData() {
 	_cgiExt = "";
 	_cgi = "";
 	_authBasic = "";
-  _bodyLimit = -1;
+	_timeout = -1;
+	_bodyLimit = -1;
 	_plugins.clear();
 	_allowedMethods.clear();
 	_allowedMethods.push_back("GET");
@@ -182,6 +187,8 @@ void RouteBlock::parseData() {
       _cgiExt = getKey("cgi_ext")->getArg(0);
   if (hasKey("body_limit"))
       _bodyLimit = utils::stoi(getKey("body_limit")->getArg(0));
+  if (hasKey("timeout"))
+      _timeout = utils::stoi(getKey("timeout")->getArg(0));
   if (hasKey("allowed_methods")) {
       _allowedMethods.clear();
       for (ConfigLine::arg_size i = 0; i < getKey("allowed_methods")->getArgLength(); i++)
@@ -206,7 +213,7 @@ void RouteBlock::parseData() {
 
 regex::Regex &RouteBlock::getLocation() {
 	throwNotParsed();
-	return _location;
+	return *_location;
 }
 
 bool RouteBlock::shouldLocationRewrite() const {
@@ -303,4 +310,17 @@ int RouteBlock::getBodyLimit() {
 		return serverParent->getBodyLimit();
 	}
 	return _bodyLimit;
+}
+
+int RouteBlock::getTimeout() const {
+	throwNotParsed();
+	return _timeout;
+}
+
+RouteBlock::~RouteBlock() {
+	delete _location;
+}
+
+const std::vector<std::string> &RouteBlock::getPlugins() const {
+	return _plugins;
 }
