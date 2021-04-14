@@ -179,7 +179,7 @@ void Regex::compile(const std::string &pattern) {
 	RegexNode *nodes = this->_regex.regexNodes;
 	unsigned char *buffer = this->_regex.regexBuffer;
 	size_t bufferLength = sizeof(this->_regex.regexBuffer);
-	int i = 0, j = 0, index = 1;
+	int i = 0, j = 0, index = 0;
 	char quantifiable = '\0';
 	unsigned long value;
 
@@ -343,6 +343,8 @@ void Regex::compile(const std::string &pattern) {
 					} else
 						nodes[j].type = QUANTIFIER;
 					nodes[j].u.mn[1] = value;
+				} else {
+					ERROR_THROW(ImpossiblePattern());
 				}
 				break;
 			}

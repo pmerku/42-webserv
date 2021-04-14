@@ -12,7 +12,6 @@ using namespace NotApache;
 
 const std::string HTTPParser::allowedURIChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_.~!#$&'()*+,/:;=?@[]";
 const int HTTPParser::maxHeaderSize = 8000;
-const std::string HTTPParser::acceptedCharset = "utf-8";
 
 const std::map<std::string, e_method> HTTPParser::methodMap_StoE =
 		utils::CreateMap<std::string, e_method>
@@ -56,12 +55,13 @@ HTTPParser::ParseReturn		HTTPParser::parseRequestLine(HTTPParseData &data, const
 	// set known method
 	data.method = methodMap_StoE.find(parts[0])->second;
 
-	// check if URI is valid
-	if (parts[1][0] != '/' && parts[1] != "*") {
+	// check if URI is valid (incl. OPTIONS + * as valid)
+	if (!(parts[1] == "*" && data.method == OPTIONS) && parts[1][0] != '/') {
 		globalLogger.logItem(logger::ERROR, "URI is malformed");
 		data.parseStatusCode = 400;
 		return ERROR;
 	}
+
 	if (parts[1].find_first_not_of(allowedURIChars) != std::string::npos) {
 		globalLogger.logItem(logger::ERROR, "Invalid character in URI");
 		data.parseStatusCode = 400;
@@ -78,6 +78,8 @@ HTTPParser::ParseReturn		HTTPParser::parseRequestLine(HTTPParseData &data, const
 
 	// set URI
 	data.uri = parts[1];
+	if (data.method == OPTIONS && parts[1] == "*")
+		data.uri.isWildcard = true;
 
 	// check request protocol
 	if (parts[2] != "HTTP/1.1") {
@@ -204,17 +206,27 @@ HTTPParser::ParseReturn		HTTPParser::parseHeaders(HTTPParseData &data, const std
 			data.parseStatusCode = 500;
 			return ERROR;
 		}
-        std::string path = data.uri.path;
-        config::RouteBlock *route = server->findRoute(path);
-        if (route == 0) {
-            globalLogger.logItem(logger::ERROR, "No matching route block");
-            data.parseStatusCode = 400;
-            return ERROR;
-        }
-		if (route->getBodyLimit() != -1 && ( data.bodyLength == -1 || data.bodyLength > route->getBodyLimit()) ) {
-			globalLogger.logItem(logger::ERROR, "Body too large");
-			data.parseStatusCode = 413;
-			return ERROR;
+		if (data.uri.isWildcard) {
+			if (data.bodyLength > 0) {
+				globalLogger.logItem(logger::ERROR, "Body too large (on OPTIONS)");
+				data.parseStatusCode = 413;
+				return ERROR;
+			}
+		} else {
+			std::string path = data.uri.path;
+			config::RouteBlock *route = server->findRoute(path);
+			if (route == 0) {
+				globalLogger.logItem(logger::ERROR, "No matching route block");
+				data.parseStatusCode = 400;
+				return ERROR;
+			}
+			if (client && route->getTimeout() > 0)
+				client->setTimeout(route->getTimeout());
+			if (route->getBodyLimit() != -1 && ( data.bodyLength == -1 || data.bodyLength > route->getBodyLimit()) ) {
+				globalLogger.logItem(logger::ERROR, "Body too large");
+				data.parseStatusCode = 413;
+				return ERROR;
+			}
 		}
 	}
 

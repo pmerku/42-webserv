@@ -32,13 +32,15 @@ endif
 SRC_DIR			= src
 BUILD_DIR		= build
 OUT_DIR			= build/out
-INC_DIR			= src/includes
+INC_DIR			= src/_includes
 
 SRC	=\
 	main.cpp\
 	log/Loggable.cpp\
 	log/Logger.cpp\
 	log/LogItem.cpp\
+	plugins/PageGenerator.cpp\
+	plugins/Plugin.cpp\
 	regex/Regex.cpp\
 	config/ConfigValidatorBuilder.cpp\
 	config/ConfigParser.cpp\
@@ -102,6 +104,13 @@ SRC	=\
 	server/http/HTTPMimeTypes.cpp\
 	server/http/RequestBuilder.cpp\
 	server/http/ResponseBuilder.cpp\
+	server/responder/associatedFds.cpp\
+	server/responder/cgi.cpp\
+	server/responder/handleError.cpp\
+	server/responder/proxy.cpp\
+	server/responder/serving.cpp\
+	server/responder/unlink.cpp\
+	server/responder/upload.cpp\
 	server/terminal/TerminalClient.cpp\
 	server/terminal/TerminalResponder.cpp\
 	server/globals.cpp\
@@ -111,6 +120,8 @@ HEADERS	=\
 	log/Loggable.hpp\
 	log/Logger.hpp\
 	log/LogItem.hpp\
+	plugins/PageGenerator.hpp\
+	plugins/Plugin.hpp\
 	regex/Regex.hpp\
 	config/ConfigValidatorBuilder.hpp\
 	config/ConfigParser.hpp\
@@ -183,6 +194,7 @@ HEADERS	=\
 	server/terminal/TerminalResponder.hpp\
 	server/global/GlobalConfig.hpp\
 	server/global/GlobalLogger.hpp\
+	server/global/GlobalPlugins.hpp\
 	server/ServerTypes.hpp\
 	server/Server.hpp
 
@@ -229,10 +241,10 @@ re:
 
 exec:
 	$(MAKE) all
-	./$(NAME)
+	cd build && ./not-apache -f ../tests/provided/test.conf -c
 
 valgrind:
-	valgrind --undef-value-errors=no --leak-check=full ./$(NAME)
+	cd build && valgrind --undef-value-errors=no --leak-check=full ./not-apache -f ../tests/provided/test.conf -c
 
 debug:
 	$(MAKE) BUILD_DEBUG=1 all
