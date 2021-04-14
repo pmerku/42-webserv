@@ -320,3 +320,7 @@ int RouteBlock::getTimeout() const {
 RouteBlock::~RouteBlock() {
 	delete _location;
 }
+
+const std::vector<std::string> &RouteBlock::getPlugins() const {
+	return _plugins;
+}
