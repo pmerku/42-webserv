@@ -15,7 +15,7 @@ namespace NotApache {
 
 	plugin::PluginContainer globalPlugins(utils::CreateMap<plugin::Plugin*, bool>
 	        (new plugin::PageGenerator(), false)
-	        (new plugin::JsonStatAPI(), true) // TODO set back to false
+	        (new plugin::JsonStatAPI(), false)
 	        (new plugin::Plugin("fuck_brainfuck"), false)
 	        (new plugin::Plugin("replace_text"), false)
 	        (new plugin::Plugin("js_executer"), false)
