@@ -19,8 +19,9 @@ void HTTPResponder::handleError(HTTPClient &client, int code) {
 		client.data.response.builder.setAllowedMethods(client.routeBlock->getAllowedMethods());
 
 	// loops through plugins and executes if plugin is loaded
-	for (plugin::PluginContainer::pluginIterator it = globalPlugins.begin(); it != globalPlugins.end(); ++it) {
-		if (it->second && it->first->onHandleError(client, code))
+	std::vector<plugin::Plugin *> plugins = config::RouteBlock::getEnabledPlugins(client.routeBlock);
+	for (std::vector<plugin::Plugin *>::iterator it = plugins.begin(); it != plugins.end(); ++it) {
+		if ((*it)->onHandleError(client, code))
 			return;
 	}
 

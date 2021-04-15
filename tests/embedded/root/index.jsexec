@@ -1,0 +1,16 @@
+print("Content-Type: text/html\r\n\r\n");
+print("<h1>Some other links:</h1>");
+
+var links = [
+    { a: "/helloworld.bf", desc: "Hello world in brainfuck" },
+    { a: "/infiniteloop.bf", desc: "An infinite loop in brainfuck (doesnt crash our entire server)" },
+    { a: "/test.bf", desc: "A custom written counter in brainfuck" },
+];
+for (var i = 0; i < links.length; i++) {
+    print("<a href=\"" + links[i].a + "\">" + links[i].desc + "</a><br/>");
+}
+
+print("<h1>Counting to 42 with Jelle van Snik</h1>");
+for (var i = 1; i <= 42; i++) {
+    print(i.toString() + '<br/>');
+}

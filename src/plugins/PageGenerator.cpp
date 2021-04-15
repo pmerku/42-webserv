@@ -3,6 +3,7 @@
 //
 
 #include "plugins/PageGenerator.hpp"
+#include "server/http/HTTPClient.hpp"
 
 using namespace plugin;
 
