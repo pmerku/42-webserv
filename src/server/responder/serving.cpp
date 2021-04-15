@@ -32,6 +32,23 @@ void HTTPResponder::prepareFile(HTTPClient &client, const struct ::stat &buf, in
 }
 
 void HTTPResponder::prepareFile(HTTPClient &client, int code) {
+	// loops through plugins and executes if plugin is loaded
+	bool plugins = false;
+	for (plugin::PluginContainer::pluginIterator it = globalPlugins.begin(); it != globalPlugins.end(); ++it) {
+		if (it->second) {
+			try {
+				plugins = it->first->onFileServing(client);
+			}
+			catch (const std::exception& e) {
+				globalLogger.logItem(logger::ERROR, std::string("Json_stat_API error: ") + e.what());
+				handleError(client, 404);	
+			}
+		}
+	}
+	// return so the plugin changes don't get overwritten
+	if (plugins)
+		return ;
+
 	FD fileFd = ::open(client.file.path.c_str(), O_RDONLY);
 	if (fileFd == -1) {
 		handleError(client, 500);
@@ -46,6 +63,7 @@ void HTTPResponder::prepareFile(HTTPClient &client, int code) {
 	if (client.data.request.data.method == OPTIONS) {
 		client.data.response.builder.setAllowedMethods(client.routeBlock->getAllowedMethods());
 	}
+
 
 	// send request for methods that dont send a file
 	if (client.data.request.data.method == HEAD || client.data.request.data.method == OPTIONS) {
@@ -88,20 +106,6 @@ void HTTPResponder::serveFile(HTTPClient &client) {
 	// if "*" set to first language in config
 	if (client.data.request.data.acceptLanguage == "*")
 		client.data.request.data.acceptLanguage = client.routeBlock->getAcceptLanguage()[0];
-	
-	// loops through plugins and executes if plugin is loaded
-	for (plugin::PluginContainer::pluginIterator it = globalPlugins.begin(); it != globalPlugins.end(); ++it) {
-		try {
-			if (it->second && it->first->onBeforeFileServing(client)) {
-				client.data.response.setResponse(client.data.response.builder.build());
-				return;
-			}
-		}
-		catch (const std::exception& e) {
-			globalLogger.logItem(logger::ERROR, std::string("Json_stat_API error: ") + e.what());
-			handleError(client, 404);	
-		}
-	}
 
 	// get file data
 	bool shouldCgi = client.routeBlock->shouldDoCgi() && !client.routeBlock->getCgiExt().empty() && client.file.getExt() == client.routeBlock->getCgiExt();

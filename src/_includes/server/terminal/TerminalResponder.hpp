@@ -7,11 +7,16 @@
 
 #include <string>
 
+
 namespace NotApache {
+	class Server;
 
 	class TerminalResponder {
+	private:
+		static const std::string _help;
+		
 	public:
-		void	respond(const std::string &str);
+		void	respond(const std::string &str, Server* server);
 	};
 
 }

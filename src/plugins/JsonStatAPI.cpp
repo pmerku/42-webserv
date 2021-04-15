@@ -3,7 +3,7 @@
 //
 
 #include "plugins/JsonStatAPI.hpp"
-#include "server/http/BodyBuilder.hpp"
+#include "server/http/JsonBuilder.hpp"
 #include "server/http/HTTPMimeTypes.hpp"
 #include "server/http/HTTPMimeTypes.hpp"
 #include "utils/ErrorThrow.hpp"
@@ -16,7 +16,7 @@ JsonStatAPI::JsonStatAPI() : Plugin("json_stat_api") { }
 
 JsonStatAPI::~JsonStatAPI() { }
 
-bool JsonStatAPI::onBeforeFileServing(NotApache::HTTPClient& client) {
+bool JsonStatAPI::onFileServing(NotApache::HTTPClient& client) {
 	struct stat buf;
 	std::string body;
 
@@ -24,18 +24,23 @@ bool JsonStatAPI::onBeforeFileServing(NotApache::HTTPClient& client) {
 		ERROR_THROW(NotFound());
 
 	std::string fileName = client.file.path.substr(client.file.path.rfind("/")+1);
-	std::string fileType = client.file.path.substr(client.file.path.rfind(".")+1);
-	client.data.response.builder.setBody(NotApache::BodyBuilder()
-		.line("name", fileName)
-		.line("type", fileType)
-		.line("size", buf.st_size)
-		.line("MIME type", MimeTypes::getMimeType(client.file.getExt()))
-		.time("last accessed", buf.st_atime)
-		.time("last modified", buf.st_mtime)
-		.time("last status change", buf.st_ctime)
-		.mode("mode", buf.st_mode)
-		.build()
-	);
-
+	std::string fileType = client.file.getExt();
+	client.data.response.builder
+		.setBody(NotApache::JsonBuilder()
+			.addLine("name", fileName)
+			.addLine("type", fileType)
+			.addLine("size", buf.st_size)
+			.addLine("MIMEType", MimeTypes::getMimeType(client.file.getExt()))
+			.time("lastAccessed", buf.st_atime)
+			.time("lastModified", buf.st_mtime)
+			.time("lastStatusChange", buf.st_ctime)
+			.mode("mode", buf.st_mode)
+			.build()
+		);
+	client.data.response
+		.setResponse(client.data.response.builder
+			.setHeader("Content-Type", "application/json")
+			.build()
+		);
 	return true;
 }

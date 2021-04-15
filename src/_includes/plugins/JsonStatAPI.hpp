@@ -15,13 +15,14 @@ namespace plugin {
 		JsonStatAPI();
 		virtual ~JsonStatAPI();
 
-		virtual bool onBeforeFileServing(NotApache::HTTPClient &client);
+		virtual bool onFileServing(NotApache::HTTPClient &client);
 
 		class NotFound : public std::exception {
 			public:
 				virtual const char* what() const throw() { return "file not found"; }
 		};
 	};
+	//TODO MAP VOOR KEYS om dubbele te voorkomen
 
 } // namespace plugin
 

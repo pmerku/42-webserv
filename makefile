@@ -106,7 +106,7 @@ SRC	=\
 	server/http/HTTPMimeTypes.cpp\
 	server/http/RequestBuilder.cpp\
 	server/http/ResponseBuilder.cpp\
-	server/http/BodyBuilder.cpp\
+	server/http/JsonBuilder.cpp\
 	server/responder/associatedFds.cpp\
 	server/responder/cgi.cpp\
 	server/responder/handleError.cpp\
@@ -195,7 +195,7 @@ HEADERS	=\
 	server/http/HTTPMimeTypes.hpp\
 	server/http/RequestBuilder.hpp\
 	server/http/ResponseBuilder.hpp\
-	server/http/BodyBuilder.hpp\
+	server/http/JsonBuilder.hpp\
 	server/terminal/TerminalClient.hpp\
 	server/terminal/TerminalResponder.hpp\
 	server/global/GlobalConfig.hpp\
