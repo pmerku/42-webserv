@@ -8,6 +8,7 @@
 using namespace NotApache;
 
 void HTTPResponder::generateAssociatedResponse(HTTPClient &client) {
+	client.clearAssociatedFd();
 	// if file, build body and send
 	if (client.responseState == FILE) {
 		// loops through plugins and executes if plugin is loaded

@@ -1,7 +1,0 @@
-print("Content-Type: text/html\r\n");
-print("\r\n<h1>Counting to 42 with Jelle van Snik</h1>");
-
-for (var i = 1; i <= 42; i++) {
-    print(i.toString() + '<br/>');
-}
-

@@ -68,7 +68,6 @@ void	HTTPResponder::runJs(HTTPClient& client) {
 		throw;
 	}
 
-	client.removeAssociatedFd(client.getAssociatedFd(0).fd); // remove previous file FD
 	client.addAssociatedFd(client.cgi->pipefd[0]);
 	client.responseState = CGI;
 	client.connectionState = ASSOCIATED_FD;
