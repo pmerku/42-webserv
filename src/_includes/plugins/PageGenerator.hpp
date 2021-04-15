@@ -11,6 +11,9 @@ namespace plugin {
 
 	class PageGenerator : public Plugin {
 	private:
+		static const std::vector<std::string>	_facts;
+		static const std::string				_template;
+
 	public:
 		PageGenerator();
 		virtual ~PageGenerator();
