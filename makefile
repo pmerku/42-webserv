@@ -5,11 +5,9 @@ NAME			:= $(addprefix ./build/,$(NAME))
 # Compiler
 CC				= clang
 CXX				= clang++
-CC				= clang
 
 CC_FLAGS		= -Wall -Werror -Wextra -std=c99 -pedantic-errors
 CXX_FLAGS		= -Wall -Werror -Wextra -std=c++98 -pedantic-errors
-CC_FLAGS		= -Wall -Werror -Wextra -pedantic-errors
 DEBUG_FLAGS		=
 BUILD_FLAGS		= -O3 -pthread
 
