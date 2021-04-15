@@ -62,6 +62,13 @@ void HTTPClient::removeAssociatedFd(FD fd) {
 	}
 }
 
+void HTTPClient::clearAssociatedFd() {
+	for (std::vector<associatedFD>::iterator it = _associatedFds.begin(); it != _associatedFds.end(); ++it) {
+		::close(it->fd);
+	}
+	_associatedFds.clear();
+}
+
 void HTTPClient::setAssociatedFdMode(FD fd, associatedFD::type mode) {
 	for (std::vector<associatedFD>::iterator it = _associatedFds.begin(); it != _associatedFds.end(); ++it) {
 		if (it->fd == fd) {

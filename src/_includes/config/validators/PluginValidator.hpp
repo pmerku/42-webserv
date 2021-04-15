@@ -14,7 +14,6 @@ namespace config {
 	class PluginValidator : public AConfigValidator {
 	private:
 		int 									_argnum;
-		static const std::vector<std::string>	_plugins;
 
 	public:
 		PluginValidator(int argnum);

@@ -88,6 +88,7 @@ namespace NotApache {
 
 		void	addAssociatedFd(FD fd, associatedFD::type mode = associatedFD::READ);
 		void	removeAssociatedFd(FD fd);
+		void	clearAssociatedFd();
 		void 	setAssociatedFdMode(FD fd, associatedFD::type mode);
 		associatedFD	getAssociatedFd(std::vector<associatedFD>::size_type i) const;
 		std::vector<associatedFD>::size_type	getAssociatedFdLength() const;

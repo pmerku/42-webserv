@@ -37,6 +37,8 @@ namespace NotApache {
 
 		static void handleProxy(HTTPClient &client);
 		static void runCGI(HTTPClient& client, const std::string& cgi);
+		static void	runJs(HTTPClient& client);
+		static void	runBrainfuck(HTTPClient& client);
 
 		class AuthHeader : public std::exception {
 			public:

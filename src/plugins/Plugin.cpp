@@ -25,6 +25,11 @@ bool Plugin::onFileServing(NotApache::HTTPClient &client) {
 	return false;
 }
 
+bool Plugin::onSendFile(NotApache::HTTPClient &client) {
+	(void)client;
+	return false;
+}
+
 bool Plugin::operator==(const std::string &name) const {
 	return _id == name;
 }
