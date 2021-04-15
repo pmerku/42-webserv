@@ -32,6 +32,7 @@ const std::vector<std::string> PageGenerator::_facts =
 		("China censored the word for \"censorship.\"")
 		("You're twice as likely to be killed by a vending machine than a shark.")
 		("\"I'm sorry\" and \"I apologize\" mean the same thing. Except at a funeral.")
+		("At some point in their lives 1 in 6 children will be abducted by the Dutch.")
 		;
 
 const std::string PageGenerator::_template =
