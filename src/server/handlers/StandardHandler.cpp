@@ -232,6 +232,10 @@ void StandardHandler::write(HTTPClient &client) {
 	}
 	else if (client.writeState == GOT_ASSOCIATED) {
 		_responder->generateAssociatedResponse(client);
+		if (client.connectionState == ASSOCIATED_FD) {
+			stopHandle(client);
+			return;
+		}
 		client.writeState = IS_WRITING;
 	}
 

@@ -47,6 +47,7 @@ SRC	=\
 	log/Logger.cpp\
 	log/LogItem.cpp\
 	plugins/PageGenerator.cpp\
+	plugins/JsExecutor.cpp\
 	plugins/Plugin.cpp\
 	regex/Regex.cpp\
 	config/ConfigValidatorBuilder.cpp\
@@ -95,6 +96,7 @@ SRC	=\
     utils/Uri.cpp\
     utils/ArgParser.cpp\
     utils/base64.cpp\
+    libs/duktape/duktape.c\
 	server/handlers/AHandler.cpp\
 	server/handlers/StandardHandler.cpp\
 	server/handlers/HandlerHolder.cpp\
@@ -113,6 +115,7 @@ SRC	=\
 	server/http/ResponseBuilder.cpp\
 	server/responder/associatedFds.cpp\
 	server/responder/cgi.cpp\
+	server/responder/embeddedJS.cpp\
 	server/responder/handleError.cpp\
 	server/responder/proxy.cpp\
 	server/responder/serving.cpp\
@@ -128,6 +131,7 @@ HEADERS	=\
 	log/Logger.hpp\
 	log/LogItem.hpp\
 	plugins/PageGenerator.hpp\
+	plugins/JsExecutor.hpp\
 	plugins/Plugin.hpp\
 	regex/Regex.hpp\
 	config/ConfigValidatorBuilder.hpp\
@@ -181,6 +185,7 @@ HEADERS	=\
 	utils/Uri.hpp\
 	utils/ArgParser.hpp\
     utils/base64.hpp\
+    ../libs/duktape/duktape.h\
 	server/handlers/AHandler.hpp\
 	server/handlers/StandardHandler.hpp\
 	server/handlers/HandlerHolder.hpp\
@@ -237,7 +242,7 @@ $(OUT_DIR)/%.c.o: $(SRC_DIR)/%.c $(HEADERS)
 $(OUT_DIR)/%.cpp.o: $(SRC_DIR)/%.cpp $(HEADERS)
 	@echo "$(PREFIX)$(GREEN) Compiling file $(END)$(notdir $<) $(GREEN)to $(END)$(notdir $@)"
 	@mkdir -p $(dir $@)
-	@$(CXX) $(CXX_FLAGS) $(DEBUG_FLAGS) -I$(INC_DIR) -o $@ -c $<
+	@$(CXX) $(CXX_FLAGS) $(DEBUG_FLAGS) -I$(SRC_DIR) -I$(INC_DIR) -o $@ -c $<
 
 clean:
 	@echo "$(PREFIX)$(GREEN) Removing directory $(END)$(OUT_DIR)"
