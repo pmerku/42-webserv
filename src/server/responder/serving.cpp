@@ -33,22 +33,11 @@ void HTTPResponder::prepareFile(HTTPClient &client, const struct ::stat &buf, in
 
 void HTTPResponder::prepareFile(HTTPClient &client, int code) {
 	// loops through plugins and executes if plugin is loaded
-	bool plugins = false;
 	for (plugin::PluginContainer::pluginIterator it = globalPlugins.begin(); it != globalPlugins.end(); ++it) {
-		if (it->second) {
-			try {
-				plugins = it->first->onFileServing(client);
-			}
-			catch (const std::exception& e) {
-				globalLogger.logItem(logger::ERROR, std::string("Json_stat_API error: ") + e.what());
-				handleError(client, 404);	
-			}
+		if (it->second && it->first->onFileServing(client)) {
+			return;
 		}
 	}
-	// return so the plugin changes don't get overwritten
-	if (plugins)
-		return ;
-
 	FD fileFd = ::open(client.file.path.c_str(), O_RDONLY);
 	if (fileFd == -1) {
 		handleError(client, 500);
