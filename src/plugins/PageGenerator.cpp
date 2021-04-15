@@ -6,6 +6,7 @@
 #include "plugins/PageGenerator.hpp"
 #include "utils/intToString.hpp"
 #include "utils/CreateVector.hpp"
+#include "server/http/HTTPClient.hpp"
 
 using namespace plugin;
 

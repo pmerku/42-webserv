@@ -7,9 +7,13 @@
 
 #include <string>
 #include "server/global/GlobalLogger.hpp"
-#include "server/http/HTTPClient.hpp"
+
+namespace NotApache {
+	class HTTPClient;
+}
 
 namespace plugin {
+
 
 	class Plugin {
 	private:
@@ -20,6 +24,7 @@ namespace plugin {
 		virtual ~Plugin();
 
 		virtual bool onHandleError(NotApache::HTTPClient &client, int code);
+		virtual bool onSendFile(NotApache::HTTPClient &client);
 
 		const std::string &getId() const;
 

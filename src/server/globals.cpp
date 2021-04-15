@@ -7,6 +7,8 @@
 #include "server/global/GlobalPlugins.hpp"
 #include "utils/CreateMap.hpp"
 #include "plugins/PageGenerator.hpp"
+#include "plugins/JsExecutor.hpp"
+#include "plugins/BrainfuckExecutor.hpp"
 
 namespace NotApache {
 	config::RootBlock	*configuration = 0;
@@ -15,10 +17,10 @@ namespace NotApache {
 	plugin::PluginContainer globalPlugins(utils::CreateMap<plugin::Plugin*, bool>
 	        (new plugin::PageGenerator(), false)
 	        (new plugin::Plugin("json_stat_api"), false)
-	        (new plugin::Plugin("fuck_brainfuck"), false)
+	        (new plugin::BrainfuckExecutor(), false)
 	        (new plugin::Plugin("replace_text"), false)
-	        (new plugin::Plugin("js_executer"), false)
-	        );
+	        (new plugin::JsExecutor(), false)
+	);
 }
 
 using namespace plugin;

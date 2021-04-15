@@ -20,7 +20,9 @@
 #include "config/validators/PluginValidator.hpp"
 #include "config/validators/UrlValidator.hpp"
 #include "config/validators/UploadValidator.hpp"
+#include "server/global/GlobalPlugins.hpp"
 #include "utils/stoi.hpp"
+#include <algorithm>
 
 using namespace config;
 
@@ -321,6 +323,12 @@ RouteBlock::~RouteBlock() {
 	delete _location;
 }
 
-const std::vector<std::string> &RouteBlock::getPlugins() const {
-	return _plugins;
+std::vector<plugin::Plugin *>	RouteBlock::getEnabledPlugins(RouteBlock *route) {
+	std::vector<plugin::Plugin *> out;
+	for (plugin::PluginContainer::pluginIterator it = NotApache::globalPlugins.begin(); it != NotApache::globalPlugins.end(); ++it) {
+		// IF globally enabled OR enabled on route (if route exists), then add to output list
+		if (it->second || (route && std::find(route->_plugins.begin(), route->_plugins.end(), it->first->getId()) != route->_plugins.end()))
+			out.push_back(it->first);
+	}
+	return out;
 }

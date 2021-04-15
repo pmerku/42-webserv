@@ -3,20 +3,27 @@ NAME			= not-apache
 NAME			:= $(addprefix ./build/,$(NAME))
 
 # Compiler
+CC				= clang
 CXX				= clang++
 
+CC_FLAGS		= -Wall -Werror -Wextra -std=c99 -pedantic-errors
 CXX_FLAGS		= -Wall -Werror -Wextra -std=c++98 -pedantic-errors
 DEBUG_FLAGS		=
 BUILD_FLAGS		= -O3 -pthread
 
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Linux)
+	ifeq ($(CC),gcc)
+		CC_FLAGS += -fPIE
+	endif
 	ifeq ($(CXX),g++)
 		CXX_FLAGS += -fPIE
 	endif
+	CC_FLAGS += -DBUILD_LINUX=1
 	CXX_FLAGS += -DBUILD_LINUX=1
 else ifeq ($(UNAME_S),Darwin)
-    CXX_FLAGS += -DBUILD_APPLE=1
+	CC_FLAGS += -DBUILD_APPLE=1
+	CXX_FLAGS += -DBUILD_APPLE=1
 endif
 
 ifdef BUILD_DEBUG
@@ -40,6 +47,8 @@ SRC	=\
 	log/Logger.cpp\
 	log/LogItem.cpp\
 	plugins/PageGenerator.cpp\
+	plugins/JsExecutor.cpp\
+	plugins/BrainfuckExecutor.cpp\
 	plugins/Plugin.cpp\
 	regex/Regex.cpp\
 	config/ConfigValidatorBuilder.cpp\
@@ -88,6 +97,7 @@ SRC	=\
     utils/Uri.cpp\
     utils/ArgParser.cpp\
     utils/base64.cpp\
+    libs/duktape/duktape.c\
 	server/handlers/AHandler.cpp\
 	server/handlers/StandardHandler.cpp\
 	server/handlers/HandlerHolder.cpp\
@@ -106,6 +116,8 @@ SRC	=\
 	server/http/ResponseBuilder.cpp\
 	server/responder/associatedFds.cpp\
 	server/responder/cgi.cpp\
+	server/responder/embeddedJS.cpp\
+	server/responder/embeddedBrainfuck.cpp\
 	server/responder/handleError.cpp\
 	server/responder/proxy.cpp\
 	server/responder/serving.cpp\
@@ -121,6 +133,8 @@ HEADERS	=\
 	log/Logger.hpp\
 	log/LogItem.hpp\
 	plugins/PageGenerator.hpp\
+	plugins/JsExecutor.hpp\
+	plugins/BrainfuckExecutor.hpp\
 	plugins/Plugin.hpp\
 	regex/Regex.hpp\
 	config/ConfigValidatorBuilder.hpp\
@@ -174,6 +188,7 @@ HEADERS	=\
 	utils/Uri.hpp\
 	utils/ArgParser.hpp\
     utils/base64.hpp\
+    ../libs/duktape/duktape.h\
 	server/handlers/AHandler.hpp\
 	server/handlers/StandardHandler.hpp\
 	server/handlers/HandlerHolder.hpp\
@@ -199,7 +214,7 @@ HEADERS	=\
 	server/Server.hpp
 
 # Fix sources and headers
-OBJ				= $(patsubst %.cpp,%.o,$(SRC))
+OBJ				= $(patsubst %,%.o,$(SRC))
 HEADERS			:= $(addprefix $(INC_DIR)/,$(HEADERS))
 
 # Colours
@@ -222,10 +237,15 @@ $(NAME): $(addprefix $(OUT_DIR)/,$(OBJ))
 	@echo "BUILD $(NAME) $(CXX_FLAGS) $(DEBUG_FLAGS) $(BUILD_FLAGS)"
 	@$(CXX) $(CXX_FLAGS) $(DEBUG_FLAGS) $(BUILD_FLAGS) -I$(INC_DIR) -o $@ $(addprefix $(OUT_DIR)/,$(OBJ))
 
-$(OUT_DIR)/%.o: $(SRC_DIR)/%.cpp $(HEADERS)
+$(OUT_DIR)/%.c.o: $(SRC_DIR)/%.c $(HEADERS)
 	@echo "$(PREFIX)$(GREEN) Compiling file $(END)$(notdir $<) $(GREEN)to $(END)$(notdir $@)"
 	@mkdir -p $(dir $@)
-	@$(CXX) $(CXX_FLAGS) $(DEBUG_FLAGS) -I$(INC_DIR) -o $@ -c $<
+	@$(CC) $(CC_FLAGS) $(DEBUG_FLAGS) -I$(INC_DIR) -o $@ -c $<
+
+$(OUT_DIR)/%.cpp.o: $(SRC_DIR)/%.cpp $(HEADERS)
+	@echo "$(PREFIX)$(GREEN) Compiling file $(END)$(notdir $<) $(GREEN)to $(END)$(notdir $@)"
+	@mkdir -p $(dir $@)
+	@$(CXX) $(CXX_FLAGS) $(DEBUG_FLAGS) -I$(SRC_DIR) -I$(INC_DIR) -o $@ -c $<
 
 clean:
 	@echo "$(PREFIX)$(GREEN) Removing directory $(END)$(OUT_DIR)"
