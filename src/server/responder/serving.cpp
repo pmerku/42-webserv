@@ -33,11 +33,12 @@ void HTTPResponder::prepareFile(HTTPClient &client, const struct ::stat &buf, in
 
 void HTTPResponder::prepareFile(HTTPClient &client, int code) {
 	// loops through plugins and executes if plugin is loaded
-	for (plugin::PluginContainer::pluginIterator it = globalPlugins.begin(); it != globalPlugins.end(); ++it) {
-		if (it->second && it->first->onFileServing(client)) {
+	std::vector<plugin::Plugin *> plugins = config::RouteBlock::getEnabledPlugins(client.routeBlock);
+	for (std::vector<plugin::Plugin *>::iterator it = plugins.begin(); it != plugins.end(); ++it) {
+		if ((*it)->onFileServing(client))
 			return;
-		}
 	}
+	
 	FD fileFd = ::open(client.file.path.c_str(), O_RDONLY);
 	if (fileFd == -1) {
 		handleError(client, 500);
