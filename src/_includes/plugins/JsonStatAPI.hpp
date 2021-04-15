@@ -16,6 +16,11 @@ namespace plugin {
 		virtual ~JsonStatAPI();
 
 		virtual bool onBeforeFileServing(NotApache::HTTPClient &client);
+
+		class NotFound : public std::exception {
+			public:
+				virtual const char* what() const throw() { return "file not found"; }
+		};
 	};
 
 } // namespace plugin

@@ -91,10 +91,15 @@ void HTTPResponder::serveFile(HTTPClient &client) {
 	
 	// loops through plugins and executes if plugin is loaded
 	for (plugin::PluginContainer::pluginIterator it = globalPlugins.begin(); it != globalPlugins.end(); ++it) {
-		// std::cout << "=====>>>>> HEEEEERRREEEEE <<<<<<=========" << std::endl;
-		if (it->second && it->first->onBeforeFileServing(client)) {
-			client.data.response.setResponse(client.data.response.builder.build());
-			return;
+		try {
+			if (it->second && it->first->onBeforeFileServing(client)) {
+				client.data.response.setResponse(client.data.response.builder.build());
+				return;
+			}
+		}
+		catch (const std::exception& e) {
+			globalLogger.logItem(logger::ERROR, std::string("Json_stat_API error: ") + e.what());
+			handleError(client, 404);	
 		}
 	}
 

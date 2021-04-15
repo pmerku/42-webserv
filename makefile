@@ -74,6 +74,7 @@ SRC	=\
 	env/ENVBuilder.cpp\
 	utils/AThread.cpp\
 	utils/intToString.cpp\
+	utils/size_tToString.cpp\
 	utils/isSpace.cpp\
 	utils/mutex.cpp\
 	utils/split.cpp\
@@ -169,6 +170,7 @@ HEADERS	=\
 	utils/CreateVector.hpp\
 	utils/ErrorThrow.hpp\
 	utils/intToString.hpp\
+	utils/size_tToString.hpp\
 	utils/isSpace.hpp\
 	utils/localTime.hpp\
 	utils/mutex.hpp\

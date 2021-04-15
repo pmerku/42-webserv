@@ -22,10 +22,16 @@ namespace NotApache {
 	public:
 		BodyBuilder();
 
-		BodyBuilder& fileName(const std::string& name);
-		BodyBuilder& fileSize(const std::string& size);
-		BodyBuilder& fileType(const std::string& type);
+		BodyBuilder& line(const std::string& type, const std::string& value);
+		BodyBuilder& line(const std::string& type, size_t value);
+		BodyBuilder& time(const std::string& txt, time_t time);
+		BodyBuilder& mode(const std::string& type, mode_t mode);
 
+		const std::string numberFormat(size_t number);
+		const std::string stringFormat(const std::string& str);
+		const std::string typeFormat(const std::string& str);
+	
+		
 		const std::string& build();
 	};
 
