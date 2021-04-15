@@ -48,6 +48,7 @@ SRC	=\
 	log/LogItem.cpp\
 	plugins/PageGenerator.cpp\
 	plugins/JsExecutor.cpp\
+	plugins/BrainfuckExecutor.cpp\
 	plugins/Plugin.cpp\
 	regex/Regex.cpp\
 	config/ConfigValidatorBuilder.cpp\
@@ -116,6 +117,7 @@ SRC	=\
 	server/responder/associatedFds.cpp\
 	server/responder/cgi.cpp\
 	server/responder/embeddedJS.cpp\
+	server/responder/embeddedBrainfuck.cpp\
 	server/responder/handleError.cpp\
 	server/responder/proxy.cpp\
 	server/responder/serving.cpp\
@@ -132,6 +134,7 @@ HEADERS	=\
 	log/LogItem.hpp\
 	plugins/PageGenerator.hpp\
 	plugins/JsExecutor.hpp\
+	plugins/BrainfuckExecutor.hpp\
 	plugins/Plugin.hpp\
 	regex/Regex.hpp\
 	config/ConfigValidatorBuilder.hpp\
