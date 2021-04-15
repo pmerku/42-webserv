@@ -6,7 +6,6 @@
 #include "utils/size_tToString.hpp"
 
 #include <ctime>
-#include <string.h>
 
 using namespace NotApache;
 

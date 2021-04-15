@@ -22,8 +22,7 @@ namespace plugin {
 				virtual const char* what() const throw() { return "file not found"; }
 		};
 	};
-	//TODO MAP VOOR KEYS om dubbele te voorkomen
-
+	
 } // namespace plugin
 
 #endif //JSTONSTATAPI_HPP

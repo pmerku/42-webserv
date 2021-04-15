@@ -34,6 +34,10 @@ void TerminalResponder::respond(const std::string &str, Server* server) {
 				globalLogger.logItem(logger::INFO, "Plugin loaded");
 			}
 		}
+		else {
+			globalLogger.logItem(logger::ERROR, "Plugin not found");
+			return ;
+		}
 	}
 	else if (command[0] == "unload") {
 		plugin::PluginContainer::pluginIterator it = globalPlugins.find(command[1]);
@@ -57,6 +61,4 @@ void TerminalResponder::respond(const std::string &str, Server* server) {
 			globalLogger.logItem(logger::INFO, "Invalid command...");
 		globalLogger.logItem(logger::INFO, _help);
 	}
-
-	globalLogger.logItem(logger::INFO, "Handled terminal command :)");
 }
