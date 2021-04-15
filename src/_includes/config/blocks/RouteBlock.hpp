@@ -8,6 +8,7 @@
 #include "config/AConfigBlock.hpp"
 #include "regex/Regex.hpp"
 #include "config/validators/UrlValidator.hpp"
+#include "plugins/Plugin.hpp"
 
 namespace config {
 
@@ -63,7 +64,7 @@ namespace config {
 		const std::vector<std::string> &getAcceptLanguage() const;
 		const std::vector<std::string> &getAuthorized() const;
 		const std::string &getAuthBasic() const;
-		const std::vector<std::string> &getPlugins() const;
+		static std::vector<plugin::Plugin *> getEnabledPlugins(RouteBlock *route = 0);
 
 		// will also traverse parent block for body limit if not set
 		int getBodyLimit();

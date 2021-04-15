@@ -7,9 +7,13 @@
 
 #include <string>
 #include "server/global/GlobalLogger.hpp"
-#include "server/http/HTTPClient.hpp"
+
+namespace NotApache {
+	class HTTPClient;
+}
 
 namespace plugin {
+
 
 	class Plugin {
 	private:

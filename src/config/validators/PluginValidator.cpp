@@ -3,12 +3,10 @@
 //
 
 #include "config/validators/PluginValidator.hpp"
+#include "server/global/GlobalPlugins.hpp"
 #include "utils/stoi.hpp"
-#include "utils/CreateVector.hpp"
 
 using namespace config;
-
-const std::vector<std::string>	PluginValidator::_plugins = utils::CreateVector<std::string>("");
 
 PluginValidator::PluginValidator(int argnum): AConfigValidator(false), _argnum(argnum) {}
 
@@ -16,8 +14,8 @@ void PluginValidator::test(const ConfigLine &line, const AConfigBlock &block) co
 	if (line.getArgLength() <= (unsigned long)_argnum)
 		ERROR_THROW(PluginValidatorException(line, &block));
 	const std::string &plugin = line.getArg(_argnum);
-	for (std::vector<std::string>::const_iterator it = _plugins.begin(); it != _plugins.end(); ++it) {
-		if (*it == plugin)
+	for (plugin::PluginContainer::pluginIterator it = NotApache::globalPlugins.begin(); it != NotApache::globalPlugins.end(); ++it) {
+		if (*(it->first) == plugin)
 			return; // found valid plugin
 	}
 	// not found, invalid

@@ -3,7 +3,6 @@
 //
 
 #include "server/http/HTTPResponder.hpp"
-#include "server/global/GlobalPlugins.hpp"
 
 using namespace NotApache;
 
@@ -12,8 +11,9 @@ void HTTPResponder::generateAssociatedResponse(HTTPClient &client) {
 	// if file, build body and send
 	if (client.responseState == FILE) {
 		// loops through plugins and executes if plugin is loaded
-		for (plugin::PluginContainer::pluginIterator it = globalPlugins.begin(); it != globalPlugins.end(); ++it) {
-			if (it->second && it->first->onSendFile(client))
+		std::vector<plugin::Plugin *> plugins = config::RouteBlock::getEnabledPlugins(client.routeBlock);
+		for (std::vector<plugin::Plugin *>::iterator it = plugins.begin(); it != plugins.end(); ++it) {
+			if ((*it)->onSendFile(client))
 				return;
 		}
 
