@@ -4,6 +4,8 @@
 
 #include "server/http/HTTPResponder.hpp"
 #include "server/http/HTTPMimeTypes.hpp"
+#include "plugins/JsonStatAPI.hpp"
+#include "server/global/GlobalPlugins.hpp"
 #include "utils/base64.hpp"
 #include <fcntl.h>
 #include <cerrno>
@@ -30,6 +32,13 @@ void HTTPResponder::prepareFile(HTTPClient &client, const struct ::stat &buf, in
 }
 
 void HTTPResponder::prepareFile(HTTPClient &client, int code) {
+	// loops through plugins and executes if plugin is loaded
+	std::vector<plugin::Plugin *> plugins = config::RouteBlock::getEnabledPlugins(client.routeBlock);
+	for (std::vector<plugin::Plugin *>::iterator it = plugins.begin(); it != plugins.end(); ++it) {
+		if ((*it)->onFileServing(client))
+			return;
+	}
+	
 	FD fileFd = ::open(client.file.path.c_str(), O_RDONLY);
 	if (fileFd == -1) {
 		handleError(client, 500);
@@ -44,6 +53,7 @@ void HTTPResponder::prepareFile(HTTPClient &client, int code) {
 	if (client.data.request.data.method == OPTIONS) {
 		client.data.response.builder.setAllowedMethods(client.routeBlock->getAllowedMethods());
 	}
+
 
 	// send request for methods that dont send a file
 	if (client.data.request.data.method == HEAD || client.data.request.data.method == OPTIONS) {

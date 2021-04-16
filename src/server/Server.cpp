@@ -116,7 +116,7 @@ void Server::_handleSelect() {
 	if (FD_ISSET(_termClient.getFd(), &_readFdSet)) {
 		TerminalClient::TerminalCommandState	parseState = _termClient.readNewData();
 		while (parseState == TerminalClient::FOUND_LINE) {
-			_termResponder.respond(_termClient.takeLine());
+			_termResponder.respond(_termClient.takeLine(), this);
 			parseState = _termClient.parseState();
 		}
 	}

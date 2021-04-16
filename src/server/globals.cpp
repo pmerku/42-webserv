@@ -7,6 +7,7 @@
 #include "server/global/GlobalPlugins.hpp"
 #include "utils/CreateMap.hpp"
 #include "plugins/PageGenerator.hpp"
+#include "plugins/JsonStatAPI.hpp"
 #include "plugins/JsExecutor.hpp"
 #include "plugins/BrainfuckExecutor.hpp"
 
@@ -16,7 +17,7 @@ namespace NotApache {
 
 	plugin::PluginContainer globalPlugins(utils::CreateMap<plugin::Plugin*, bool>
 	        (new plugin::PageGenerator(), false)
-	        (new plugin::Plugin("json_stat_api"), false)
+	        (new plugin::JsonStatAPI(), false)
 	        (new plugin::BrainfuckExecutor(), false)
 	        (new plugin::Plugin("replace_text"), false)
 	        (new plugin::JsExecutor(), false)

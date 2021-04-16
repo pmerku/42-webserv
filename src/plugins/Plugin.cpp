@@ -20,6 +20,11 @@ bool Plugin::onHandleError(NotApache::HTTPClient &client, int code) {
 	return false;
 }
 
+bool Plugin::onFileServing(NotApache::HTTPClient &client) {
+	(void)client;
+	return false;
+}
+
 bool Plugin::onSendFile(NotApache::HTTPClient &client) {
 	(void)client;
 	return false;

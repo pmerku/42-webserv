@@ -24,6 +24,7 @@ namespace plugin {
 		virtual ~Plugin();
 
 		virtual bool onHandleError(NotApache::HTTPClient &client, int code);
+		virtual bool onFileServing(NotApache::HTTPClient &client);
 		virtual bool onSendFile(NotApache::HTTPClient &client);
 
 		const std::string &getId() const;
