@@ -5,9 +5,8 @@
 #include "plugins/JsonStatAPI.hpp"
 #include "server/http/JsonBuilder.hpp"
 #include "server/http/HTTPMimeTypes.hpp"
-#include "server/http/HTTPMimeTypes.hpp"
 #include "utils/ErrorThrow.hpp"
-
+#include "server/http/HTTPClient.hpp"
 #include <sys/stat.h>
 
 using namespace plugin;

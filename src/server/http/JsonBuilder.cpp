@@ -4,6 +4,7 @@
 
 #include "server/http/JsonBuilder.hpp"
 #include "utils/size_tToString.hpp"
+#include <sys/stat.h>
 
 #include <ctime>
 
@@ -37,10 +38,37 @@ JsonBuilder& JsonBuilder::time(const std::string& type, time_t value) {
 	return *this;
 }
 
-JsonBuilder& JsonBuilder::mode(const std::string& type, mode_t value) {
-	char mode[128];
+char JsonBuilder::getMode(mode_t value, int mask, char c) {
+	if (value & mask)
+		return (c);
+	else
+		return ('-');
+}
 
-	::strmode(value, mode); // TODO fix own implementation
+JsonBuilder& JsonBuilder::mode(const std::string& type, mode_t value) {
+	std::string mode;
+
+	// is directory or file
+	if (S_ISDIR(value))
+		mode = 'd';
+	else
+		mode = '-';
+
+	// Get user permissions
+	mode += getMode(value, S_IRUSR, 'r');
+	mode += getMode(value, S_IWUSR, 'w');
+	mode += getMode(value, S_IXUSR, 'x');
+
+	// Get group permissions
+	mode += getMode(value, S_IRGRP, 'r');
+	mode += getMode(value, S_IWGRP, 'w');
+	mode += getMode(value, S_IXGRP, 'x');
+
+	// Get other permissions
+	mode += getMode(value, S_IROTH, 'r');
+	mode += getMode(value, S_IWOTH, 'w');
+	mode += getMode(value, S_IXOTH, 'x');
+	
 	addLine(type, mode);
 	return *this;
 }

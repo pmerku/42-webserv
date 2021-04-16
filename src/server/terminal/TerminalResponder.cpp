@@ -13,12 +13,13 @@ using namespace NotApache;
 const std::string TerminalResponder::_help("\
 	command options:\n\
 		- exit\n\
-		- help\n\
+		- help\n\n\
 	load/unload plugins:\n\
-		- load page_404_gen\n\
-		- unload page_404_gen\n\
-		- load json_stat_api\n\
-		- unload json_stat_api"
+		- (un)load page_404_gen\n\
+		- (un)load json_stat_api\n\
+		- (un)load brainfuck_executor\n\
+		- (un)load replace_text\n\
+		- (un)load js_executor"
 	);
 
 void TerminalResponder::respond(const std::string &str, Server* server) {

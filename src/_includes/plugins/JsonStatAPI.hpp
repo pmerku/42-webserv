@@ -10,7 +10,6 @@
 namespace plugin {
 
 	class JsonStatAPI : public Plugin {
-	private:
 	public:
 		JsonStatAPI();
 		virtual ~JsonStatAPI();
@@ -22,7 +21,7 @@ namespace plugin {
 				virtual const char* what() const throw() { return "file not found"; }
 		};
 	};
-	
+
 } // namespace plugin
 
 #endif //JSTONSTATAPI_HPP

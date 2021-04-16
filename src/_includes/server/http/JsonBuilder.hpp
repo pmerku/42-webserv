@@ -26,7 +26,9 @@ namespace NotApache {
 		JsonBuilder& addLine(const std::string& type, size_t value);
 		JsonBuilder& time(const std::string& txt, time_t time);
 		JsonBuilder& mode(const std::string& type, mode_t mode);
+		
 
+		char getMode(mode_t value, int mask, char c);
 		const std::string numberFormat(size_t number);
 		const std::string stringFormat(const std::string& str);
 		const std::string typeFormat(const std::string& str);
