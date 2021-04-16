@@ -29,10 +29,12 @@ void Server::_createFdSets() {
 	FD_ZERO(&_readFdSet);
 
 	// add listeners (sockets)
-	for (std::vector<TCPListener*>::iterator i = _listeners.begin(); i != _listeners.end(); ++i) {
-		FD	fd = (*i)->getFD();
-		if (fd > _maxFd) _maxFd = fd;
-		FD_SET(fd, &_readFdSet);
+	if (isCheckingListeners) {
+		for (std::vector<TCPListener*>::iterator i = _listeners.begin(); i != _listeners.end(); ++i) {
+			FD	fd = (*i)->getFD();
+			if (fd > _maxFd) _maxFd = fd;
+			FD_SET(fd, &_readFdSet);
+		}
 	}
 
 	// add event bus & term client
@@ -151,6 +153,7 @@ void Server::_clientCleanup() {
 		*i = 0;
 	}
 	_clients.remove(0);
+	isCheckingListeners = _clients.size() > 100 ? false : true;
 }
 
 void Server::startServer(config::RootBlock *c) {
@@ -212,7 +215,7 @@ Server::~Server() {
 	delete configuration;
 }
 
-Server::Server(): _readFdSet(), _writeFdSet(), _maxFd(), _shouldShutdown(false), _termClient(STDIN_FILENO) {}
+Server::Server(): _readFdSet(), _writeFdSet(), isCheckingListeners(true), _maxFd(), _shouldShutdown(false), _termClient(STDIN_FILENO) {}
 
 void Server::shutdownServer() {
 	globalLogger.logItem(logger::INFO, "Received shutdown signal, gracefully shutting down");
