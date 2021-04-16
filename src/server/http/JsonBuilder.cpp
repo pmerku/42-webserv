@@ -4,7 +4,6 @@
 
 #include "server/http/JsonBuilder.hpp"
 #include "utils/size_tToString.hpp"
-#include <sys/stat.h>
 
 #include <ctime>
 

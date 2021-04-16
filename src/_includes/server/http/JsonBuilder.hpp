@@ -5,6 +5,7 @@
 #ifndef JSONBUILDER_HPP
 #define JSONBUILDER_HPP
 
+#include <sys/stat.h>
 #include <string>
 #include <map>
 
