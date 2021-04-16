@@ -34,6 +34,7 @@ namespace NotApache {
 		// select fd sets
 		fd_set	_readFdSet;
 		fd_set	_writeFdSet;
+		bool	isCheckingListeners;
 		FD		_maxFd;
 		bool 	_shouldShutdown;
 
