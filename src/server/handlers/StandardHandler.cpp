@@ -151,7 +151,7 @@ void StandardHandler::read(HTTPClient &client) {
 	IOReturn ret = doRead(client.getFd(), client.data.request.getRequest(), true);
 	if (ret == IO_EOF) {
 		client.isHandled.lock();
-		client.connectionState = CLOSED;
+		client.endRequest(true);
 		stopHandle(client, false);
 		return;
 	}
@@ -185,12 +185,7 @@ void StandardHandler::handleAssociatedWrite(HTTPClient &client) {
 		return;
 	}
 	else if (client.responseState == UPLOAD) {
-		utils::DataList *body = NULL;
-		if (client.data.request.data.isChunked)
-			body = &client.data.request.data.chunkedData;
-		else
-			body = &client.data.request.data.data;
-		IOReturn ret = doWrite(client.getAssociatedFd(0).fd, client.data.request, *body);
+		IOReturn ret = doWrite(client.getAssociatedFd(0).fd, client.data.request, client.data.request.data.body);
 		if (ret == IO_ERROR || ret == SUCCESS) {
 			stopHandle(client);
 			return;
@@ -205,12 +200,7 @@ void StandardHandler::handleAssociatedWrite(HTTPClient &client) {
 		return;
 	}
 	else if (client.responseState == CGI) {
-		utils::DataList *body = NULL;
-		if (client.data.request.data.isChunked)
-			body = &client.data.request.data.chunkedData;
-		else
-			body = &client.data.request.data.data;
-		IOReturn ret = doWrite(client.getAssociatedFd(1).fd, client.data.request, *body);
+		IOReturn ret = doWrite(client.getAssociatedFd(1).fd, client.data.request, client.data.request.data.body);
 		if (ret == IO_ERROR) {
 			client.isHandled = false;
 			return;
@@ -253,7 +243,7 @@ void StandardHandler::write(HTTPClient &client) {
 			client.concurrentFails = 0;
 		if (ret == IO_EOF) {
 			client.isHandled.lock();
-			client.connectionState = CLOSED;
+			client.endRequest(client.data.request.data.shouldClose);
 			stopHandle(client, false);
 			return;
 		} else if (ret == IO_ERROR) {
@@ -261,7 +251,7 @@ void StandardHandler::write(HTTPClient &client) {
 			// if failed 10 times in a row, close connection. we are assuming its dead (you would normally check errno here)
 			if (client.concurrentFails >= 10) {
                 client.isHandled.lock();
-                client.connectionState = CLOSED;
+				client.endRequest(true);
                 stopHandle(client, false);
                 return;
 			}

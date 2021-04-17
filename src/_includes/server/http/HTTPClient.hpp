@@ -85,6 +85,7 @@ namespace NotApache {
 		sockaddr_in getCliAddr() const;
 		std::string getIp() const;
 		void	setTimeout(int timeout);
+		void 	endRequest(bool shouldClose);
 
 		void	addAssociatedFd(FD fd, associatedFD::type mode = associatedFD::READ);
 		void	removeAssociatedFd(FD fd);

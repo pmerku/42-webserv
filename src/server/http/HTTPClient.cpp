@@ -121,3 +121,29 @@ long int	HTTPClient::getTimeoutAfter() const {
 void HTTPClient::setTimeout(int timeout) {
 	_timeoutAfter = timeout;
 }
+
+void HTTPClient::endRequest(bool shouldClose) {
+	if (shouldClose) {
+		connectionState = CLOSED;
+		return;
+	}
+	timeval timeData;
+	::gettimeofday(&timeData, 0);
+	_createdAt = timeData.tv_sec; // reset createdAt so timeout gets reset
+	_timeoutAfter = 60; // reset timeout
+	clearAssociatedFd();
+	connectionState = READING;
+	writeState = NO_RESPONSE;
+	responseState = NONE;
+	delete cgi;
+	delete proxy;
+	cgi = 0;
+	proxy = 0;
+	concurrentFails = 0;
+	routeBlock = 0;
+	serverBlock = 0;
+	replyStatus = 0;
+	hasErrored = false;
+	data.reset();
+	// TODO log request
+}

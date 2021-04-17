@@ -138,6 +138,8 @@ namespace utils {
 
 		std::string		substring(DataListIterator start);
 		std::string 	substring(DataListIterator start, DataListIterator last);
+
+		void 			subList(DataList &out, DataListIterator start, DataListIterator last);
 	};
 
 } // namespace utils

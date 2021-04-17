@@ -99,10 +99,7 @@ ResponseBuilder::ResponseBuilder(const HTTPParseData &data) {
 	for (std::map<std::string, std::string>::const_iterator it = data.headers.begin(); it != data.headers.end(); ++it) {
 		setHeader(it->first, it->second);
 	}
-	if (data.isChunked)
-		setBody(data.chunkedData);
-	else
-		setBody(data.data);
+	setBody(data.body);
 	// set defaults
 	setDefaults();
 }

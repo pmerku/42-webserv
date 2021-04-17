@@ -66,3 +66,8 @@ void HTTPClientResponse::appendAssociatedData(const char *d, utils::DataList::si
 void HTTPClientResponse::appendResponseData(const char *d, utils::DataList::size_type size) {
 	data.data.add(d, size);
 }
+
+void HTTPClientData::reset() {
+	request = HTTPClientRequest();
+	response = HTTPClientResponse();
+}

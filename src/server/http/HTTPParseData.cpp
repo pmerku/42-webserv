@@ -9,14 +9,16 @@ using namespace NotApache;
 
 HTTPParseData::HTTPParseData(HTTPParseData::HTTPParseType type):
 		data(),
-		chunkedData(),
+		body(),
 		_pos(data.beginList()),
+		_posStart(),
 		_type(type),
 		_gotHeaders(false),
 		_gotFirstLine(false),
 		_gotBody(false),
 		_gotTrailHeaders(false),
 		isChunked(false),
+		shouldClose(false),
 		method(),
 		bodyLength(0),
 		statusCode(0),
@@ -38,13 +40,10 @@ std::ostream& operator<<(std::ostream& o, NotApache::HTTPParseData& x) {
 	}
 	else
 		o	<< "-NO HEADERS-" 											<< std::endl;
-	utils::DataList *body = &x.data;
-	if (x.isChunked)
-		body = &x.chunkedData;
-	if (!body->empty()) {
-		o << "Body length: " << body->size() << std::endl << std::endl
+	if (!x.body.empty()) {
+		o << "Body length: " << x.body.size() << std::endl << std::endl
 		  << "-BODY-" << std::endl
-		  << body->substring(body->beginList(), body->endList()) << std::endl;
+		  << x.body.substring(x.body.beginList(), x.body.endList()) << std::endl;
 	}
 	else
 		o << std::endl << "-NO BODY-" 									<< std::endl;
