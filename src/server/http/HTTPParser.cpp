@@ -273,6 +273,7 @@ HTTPParser::ParseReturn		HTTPParser::parseHeaders(HTTPParseData &data, const std
 HTTPParser::ParseReturn HTTPParser::parseTrailHeaders(HTTPParseData &data, const std::string &headers) {
 	// check if header field name has correct format
 	std::vector<std::string> headersArray = utils::split(headers, "\r\n");
+	// TODO there will be a empty header array emtpy
 	for (std::vector<std::string>::iterator it = headersArray.begin(); it != headersArray.end(); ++it) {
 		std::string::size_type colonPos = it->find(':');
 		if (colonPos == std::string::npos) {
@@ -348,10 +349,15 @@ HTTPParser::ParseReturn		HTTPParser::parseCgiHeaders(HTTPParseData &data, const 
 }
 
 HTTPParser::ParseReturn		HTTPParser::parseBody(HTTPParseData &data, utils::DataList::DataListIterator it) {
+	if (it == data.data.endList() && data._posStart)
+		it = data.data.beginList();
 	if (data._type != HTTPParseData::CGI_RESPONSE && data.data.size(it) < static_cast<utils::DataList::size_type>(data.bodyLength))
 		return OK; // unfinished
 	utils::DataList::DataListIterator itEnd = it;
-	std::advance(itEnd, data.bodyLength); // TODO optimize
+	if (data._type == HTTPParseData::CGI_RESPONSE)
+		itEnd = data.data.endList();
+	else
+		std::advance(itEnd, data.bodyLength); // TODO optimize
 	data.data.subList(data.body, it, itEnd);
 	data.data.resize(itEnd, data.data.endList());
 	return FINISHED;
@@ -392,13 +398,12 @@ HTTPParser::ParseReturn		HTTPParser::parseChunkedBody(HTTPClient *client, HTTPPa
             }
         }
 
+		utils::DataList::DataListIterator headersStart = sizeEnd;
 		std::advance(sizeEnd, 2);
 		if (data.data.size(sizeEnd) < chunkSize + 2) {
 			return OK; // unfinished
 		} else if (chunkSize == 0) {
-			if (data.data.find("\r\n", sizeEnd) == sizeEnd)
-				data._gotTrailHeaders = true;
-			data._pos = sizeEnd;
+			data._pos = headersStart;
 			return FINISHED;
 		}
 
@@ -526,6 +531,8 @@ HTTPParser::ParseState		HTTPParser::parse(HTTPParseData &data, HTTPClient *clien
 		if (endOfHeaders == data.data.endList())
 			return UNFINISHED;
 		else if (endOfHeaders == beginOfHeaders) { // no trail headers
+			std::advance(endOfHeaders, 4);
+			data.data.resize(endOfHeaders, data.data.endList());
 			data._gotTrailHeaders = true;
 			return READY_FOR_WRITE;
 		}
@@ -540,8 +547,11 @@ HTTPParser::ParseState		HTTPParser::parse(HTTPParseData &data, HTTPClient *clien
 		ParseReturn ret = parseTrailHeaders(data, data.data.substring(beginOfHeaders, endOfHeaders));
 		if (ret == ERROR)
 			return READY_FOR_WRITE;
+		std::advance(endOfHeaders, 4);
 		data.data.resize(endOfHeaders, data.data.endList());
 		data._gotTrailHeaders = true;
 	}
 	return READY_FOR_WRITE;
 }
+
+// TODO failed HEAD on postman (cuz of keep alive)

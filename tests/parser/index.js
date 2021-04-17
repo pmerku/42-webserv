@@ -40,7 +40,7 @@ function httpRequest(ops = {}) {
         method: "GET",
         uri: "/",
         version: "1.1",
-        headers: [ "Host: localhost" ],
+        headers: [ "Host: localhost", "Connection: Close" ],
         body: "",
         ...ops,
     }
@@ -54,7 +54,7 @@ function httpRequest(ops = {}) {
 const tests = [
     // request line tests
     ["GET / HTTP/1.1\r\n\r\n", 400], // no header
-    [["GET /", " HTTP/1", ".1\r\nHost: localhost\r\n\r\n"], 200], // send individual packets
+    [["GET /", " HTTP/1", ".1\r\nHost: localhost\r\nConnection: Close\r\n\r\n"], 200], // send individual packets
     ["GET  / HTTP/1.1\r\nHost: localhost\r\n\r\n", 400], // invalid status line
     ["GET /  HTTP/1.1\r\nHost: localhost\r\n\r\n", 400], // invalid status line
     ["GET /\tHTTP/1.1\r\nHost: localhost\r\n\r\n", 400], // invalid status line
@@ -108,6 +108,7 @@ function runTest(test) {
                 success++;
             } else
                 console.log(`\u001b[31mTest ${i}: Failed (${status})\u001b[0m\n`, result);
+            console.log(result.replaceAll("\r", "\\r").replaceAll("\n", "\\n"));
         } catch (err) {
             console.log(`\u001b[31mTest ${i}: Failed (ERROR)\u001b[0m\n`, err);
         }

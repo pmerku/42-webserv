@@ -48,6 +48,9 @@ void HTTPResponder::handleError(HTTPClient &client, int code) {
 			.setStatus(code)
 			.setHeader("Content-Type", "text/html");
 
+	if (client.data.request.data.shouldClose)
+		client.data.response.builder.setConnection();
+
 	std::map<int,std::string>::const_iterator statusIt = ResponseBuilder::statusMap.find(code);
 	std::string text = statusIt == ResponseBuilder::statusMap.end() ? "Internal server error!" : statusIt->second;
 	client.replyStatus = code;

@@ -78,7 +78,6 @@ const std::map<int, std::string> ResponseBuilder::statusMap =
 		(510, "Not Extended")
 		(511, "Network Authentication Required");
 
-// TODO not connection close by default
 ResponseBuilder::ResponseBuilder() {
 	_protocol = "HTTP/1.1";
 	// set defaults
@@ -210,11 +209,6 @@ ResponseBuilder &ResponseBuilder::setDefaults() {
 	if (it == _headerMap.end())
 		setServer();
 
-	// if no connection header set it
-	it = _headerMap.find("CONNECTION");
-	if (it == _headerMap.end())
-		setConnection();
-
 	// if body is empty set content-length to 0
 	if (_body.empty())
 		setHeader("CONTENT-LENGTH", "0");
@@ -238,11 +232,10 @@ utils::DataList	ResponseBuilder::build() {
 		response += _endLine;
 	}
 
-	// \r\n {body} \r\n
+	// \r\n {body}
 	response += _endLine;
 	if (!_body.empty()) {
 		output = _body;
-		output.add(_endLine.c_str());
 	}
 
 	output.add_front(response.c_str());
