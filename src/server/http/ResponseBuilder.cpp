@@ -78,6 +78,7 @@ const std::map<int, std::string> ResponseBuilder::statusMap =
 		(510, "Not Extended")
 		(511, "Network Authentication Required");
 
+// TODO not connection close by default
 ResponseBuilder::ResponseBuilder() {
 	_protocol = "HTTP/1.1";
 	// set defaults
