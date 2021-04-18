@@ -236,49 +236,54 @@ DataList::DataListIterator	DataList::findAndReplaceOne(const std::string &needle
 	return findAndReplaceOne(needle, newNeedle, start, endList());
 }
 
+#include <iostream>
+
 DataList::DataListIterator DataList::findAndReplaceOne(const std::string &needle, const std::string &newNeedle, DataListIterator start, DataListIterator last) {
 	DataListIterator it = this->find(needle, start, last);
-
-	// it._it   list_item -> <it._index, _it._index+needle.size()>
-	// it._it.data = it._it->data + newNeedle;
-	// it._it.size = it._it->data.size()
-	// remove/resize rest of packets that may still contain the needle bytes
+	if (it == endList())
+		return it;
 
 	// remove needle part from main packet and add new needle
 	size_type needlePartSize = it._it->size - it._index;
 	if (needlePartSize > needle.size())
 		needlePartSize = needle.size();
-	size_type newDataSize = (it._it->size-needlePartSize) + newNeedle.size();
-	char *newData = new char[newDataSize];
-	if (it._index > 0)
-		::memmove(newData, it._it->data, it._index); // [abc]NEEDLEdef
-	::memmove(newData+it._index, newNeedle.c_str(), newNeedle.size()); // abc[NEWNEEDLE]def
-	if (needlePartSize+it._index < it._it->size)
-		::memmove(newData+it._index+newNeedle.size(), it._it->data+needlePartSize, (it._it->size-needlePartSize)-it._index); // abcNEEDLE[def]
-	delete [] it._it->data;
-	it._it->data = newData;
-	it._it->size = newDataSize;
+	{
+		size_type newDataSize = (it._it->size-needlePartSize) + newNeedle.size();
+		char *newData = new char[newDataSize];
+		if (it._index > 0)
+			::memmove(newData, it._it->data, it._index); // [abc]NEEDLEdef
+		::memmove(newData+it._index, newNeedle.c_str(), newNeedle.size()); // abc[NEWNEEDLE]def
+		if (needlePartSize+it._index < it._it->size)
+			::memmove(newData+it._index+newNeedle.size(), it._it->data+needlePartSize+it._index, (it._it->size-needlePartSize)-it._index); // abcNEEDLE[def]
+		delete [] it._it->data;
+		it._it->data = newData;
+		it._it->size = newDataSize;
+	}
 
 	// remove needle part from rest of packets
 	size_type toRemoveBytes = needle.size() - needlePartSize;
+	iterator listIt = it._it;
 	while (toRemoveBytes > 0) {
+		++listIt;
 		// full packet removal
-		if (it._it->size < toRemoveBytes) {
-			// TODO remove this packet completely
-			toRemoveBytes -= it._it->size;
-			continue;
+		if (listIt->size <= toRemoveBytes) {
+			iterator prevIt = listIt;
+			--prevIt;
+			toRemoveBytes -= listIt->size;
+			_list.erase(listIt);
+			listIt = prevIt;
 		}
 		// resize packet to only remove needle
 		else {
-			size_type newDataSize = (it._it->size-needlePartSize) + newNeedle.size();
+			size_type newDataSize = listIt->size - toRemoveBytes;
 			char *newData = new char[newDataSize];
-			if (it._index > 0)
-				::memmove(newData, it._it->data, it._index); // [abc]NEEDLEdef
-			::memmove(newData+it._index, newNeedle.c_str(), newNeedle.size()); // abc[NEWNEEDLE]def
-			if (needlePartSize+it._index < it._it->size)
-				::memmove(newData+it._index+newNeedle.size(), it._it->data+needlePartSize, (it._it->size-needlePartSize)-it._index); // abcNEEDLE[def]
-			delete [] it._it->data;
+			::memmove(newData, listIt->data + toRemoveBytes, newDataSize);
+			delete [] listIt->data;
+			listIt->data = newData;
+			listIt->size = newDataSize;
+			toRemoveBytes = 0;
 		}
 	}
+	_size = size(beginList(), endList());
 	return it;
 }
