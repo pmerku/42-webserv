@@ -48,9 +48,17 @@ void HTTPResponder::handleError(HTTPClient &client, int code) {
 			.setStatus(code)
 			.setHeader("Content-Type", "text/html");
 
+	if (client.data.request.data.shouldClose)
+		client.data.response.builder.setConnection();
+
 	std::map<int,std::string>::const_iterator statusIt = ResponseBuilder::statusMap.find(code);
 	std::string text = statusIt == ResponseBuilder::statusMap.end() ? "Internal server error!" : statusIt->second;
 	client.replyStatus = code;
 	client.data.response.builder.setBody(std::string("<h1>") + utils::intToString(code) + "</h1><p>" + text + "</p>");
+
+	// make head request not have a body
+	if (client.data.request.data.method == HEAD || client.data.request.data.method == OPTIONS)
+		client.data.response.builder.setBody("");
+
 	client.data.response.setResponse(client.data.response.builder.build());
 }

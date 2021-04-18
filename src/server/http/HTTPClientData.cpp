@@ -66,3 +66,13 @@ void HTTPClientResponse::appendAssociatedData(const char *d, utils::DataList::si
 void HTTPClientResponse::appendResponseData(const char *d, utils::DataList::size_type size) {
 	data.data.add(d, size);
 }
+
+void HTTPClientData::reset() {
+	// copy old data, could be from next request on client
+	utils::DataList copy = request.data.data;
+	request = HTTPClientRequest();
+	response = HTTPClientResponse();
+
+	// paste old data on reset data
+	request.data.data = copy;
+}

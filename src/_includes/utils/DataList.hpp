@@ -139,6 +139,8 @@ namespace utils {
 		std::string		substring(DataListIterator start);
 		std::string 	substring(DataListIterator start, DataListIterator last);
 
+		void 			subList(DataList &out, DataListIterator start, DataListIterator last);
+
 		DataListIterator findAndReplaceOne(const std::string &needle, const std::string &newNeedle);
 		DataListIterator findAndReplaceOne(const std::string &needle, const std::string &newNeedle, DataListIterator start);
 		DataListIterator findAndReplaceOne(const std::string &needle, const std::string &newNeedle, DataListIterator start, DataListIterator last);

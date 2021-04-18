@@ -17,9 +17,9 @@ namespace NotApache {
 			SUCCESS
 		};
 
-		IOReturn		doRead(FD fd, utils::DataList &readable);
+		IOReturn		doRead(FD fd, utils::DataList &readable, bool useRecv = false);
 		template<typename HTTPClientType>
-		IOReturn 		doWrite(FD fd, HTTPClientType &writable, utils::DataList &data);
+		IOReturn 		doWrite(FD fd, HTTPClientType &writable, utils::DataList &data, bool useSend = false);
 
 		void handleAssociatedRead(HTTPClient &client);
 		void handleAssociatedWrite(HTTPClient &client);

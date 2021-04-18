@@ -73,6 +73,8 @@ namespace NotApache {
 	public:
 		HTTPClientRequest	request;
 		HTTPClientResponse	response;
+
+		void reset();
 	};
 
 }

@@ -11,6 +11,8 @@ using namespace NotApache;
 void HTTPResponder::generateResponse(HTTPClient &client) {
 	// error responses if parsing failed
 	if (client.data.request.data.parseStatusCode != 200) {
+		// close on all parse errors, because all further requests will be screwed up
+		client.data.request.data.shouldClose = true;
 		handleError(client, client.data.request.data.parseStatusCode);
 		return;
 	}

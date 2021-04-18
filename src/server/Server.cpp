@@ -114,7 +114,7 @@ void Server::_handleSelect() {
 	if (FD_ISSET(_termClient.getFd(), &_readFdSet)) {
 		TerminalClient::TerminalCommandState	parseState = _termClient.readNewData();
 		while (parseState == TerminalClient::FOUND_LINE) {
-			_termResponder.respond(_termClient.takeLine());
+			_termResponder.respond(_termClient.takeLine(), this);
 			parseState = _termClient.parseState();
 		}
 	}
@@ -141,11 +141,10 @@ void Server::_clientCleanup() {
 
 		if (!isClosed)
 			continue;
-        std::string start = "Client #";
-		if ((int)(*i)->getTimeDiff() >= (*i)->getTimeoutAfter())
-			start = "Client (timed out) #";
-		globalLogger.logItem(logger::INFO, start + utils::intToString((int)(*i)->clientCount) + " got served file: " + (*i)->data.request.data.uri.path + " (in " + utils::intToString((int)(*i)->getTimeDiff()) + "s) " + "(" + utils::intToString((*i)->replyStatus) + ")");
-		globalLogger.logItem(logger::DEBUG, "Closed client connection");
+		std::string start = "Closed client connection #";
+		if ((*i)->getTimeDiff() >= (*i)->getTimeoutAfter())
+			start = "Closed (TIME OUT) client connection #";
+		globalLogger.logItem(logger::INFO, start + utils::intToString((int)(*i)->clientCount));
 		close((*i)->getFd());
 		delete *i;
 		*i = 0;

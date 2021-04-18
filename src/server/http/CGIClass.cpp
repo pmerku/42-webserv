@@ -44,10 +44,7 @@ void CgiClass::generateENV(HTTPClient& client, const utils::Uri& uri, const std:
 	builder.SERVER_NAME(domain); // domain name from host header
 
 	// content length
-	if (data.isChunked)
-		builder.CONTENT_LENGTH(utils::intToString(data.chunkedData.size()));
-	else
-        builder.CONTENT_LENGTH(utils::intToString(data.data.size()));
+	builder.CONTENT_LENGTH(utils::intToString(data.body.size()));
 
 	builder
 		.GATEWAY_INTERFACE("CGI/1.1") // which gateway version

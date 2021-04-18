@@ -19,9 +19,13 @@ void StandardHandler::stopHandle(HTTPClient &client, bool shouldLock) {
 	client.isHandled.unlock();
 }
 
-StandardHandler::IOReturn StandardHandler::doRead(FD fd, utils::DataList &readable) {
+StandardHandler::IOReturn StandardHandler::doRead(FD fd, utils::DataList &readable, bool useRecv) {
 	char	buf[_bufferSize+1];
-	ssize_t	ret = ::read(fd, buf, _bufferSize);
+	ssize_t	ret;
+	if (useRecv)
+		ret = ::recv(fd, buf, _bufferSize, 0);
+	else
+		ret = ::read(fd, buf, _bufferSize);
 	switch (ret) {
 		case 0:
 			return IO_EOF;
@@ -35,7 +39,7 @@ StandardHandler::IOReturn StandardHandler::doRead(FD fd, utils::DataList &readab
 }
 
 template<typename HTTPClientType>
-StandardHandler::IOReturn StandardHandler::doWrite(FD fd, HTTPClientType &writable, utils::DataList &data) {
+StandardHandler::IOReturn StandardHandler::doWrite(FD fd, HTTPClientType &writable, utils::DataList &data, bool useSend) {
 	if (!writable.hasProgress) {
 		writable.currentPacket = data.begin();
 		writable.packetProgress = 0;
@@ -45,14 +49,16 @@ StandardHandler::IOReturn StandardHandler::doWrite(FD fd, HTTPClientType &writab
 		return IO_EOF;
 	std::string::size_type	pos = writable.packetProgress;
 	std::string::size_type	len = writable.currentPacket->size - pos;
-	ssize_t ret = ::write(fd, writable.currentPacket->data + pos, len);
+	ssize_t	ret;
+	if (useSend)
+		ret = ::send(fd, writable.currentPacket->data + pos, len, 0);
+	else
+		ret = ::write(fd, writable.currentPacket->data + pos, len);
 	switch (ret) {
 		case -1:
 			globalLogger.logItem(logger::ERROR, "Failed to write");
 			return IO_ERROR;
 		case 0:
-			// zero bytes is unlikely to happen, dont do anything if it does happen
-			break;
 		default:
 			writable.packetProgress += ret;
 			if (writable.packetProgress == writable.currentPacket->size) {
@@ -140,10 +146,10 @@ void StandardHandler::read(HTTPClient &client) {
 		return;
 	}
 
-	IOReturn ret = doRead(client.getFd(), client.data.request.getRequest());
+	IOReturn ret = doRead(client.getFd(), client.data.request.getRequest(), true);
 	if (ret == IO_EOF) {
 		client.isHandled.lock();
-		client.connectionState = CLOSED;
+		client.endRequest(true);
 		stopHandle(client, false);
 		return;
 	}
@@ -177,12 +183,7 @@ void StandardHandler::handleAssociatedWrite(HTTPClient &client) {
 		return;
 	}
 	else if (client.responseState == UPLOAD) {
-		utils::DataList *body = NULL;
-		if (client.data.request.data.isChunked)
-			body = &client.data.request.data.chunkedData;
-		else
-			body = &client.data.request.data.data;
-		IOReturn ret = doWrite(client.getAssociatedFd(0).fd, client.data.request, *body);
+		IOReturn ret = doWrite(client.getAssociatedFd(0).fd, client.data.request, client.data.request.data.body);
 		if (ret == IO_ERROR || ret == SUCCESS) {
 			stopHandle(client);
 			return;
@@ -197,12 +198,7 @@ void StandardHandler::handleAssociatedWrite(HTTPClient &client) {
 		return;
 	}
 	else if (client.responseState == CGI) {
-		utils::DataList *body = NULL;
-		if (client.data.request.data.isChunked)
-			body = &client.data.request.data.chunkedData;
-		else
-			body = &client.data.request.data.data;
-		IOReturn ret = doWrite(client.getAssociatedFd(1).fd, client.data.request, *body);
+		IOReturn ret = doWrite(client.getAssociatedFd(1).fd, client.data.request, client.data.request.data.body);
 		if (ret == IO_ERROR) {
 			client.isHandled = false;
 			return;
@@ -240,12 +236,12 @@ void StandardHandler::write(HTTPClient &client) {
 	}
 
 	if (client.writeState == IS_WRITING) {
-		IOReturn ret = doWrite(client.getFd(), client.data.response, client.data.response.data.data);
+		IOReturn ret = doWrite(client.getFd(), client.data.response, client.data.response.data.data, true);
 		if (ret != IO_ERROR)
 			client.concurrentFails = 0;
 		if (ret == IO_EOF) {
 			client.isHandled.lock();
-			client.connectionState = CLOSED;
+			client.endRequest(client.data.request.data.shouldClose);
 			stopHandle(client, false);
 			return;
 		} else if (ret == IO_ERROR) {
@@ -253,7 +249,7 @@ void StandardHandler::write(HTTPClient &client) {
 			// if failed 10 times in a row, close connection. we are assuming its dead (you would normally check errno here)
 			if (client.concurrentFails >= 10) {
                 client.isHandled.lock();
-                client.connectionState = CLOSED;
+				client.endRequest(true);
                 stopHandle(client, false);
                 return;
 			}
