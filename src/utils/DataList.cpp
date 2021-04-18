@@ -188,3 +188,32 @@ void DataList::clear() {
 	_list.clear();
 	_size = 0;
 }
+
+
+
+DataList::DataListIterator	DataList::findAndReplaceOne(const std::string &needle, const std::string &newNeedle) {
+	return findAndReplaceOne(needle, newNeedle, beginList(), endList());
+}
+
+DataList::DataListIterator	DataList::findAndReplaceOne(const std::string &needle, const std::string &newNeedle, DataListIterator start) {
+	return findAndReplaceOne(needle, newNeedle, start, endList());
+}
+
+DataList::DataListIterator DataList::findAndReplaceOne(const std::string &needle, const std::string &newNeedle, DataListIterator start, DataListIterator last) {
+	DataListIterator it = this->find(needle, start, last);
+
+	// it._it   list_item -> <it._index, _it._index+needle.size()>
+	// it._it.data = it._it->data + newNeedle;
+	// it._it.size = it._it->data.size()
+	// remove/resize rest of packets that may still contain the needle bytes
+
+	// remove needle part from main packet
+	size_type needlePartSize = it._it->size - it._index;
+	if (needlePartSize > needle.size())
+		needlePartSize = needle.size();
+	char *newData = new char[it._it->size-needlePartSize];
+	::memmove(newData, it._it->data, it._index); // [abc]NEEDLEdef
+	if (needlePartSize+it._index < it._it->size)
+		::memmove(newData+it._index, it._it->data+needlePartSize, it._it->size-needlePartSize-it._index); // abcNEEDLE[def]
+	return it;
+}
