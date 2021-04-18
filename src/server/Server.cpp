@@ -141,7 +141,10 @@ void Server::_clientCleanup() {
 
 		if (!isClosed)
 			continue;
-		globalLogger.logItem(logger::INFO, std::string("Closed client connection #") + utils::intToString((int)(*i)->clientCount));
+		std::string start = "Closed client connection #";
+		if ((*i)->getTimeDiff() >= (*i)->getTimeoutAfter())
+			start = "Closed (TIME OUT) client connection #";
+		globalLogger.logItem(logger::INFO, start + utils::intToString((int)(*i)->clientCount));
 		close((*i)->getFd());
 		delete *i;
 		*i = 0;
