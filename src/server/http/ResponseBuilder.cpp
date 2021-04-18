@@ -127,6 +127,7 @@ ResponseBuilder &ResponseBuilder::setHeader(const std::string &key, const std::s
 
 ResponseBuilder &ResponseBuilder::setBody(const std::string &data, size_t length) {
 	setHeader("CONTENT-LENGTH", utils::intToString(length));
+	_body.clear();
 	_body.add(data.c_str());
 	return *this;
 }

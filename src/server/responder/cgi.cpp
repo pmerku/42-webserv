@@ -9,7 +9,6 @@
 
 using namespace NotApache;
 
-// TODO cgi body sending broke
 void	HTTPResponder::runCGI(HTTPClient& client, const std::string& cgiPath) {
 	struct stat	sb;
 	client.cgi = new CgiClass;

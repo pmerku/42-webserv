@@ -59,8 +59,6 @@ StandardHandler::IOReturn StandardHandler::doWrite(FD fd, HTTPClientType &writab
 			globalLogger.logItem(logger::ERROR, "Failed to write");
 			return IO_ERROR;
 		case 0:
-			// zero bytes is unlikely to happen, dont do anything if it does happen
-			break;
 		default:
 			writable.packetProgress += ret;
 			if (writable.packetProgress == writable.currentPacket->size) {

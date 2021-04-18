@@ -194,10 +194,12 @@ HTTPParser::ParseReturn		HTTPParser::parseHeaders(HTTPParseData &data, const std
 
 	if (data._type == HTTPParseData::REQUEST) {
 		// parse connection header
-		// TODO parse better
 		std::map<std::string,std::string>::iterator connIt = data.headers.find("CONNECTION");
-		if (connIt != data.headers.end() && connIt->second == "close") {
-			data.shouldClose = true;
+		if (connIt != data.headers.end()) {
+			std::string val = connIt->second;
+			utils::toUpper(val);
+			if (val == "CLOSE")
+				data.shouldClose = true;
 		}
 
 		// host header needs to exist on requests
@@ -273,7 +275,6 @@ HTTPParser::ParseReturn		HTTPParser::parseHeaders(HTTPParseData &data, const std
 HTTPParser::ParseReturn HTTPParser::parseTrailHeaders(HTTPParseData &data, const std::string &headers) {
 	// check if header field name has correct format
 	std::vector<std::string> headersArray = utils::split(headers, "\r\n");
-	// TODO there will be a empty header array emtpy
 	for (std::vector<std::string>::iterator it = headersArray.begin(); it != headersArray.end(); ++it) {
 		std::string::size_type colonPos = it->find(':');
 		if (colonPos == std::string::npos) {
@@ -357,7 +358,7 @@ HTTPParser::ParseReturn		HTTPParser::parseBody(HTTPParseData &data, utils::DataL
 	if (data._type == HTTPParseData::CGI_RESPONSE)
 		itEnd = data.data.endList();
 	else
-		std::advance(itEnd, data.bodyLength); // TODO optimize
+		std::advance(itEnd, data.bodyLength); // really slow on big bodies, can be optimized
 	data.data.subList(data.body, it, itEnd);
 	data.data.resize(itEnd, data.data.endList());
 	return FINISHED;
@@ -553,5 +554,3 @@ HTTPParser::ParseState		HTTPParser::parse(HTTPParseData &data, HTTPClient *clien
 	}
 	return READY_FOR_WRITE;
 }
-
-// TODO failed HEAD on postman (cuz of keep alive)
