@@ -244,13 +244,41 @@ DataList::DataListIterator DataList::findAndReplaceOne(const std::string &needle
 	// it._it.size = it._it->data.size()
 	// remove/resize rest of packets that may still contain the needle bytes
 
-	// remove needle part from main packet
+	// remove needle part from main packet and add new needle
 	size_type needlePartSize = it._it->size - it._index;
 	if (needlePartSize > needle.size())
 		needlePartSize = needle.size();
-	char *newData = new char[it._it->size-needlePartSize];
-	::memmove(newData, it._it->data, it._index); // [abc]NEEDLEdef
+	size_type newDataSize = (it._it->size-needlePartSize) + newNeedle.size();
+	char *newData = new char[newDataSize];
+	if (it._index > 0)
+		::memmove(newData, it._it->data, it._index); // [abc]NEEDLEdef
+	::memmove(newData+it._index, newNeedle.c_str(), newNeedle.size()); // abc[NEWNEEDLE]def
 	if (needlePartSize+it._index < it._it->size)
-		::memmove(newData+it._index, it._it->data+needlePartSize, it._it->size-needlePartSize-it._index); // abcNEEDLE[def]
+		::memmove(newData+it._index+newNeedle.size(), it._it->data+needlePartSize, (it._it->size-needlePartSize)-it._index); // abcNEEDLE[def]
+	delete [] it._it->data;
+	it._it->data = newData;
+	it._it->size = newDataSize;
+
+	// remove needle part from rest of packets
+	size_type toRemoveBytes = needle.size() - needlePartSize;
+	while (toRemoveBytes > 0) {
+		// full packet removal
+		if (it._it->size < toRemoveBytes) {
+			// TODO remove this packet completely
+			toRemoveBytes -= it._it->size;
+			continue;
+		}
+		// resize packet to only remove needle
+		else {
+			size_type newDataSize = (it._it->size-needlePartSize) + newNeedle.size();
+			char *newData = new char[newDataSize];
+			if (it._index > 0)
+				::memmove(newData, it._it->data, it._index); // [abc]NEEDLEdef
+			::memmove(newData+it._index, newNeedle.c_str(), newNeedle.size()); // abc[NEWNEEDLE]def
+			if (needlePartSize+it._index < it._it->size)
+				::memmove(newData+it._index+newNeedle.size(), it._it->data+needlePartSize, (it._it->size-needlePartSize)-it._index); // abcNEEDLE[def]
+			delete [] it._it->data;
+		}
+	}
 	return it;
 }
