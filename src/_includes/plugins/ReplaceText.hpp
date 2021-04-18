@@ -11,8 +11,8 @@ namespace plugin {
 
 	class ReplaceText : public Plugin {
 	private:
-		static const std::string _stringToReplace;
-		static const std::string _stringToUse;
+		static const std::string _needle;
+		static const std::string _newNeedle;
 
 	public:
 		ReplaceText();

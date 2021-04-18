@@ -8,35 +8,22 @@
 
 using namespace plugin;
 
-const std::string ReplaceText::_stringToReplace = "42";
-const std::string ReplaceText::_stringToUse = "CODAM";
+const std::string ReplaceText::_needle = "42";
+const std::string ReplaceText::_newNeedle = "CODAM";
 
 ReplaceText::ReplaceText() : Plugin("replace_text") { }
 
 ReplaceText::~ReplaceText() { }
 
 bool ReplaceText::onSendFile(NotApache::HTTPClient &client) {
-	// replaces all spaces with 42
-	if (true) {
-		utils::DataList::DataListIterator it = client.data.response.getAssociatedDataRaw().beginList();
-		utils::DataList::DataListIterator pos = it;
-		utils::DataList newList;
+	// replaces all needles with newNeedle
+	utils::DataList::DataListIterator it = client.data.response.getAssociatedDataRaw().beginList();
 
-		for (; it != client.data.response.getAssociatedDataRaw().endList(); it = client.data.response.getAssociatedDataRaw().find(_stringToReplace, it)) {
-			newList.subList(newList, pos, it);
-			newList.add(_stringToUse.c_str(), _stringToUse.length());
-
-			std::advance(it, _stringToReplace.length());
-			if (it == client.data.response.getAssociatedDataRaw().endList()) {
-				break;
-			}
-
-			client.data.response.getAssociatedDataRaw().resize(it, client.data.response.getAssociatedDataRaw().endList());
-			pos = client.data.response.getAssociatedDataRaw().beginList();
-		}
-		client.data.response.getAssociatedDataRaw().clear();
-		client.data.response.getAssociatedDataRaw() = newList;
-		return true;
+	while (true) {
+		it = client.data.response.getAssociatedDataRaw().findAndReplaceOne(_needle, _newNeedle, it);
+		if (it == client.data.response.getAssociatedDataRaw().endList())
+			break;
+		std::advance(it, _newNeedle.length());
 	}
-	return false;
+	return false; // this plugin will pass on the modified text to the other plugins
 }
