@@ -51,6 +51,7 @@ SRC	=\
 	plugins/JsExecutor.cpp\
 	plugins/BrainfuckExecutor.cpp\
 	plugins/Plugin.cpp\
+	plugins/ReplaceText.cpp\
 	regex/Regex.cpp\
 	config/ConfigValidatorBuilder.cpp\
 	config/ConfigParser.cpp\
@@ -140,6 +141,7 @@ HEADERS	=\
 	plugins/JsExecutor.hpp\
 	plugins/BrainfuckExecutor.hpp\
 	plugins/Plugin.hpp\
+	plugins/ReplaceText.hpp\
 	regex/Regex.hpp\
 	config/ConfigValidatorBuilder.hpp\
 	config/ConfigParser.hpp\
