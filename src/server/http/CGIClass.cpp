@@ -36,16 +36,14 @@ CgiClass::~CgiClass() {
 }
 
 void CgiClass::generateENV(HTTPClient& client, const utils::Uri& uri, const std::string &rewrittenUrl) {
-	HTTPParseData data = client.data.request.data;
-    std::string	domain = (*data.headers.find("HOST")).second;
+    std::string	domain = (*client.data.request.data.headers.find("HOST")).second;
     domain = domain.substr(0, domain.find(':'));
 
     CGIenv::ENVBuilder builder;
 	builder.SERVER_NAME(domain); // domain name from host header
 
 	// content length
-	builder.CONTENT_LENGTH(utils::intToString(data.body.size()));
-
+	builder.CONTENT_LENGTH(utils::intToString(client.data.request.data.body.size()));
 	builder
 		.GATEWAY_INTERFACE("CGI/1.1") // which gateway version
         .PATH_INFO(uri.path)
@@ -66,21 +64,22 @@ void CgiClass::generateENV(HTTPClient& client, const utils::Uri& uri, const std:
 	    .REMOTE_USER("")
 	    .REDIRECT_STATUS("200");
 
-	for (std::map<std::string, std::string>::iterator it = data.headers.begin(); it != data.headers.end(); ++it) {
+	for (std::map<std::string, std::string>::iterator it = client.data.request.data.headers.begin(); it != client.data.request.data.headers.end(); ++it) {
 		std::string key = "HTTP_";
 		key += it->first;
 		std::replace(key.begin(), key.end(), '-', '_');
 		builder.EXPORT(key, it->second);
 	}
 
-	std::map<std::string, std::string>::iterator it = data.headers.find("AUTHORIZATION");
-    if (it != data.headers.end())
+	std::map<std::string, std::string>::iterator it = client.data.request.data.headers.find("AUTHORIZATION");
+	std::map<std::string, std::string>::iterator end = client.data.request.data.headers.end();
+    if (it != end)
         builder.AUTH_TYPE(it->second);
-    it = data.headers.find("CONTENT_TYPE");
-    if (it != data.headers.end())
+    it = client.data.request.data.headers.find("CONTENT_TYPE");
+    if (it != end)
         builder.CONTENT_TYPE(it->second);
-    it = data.headers.find("REMOTE_USER");
-    if (it != data.headers.end())
+    it = client.data.request.data.headers.find("REMOTE_USER");
+    if (it != end)
         builder.REMOTE_USER(it->second);
 
     _envp.setEnv(builder.build());

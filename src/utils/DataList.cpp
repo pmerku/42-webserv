@@ -39,32 +39,24 @@ bool DataList::empty() const {
 
 void DataList::add(const char *data, DataList::size_type size) {
 	char *newData = new char[size];
-	for (size_type i = 0; i < size; i++)
-		newData[i] = data[i];
+	std::memcpy(newData, data, size);
 	_size += size;
 	_list.push_back(DataListSection(newData, size));
 }
 
 void DataList::add(const char *str) {
-	size_type size = 0;
-	while (str[size] != 0)
-		size++;
-	add(str, size);
+	add(str, std::strlen(str));
 }
 
 void DataList::add_front(const char *data, DataList::size_type size) {
 	char *newData = new char[size];
-	for (size_type i = 0; i < size; i++)
-		newData[i] = data[i];
+	std::memcpy(newData, data, size);
 	_size += size;
 	_list.push_front(DataListSection(newData, size));
 }
 
 void DataList::add_front(const char *str) {
-	size_type size = 0;
-	while (str[size] != 0)
-		size++;
-	add_front(str, size);
+	add_front(str, std::strlen(str));
 }
 
 DataList::iterator DataList::begin() {
