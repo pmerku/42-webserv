@@ -58,6 +58,153 @@ int main() {
 		}
 	}
 
+	{
+		utils::DataList out;
+		out.add("42 is not as cool as ME");
+		out.findAndReplaceOne("42", "CODAM");
+		if (out.substring(out.beginList(), out.endList()) != "CODAM is not as cool as ME") {
+			std::cerr << "output: " << out.substring(out.beginList(), out.endList()) << std::endl;
+			error(5);
+		}
+	}
+
+	{
+		utils::DataList out;
+		out.add("4");
+		out.add("2 is not as cool as Jelle");
+		out.findAndReplaceOne("42", "CODAM");
+		if (out.substring(out.beginList(), out.endList()) != "CODAM is not as cool as Jelle") {
+			std::cerr << "output: " << out.substring(out.beginList(), out.endList()) << std::endl;
+			error(6);
+		}
+	}
+
+	{
+		utils::DataList out;
+		out.add("4");
+		out.add("2");
+		out.add("0 is not as cool as Jelle");
+		out.findAndReplaceOne("420", "CODAM");
+		if (out.substring(out.beginList(), out.endList()) != "CODAM is not as cool as Jelle") {
+			std::cerr << "output: " << out.substring(out.beginList(), out.endList()) << std::endl;
+			error(7);
+		}
+	}
+
+	{
+		utils::DataList out;
+		out.add("4");
+		out.add("2");
+		out.add(" is not as cool as Jelle");
+		out.findAndReplaceOne("42", "CODAM");
+		if (out.substring(out.beginList(), out.endList()) != "CODAM is not as cool as Jelle") {
+			std::cerr << "output: " << out.substring(out.beginList(), out.endList()) << std::endl;
+			error(8);
+		}
+	}
+
+	{
+		utils::DataList out;
+		out.add("4");
+		out.add("2");
+		out.findAndReplaceOne("42", "CODAM");
+		if (out.substring(out.beginList(), out.endList()) != "CODAM") {
+			std::cerr << "output: " << out.substring(out.beginList(), out.endList()) << std::endl;
+			error(9);
+		}
+	}
+
+	{
+		utils::DataList out;
+		out.add("YOO");
+		out.add("is not as cool as 42");
+		out.findAndReplaceOne("42", "CODAM");
+		if (out.substring(out.beginList(), out.endList()) != "YOOis not as cool as CODAM") {
+			std::cerr << "output: " << out.substring(out.beginList(), out.endList()) << std::endl;
+			error(10);
+		}
+	}
+
+	{
+		utils::DataList out;
+		out.add("H");
+		out.add("A is not as cool as Jelle");
+		out.findAndReplaceOne("42", "CODAM");
+		if (out.substring(out.beginList(), out.endList()) != "HA is not as cool as Jelle") {
+			std::cerr << "output: " << out.substring(out.beginList(), out.endList()) << std::endl;
+			error(11);
+		}
+	}
+
+	{
+		utils::DataList out;
+		out.add("4");
+		out.add("2 is not as cool as Jelle");
+		out.findAndReplaceOne("Jelle", "42");
+		if (out.substring(out.beginList(), out.endList()) != "42 is not as cool as 42") {
+			std::cerr << "output: " << out.substring(out.beginList(), out.endList()) << std::endl;
+			error(12);
+		}
+	}
+
+	{
+		utils::DataList out;
+		out.add("J");
+		out.add("elle is not as cool as Codam");
+		out.findAndReplaceOne("Jelle", "42");
+		if (out.substring(out.beginList(), out.endList()) != "42 is not as cool as Codam") {
+			std::cerr << "output: " << out.substring(out.beginList(), out.endList()) << std::endl;
+			error(13);
+		}
+	}
+
+	{
+		utils::DataList out;
+		out.add("J");
+		out.add("e");
+		out.add("l");
+		out.add("l");
+		out.add("e is not as cool as 42");
+		out.findAndReplaceOne("Jelle", "42");
+		if (out.substring(out.beginList(), out.endList()) != "42 is not as cool as 42") {
+			std::cerr << "output: " << out.substring(out.beginList(), out.endList()) << std::endl;
+			error(14);
+		}
+	}
+
+	{
+		utils::DataList out;
+		out.add("4");
+		out.add("2 is not as cool as Jelle");
+		out.findAndReplaceOne("Jelle", "42");
+		if (out.substring(out.beginList(), out.endList()) != "42 is not as cool as 42") {
+			std::cerr << "output: " << out.substring(out.beginList(), out.endList()) << std::endl;
+			error(15);
+		}
+	}
+
+	{
+		utils::DataList out;
+		out.add("Jel");
+		out.add("le");
+		out.findAndReplaceOne("Jelle", "42");
+		if (out.substring(out.beginList(), out.endList()) != "42") {
+			std::cerr << "output: " << out.substring(out.beginList(), out.endList()) << std::endl;
+			error(16);
+		}
+	}
+
+	{
+		utils::DataList out;
+		out.add("4");
+		out.add("2 is not Jelle, you silly");
+		out.findAndReplaceOne("Jelle", "42");
+		if (out.substring(out.beginList(), out.endList()) != "42 is not 42, you silly") {
+			std::cerr << "output: " << out.substring(out.beginList(), out.endList()) << std::endl;
+			error(17);
+		}
+	}
+
 	std::cout << "All successful" << std::endl;
 	return 0;
 }

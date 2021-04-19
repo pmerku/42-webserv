@@ -10,6 +10,7 @@
 #include "plugins/JsonStatAPI.hpp"
 #include "plugins/JsExecutor.hpp"
 #include "plugins/BrainfuckExecutor.hpp"
+#include "plugins/ReplaceText.hpp"
 
 namespace NotApache {
 	config::RootBlock	*configuration = 0;
@@ -19,7 +20,7 @@ namespace NotApache {
 	        (new plugin::PageGenerator(), false)
 	        (new plugin::JsonStatAPI(), false)
 	        (new plugin::BrainfuckExecutor(), false)
-	        (new plugin::Plugin("replace_text"), false)
+	        (new plugin::ReplaceText(), true)
 	        (new plugin::JsExecutor(), false)
 	);
 }
