@@ -20,7 +20,7 @@ namespace NotApache {
 	        (new plugin::PageGenerator(), false)
 	        (new plugin::JsonStatAPI(), false)
 	        (new plugin::BrainfuckExecutor(), false)
-	        (new plugin::ReplaceText(), true)
+	        (new plugin::ReplaceText(), false)
 	        (new plugin::JsExecutor(), false)
 	);
 }
