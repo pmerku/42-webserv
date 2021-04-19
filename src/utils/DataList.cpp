@@ -180,3 +180,42 @@ void DataList::clear() {
 	_list.clear();
 	_size = 0;
 }
+
+void DataList::subList(DataList &out, DataList::DataListIterator start, DataList::DataListIterator last) {
+	// copy over simple string
+	if (start._it == last._it) {
+		if (start._index >= last._index)
+			return;
+		size_type size = last._index - start._index;
+		char *newData = new char[size];
+		::memcpy(newData, start._it->data+start._index, size);
+		out._list.push_back(DataListSection(newData, size));
+		out._size += size;
+		return;
+	}
+
+	// copy over start
+	{
+		size_type size = start._it->size - start._index;
+		char *newData = new char[size];
+		::memcpy(newData, start._it->data+start._index, size);
+		out._list.push_back(DataListSection(newData, size));
+		out._size += size;
+		++start._it;
+		start._index = 0;
+	}
+
+	// copy over full packets
+	for (iterator it = start._it; it != last._it; ++it) {
+		out._list.push_back(DataListSection(*it));
+		out._size += it->size;
+	}
+
+	// copy over last part of it
+	if (last._it != _list.end() && last._index > 0) {
+		char *newData = new char[last._index];
+		::memcpy(newData, last._it->data+last._index, last._index);
+		out._list.push_back(DataListSection(newData, last._index));
+		out._size += last._index;
+	}
+}

@@ -99,10 +99,7 @@ ResponseBuilder::ResponseBuilder(const HTTPParseData &data) {
 	for (std::map<std::string, std::string>::const_iterator it = data.headers.begin(); it != data.headers.end(); ++it) {
 		setHeader(it->first, it->second);
 	}
-	if (data.isChunked)
-		setBody(data.chunkedData);
-	else
-		setBody(data.data);
+	setBody(data.body);
 	// set defaults
 	setDefaults();
 }
@@ -130,6 +127,7 @@ ResponseBuilder &ResponseBuilder::setHeader(const std::string &key, const std::s
 
 ResponseBuilder &ResponseBuilder::setBody(const std::string &data, size_t length) {
 	setHeader("CONTENT-LENGTH", utils::intToString(length));
+	_body.clear();
 	_body.add(data.c_str());
 	return *this;
 }
@@ -212,11 +210,6 @@ ResponseBuilder &ResponseBuilder::setDefaults() {
 	if (it == _headerMap.end())
 		setServer();
 
-	// if no connection header set it
-	it = _headerMap.find("CONNECTION");
-	if (it == _headerMap.end())
-		setConnection();
-
 	// if body is empty set content-length to 0
 	if (_body.empty())
 		setHeader("CONTENT-LENGTH", "0");
@@ -240,11 +233,10 @@ utils::DataList	ResponseBuilder::build() {
 		response += _endLine;
 	}
 
-	// \r\n {body} \r\n
+	// \r\n {body}
 	response += _endLine;
 	if (!_body.empty()) {
 		output = _body;
-		output.add(_endLine.c_str());
 	}
 
 	output.add_front(response.c_str());

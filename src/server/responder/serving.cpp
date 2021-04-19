@@ -58,6 +58,7 @@ void HTTPResponder::prepareFile(HTTPClient &client, int code) {
 	// send request for methods that dont send a file
 	if (client.data.request.data.method == HEAD || client.data.request.data.method == OPTIONS) {
 		client.data.response.builder.removeHeader("CONTENT-LENGTH");
+		client.data.response.builder.setBody("");
 		client.data.response.setResponse(client.data.response.builder.build());
 		return;
 	}

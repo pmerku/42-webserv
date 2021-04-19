@@ -22,7 +22,7 @@ namespace NotApache {
 		sockaddr_in svr_addr;
 
 	public:
-		TCPListener(int port, long host, int backLog = 128);
+		TCPListener(int port, long host, int backLog = SOMAXCONN);
 		virtual ~TCPListener();
 
 		FD getFD();

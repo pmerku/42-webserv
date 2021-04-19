@@ -42,7 +42,7 @@ void	HTTPResponder::runCGI(HTTPClient& client, const std::string& cgiPath) {
 		ERROR_THROW(CgiClass::PipeFail());
 	}
 
-	long int bodyLen = client.data.request.data.isChunked ? client.data.request.data.chunkedData.size() : client.data.request.data.data.size();
+	long int bodyLen = client.data.request.data.body.size();
 	if (bodyLen > 0)
 		client.cgi->body = true;
 

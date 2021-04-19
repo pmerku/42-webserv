@@ -29,12 +29,10 @@ void Server::_createFdSets() {
 	FD_ZERO(&_readFdSet);
 
 	// add listeners (sockets)
-	if (isCheckingListeners) {
-		for (std::vector<TCPListener*>::iterator i = _listeners.begin(); i != _listeners.end(); ++i) {
-			FD	fd = (*i)->getFD();
-			if (fd > _maxFd) _maxFd = fd;
-			FD_SET(fd, &_readFdSet);
-		}
+	for (std::vector<TCPListener*>::iterator i = _listeners.begin(); i != _listeners.end(); ++i) {
+		FD	fd = (*i)->getFD();
+		if (fd > _maxFd) _maxFd = fd;
+		FD_SET(fd, &_readFdSet);
 	}
 
 	// add event bus & term client
@@ -143,17 +141,15 @@ void Server::_clientCleanup() {
 
 		if (!isClosed)
 			continue;
-        std::string start = "Client #";
-		if ((int)(*i)->getTimeDiff() >= (*i)->getTimeoutAfter())
-			start = "Client (timed out) #";
-		globalLogger.logItem(logger::INFO, start + utils::intToString((int)(*i)->clientCount) + " got served file: " + (*i)->data.request.data.uri.path + " (in " + utils::intToString((int)(*i)->getTimeDiff()) + "s) " + "(" + utils::intToString((*i)->replyStatus) + ")");
-		globalLogger.logItem(logger::DEBUG, "Closed client connection");
+		std::string start = "Closed client connection #";
+		if ((*i)->getTimeDiff() >= (*i)->getTimeoutAfter())
+			start = "Closed (TIME OUT) client connection #";
+		globalLogger.logItem(logger::INFO, start + utils::intToString((int)(*i)->clientCount));
 		close((*i)->getFd());
 		delete *i;
 		*i = 0;
 	}
 	_clients.remove(0);
-	isCheckingListeners = _clients.size() > 100 ? false : true;
 }
 
 void Server::startServer(config::RootBlock *c) {
@@ -215,7 +211,7 @@ Server::~Server() {
 	delete configuration;
 }
 
-Server::Server(): _readFdSet(), _writeFdSet(), isCheckingListeners(true), _maxFd(), _shouldShutdown(false), _termClient(STDIN_FILENO) {}
+Server::Server(): _readFdSet(), _writeFdSet(), _maxFd(), _shouldShutdown(false), _termClient(STDIN_FILENO) {}
 
 void Server::shutdownServer() {
 	globalLogger.logItem(logger::INFO, "Received shutdown signal, gracefully shutting down");

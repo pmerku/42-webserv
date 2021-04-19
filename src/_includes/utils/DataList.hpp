@@ -137,7 +137,9 @@ namespace utils {
 		static DataListIterator find(const std::string &data, DataListIterator first, DataListIterator last);
 
 		std::string		substring(DataListIterator start);
-		static std::string 	substring(DataListIterator start, DataListIterator last);
+		std::string 	substring(DataListIterator start, DataListIterator last);
+
+		void 			subList(DataList &out, DataListIterator start, DataListIterator last);
 	};
 
 } // namespace utils
