@@ -192,8 +192,17 @@ HTTPParser::ParseReturn		HTTPParser::parseHeaders(HTTPParseData &data, const std
 			data.bodyLength = utils::stoi(contentLengthIt->second);
 	}
 
-	// host header needs to exist on requests
 	if (data._type == HTTPParseData::REQUEST) {
+		// parse connection header
+		std::map<std::string,std::string>::iterator connIt = data.headers.find("CONNECTION");
+		if (connIt != data.headers.end()) {
+			std::string val = connIt->second;
+			utils::toUpper(val);
+			if (val == "CLOSE")
+				data.shouldClose = true;
+		}
+
+		// host header needs to exist on requests
 		std::map<std::string,std::string>::iterator hostIt = data.headers.find("HOST");
 		if (hostIt == data.headers.end()) {
 			globalLogger.logItem(logger::ERROR, "Missing Host header");
@@ -220,7 +229,7 @@ HTTPParser::ParseReturn		HTTPParser::parseHeaders(HTTPParseData &data, const std
 				data.parseStatusCode = 400;
 				return ERROR;
 			}
-			if (client && route->getTimeout() > 0)
+			if (route->getTimeout() > 0)
 				client->setTimeout(route->getTimeout());
 			if (route->getBodyLimit() != -1 && ( data.bodyLength == -1 || data.bodyLength > route->getBodyLimit()) ) {
 				globalLogger.logItem(logger::ERROR, "Body too large");
@@ -341,9 +350,17 @@ HTTPParser::ParseReturn		HTTPParser::parseCgiHeaders(HTTPParseData &data, const 
 }
 
 HTTPParser::ParseReturn		HTTPParser::parseBody(HTTPParseData &data, utils::DataList::DataListIterator it) {
+	if (it == data.data.endList() && data._posStart)
+		it = data.data.beginList();
 	if (data._type != HTTPParseData::CGI_RESPONSE && data.data.size(it) < static_cast<utils::DataList::size_type>(data.bodyLength))
 		return OK; // unfinished
-	data.data.resize(it, data.data.endList());
+	utils::DataList::DataListIterator itEnd = it;
+	if (data._type == HTTPParseData::CGI_RESPONSE)
+		itEnd = data.data.endList();
+	else
+		std::advance(itEnd, data.bodyLength); // really slow on big bodies, can be optimized
+	data.data.subList(data.body, it, itEnd);
+	data.data.resize(itEnd, data.data.endList());
 	return FINISHED;
 }
 
@@ -375,20 +392,19 @@ HTTPParser::ParseReturn		HTTPParser::parseChunkedBody(HTTPClient *client, HTTPPa
             config::ServerBlock *server = NotApache::configuration->findServerBlock(hostIt->second, client->getPort(), client->getHost());
             std::string path = data.uri.path;
             config::RouteBlock *route = server->findRoute(path);
-            if (route->getBodyLimit() != -1 && ( data.chunkedData.size() + chunkSize > (unsigned long)route->getBodyLimit()) ) {
+            if (route->getBodyLimit() != -1 && ( data.body.size() + chunkSize > (unsigned long)route->getBodyLimit()) ) {
                 globalLogger.logItem(logger::ERROR, "Body too large");
                 data.parseStatusCode = 413;
                 return ERROR;
             }
         }
 
+		utils::DataList::DataListIterator headersStart = sizeEnd;
 		std::advance(sizeEnd, 2);
 		if (data.data.size(sizeEnd) < chunkSize + 2) {
 			return OK; // unfinished
 		} else if (chunkSize == 0) {
-			if (data.data.find("\r\n", sizeEnd) == sizeEnd)
-				data._gotTrailHeaders = true;
-			data._pos = sizeEnd;
+			data._pos = headersStart;
 			return FINISHED;
 		}
 
@@ -409,7 +425,7 @@ HTTPParser::ParseReturn		HTTPParser::parseChunkedBody(HTTPClient *client, HTTPPa
 		}
 
 		// extract chunk data
-		data.chunkedData.add(data.data.substring(sizeEnd, chunkEnd).c_str(), chunkSize);
+		data.body.add(data.data.substring(sizeEnd, chunkEnd).c_str(), chunkSize);
 		std::advance(chunkEnd, 2); // now past \r\n at end of chunk
 		data.data.resize(chunkEnd, data.data.endList());
 
@@ -498,7 +514,7 @@ HTTPParser::ParseState		HTTPParser::parse(HTTPParseData &data, HTTPClient *clien
 				for (std::string::size_type i = 0; i < arr.length(); ++i) {
 					it->second.erase(std::remove(it->second.begin(), it->second.end(), arr.at(i)), it->second.end());
 				}
-				data.headers["CONTENT-LENGTH"] = utils::intToString(data.chunkedData.size()); // set content-length header
+				data.headers["CONTENT-LENGTH"] = utils::intToString(data.body.size()); // set content-length header
 			}
 		}
 		else if (ret == ERROR)
@@ -516,6 +532,8 @@ HTTPParser::ParseState		HTTPParser::parse(HTTPParseData &data, HTTPClient *clien
 		if (endOfHeaders == data.data.endList())
 			return UNFINISHED;
 		else if (endOfHeaders == beginOfHeaders) { // no trail headers
+			std::advance(endOfHeaders, 4);
+			data.data.resize(endOfHeaders, data.data.endList());
 			data._gotTrailHeaders = true;
 			return READY_FOR_WRITE;
 		}
@@ -530,10 +548,9 @@ HTTPParser::ParseState		HTTPParser::parse(HTTPParseData &data, HTTPClient *clien
 		ParseReturn ret = parseTrailHeaders(data, data.data.substring(beginOfHeaders, endOfHeaders));
 		if (ret == ERROR)
 			return READY_FOR_WRITE;
-		data.data.resize(data.data.beginList(), beginOfHeaders);
+		std::advance(endOfHeaders, 4);
+		data.data.resize(endOfHeaders, data.data.endList());
 		data._gotTrailHeaders = true;
 	}
-	if (data.isChunked)
-		data.data.clear();
 	return READY_FOR_WRITE;
 }

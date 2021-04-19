@@ -121,3 +121,37 @@ long int	HTTPClient::getTimeoutAfter() const {
 void HTTPClient::setTimeout(int timeout) {
 	_timeoutAfter = timeout;
 }
+
+void HTTPClient::endRequest(bool shouldClose) {
+	std::string start = "Client #";
+	if ((int)getTimeDiff() >= getTimeoutAfter())
+		start = "Client (timed out) #";
+	globalLogger.logItem(logger::INFO, start + utils::intToString((int)clientCount) + " got served file: " + data.request.data.uri.path + " (in " + utils::intToString((int)getTimeDiff()) + "s) " + "(" + utils::intToString(replyStatus) + ")");
+
+	// close connection
+	if (shouldClose) {
+		connectionState = CLOSED;
+		writeState = NO_RESPONSE;
+		return;
+	}
+
+	// reset for next request on client connection
+	timeval timeData;
+	::gettimeofday(&timeData, 0);
+	_createdAt = timeData.tv_sec; // reset createdAt so timeout gets reset
+	_timeoutAfter = 60; // reset timeout
+	clearAssociatedFd();
+	connectionState = READING;
+	writeState = NO_RESPONSE;
+	responseState = NONE;
+	delete cgi;
+	delete proxy;
+	cgi = 0;
+	proxy = 0;
+	concurrentFails = 0;
+	routeBlock = 0;
+	serverBlock = 0;
+	replyStatus = 0;
+	hasErrored = false;
+	data.reset();
+}

@@ -46,10 +46,7 @@ RequestBuilder::RequestBuilder(const HTTPParseData &data) {
 		setHeader(it->first, it->second);
 	}
 
-	if (data.isChunked)
-		setBody(data.chunkedData);
-	else
-		setBody(data.data);
+	setBody(data.body);
 	// set defaults
 	setDefaults();
 }

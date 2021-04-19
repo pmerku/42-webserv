@@ -7,6 +7,7 @@
 
 #include <list>
 #include <string>
+#include <cstring>
 
 namespace utils {
 
@@ -19,8 +20,7 @@ namespace utils {
 		private:
 			static void	copyData(const char *in, size_type size, char **out) {
 				char *newData = new char[size];
-				for (size_type i = 0; i < size; i++)
-					newData[i] = in[i];
+				std::memcpy(newData, in, size);
 				*out = newData;
 			}
 
@@ -134,10 +134,16 @@ namespace utils {
 
 		DataListIterator find(const std::string &data);
 		DataListIterator find(const std::string &data, DataListIterator first);
-		DataListIterator find(const std::string &data, DataListIterator first, DataListIterator last);
+		static DataListIterator find(const std::string &data, DataListIterator first, DataListIterator last);
 
 		std::string		substring(DataListIterator start);
 		std::string 	substring(DataListIterator start, DataListIterator last);
+
+		void 			subList(DataList &out, DataListIterator start, DataListIterator last);
+
+		DataListIterator findAndReplaceOne(const std::string &needle, const std::string &newNeedle);
+		DataListIterator findAndReplaceOne(const std::string &needle, const std::string &newNeedle, DataListIterator start);
+		DataListIterator findAndReplaceOne(const std::string &needle, const std::string &newNeedle, DataListIterator start, DataListIterator last);
 	};
 
 } // namespace utils
