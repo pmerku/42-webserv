@@ -71,6 +71,7 @@ SRC	=\
 	config/validators/UploadValidator.cpp\
 	config/validators/DomainNameValidator.cpp\
 	config/validators/ErrorCodeValidator.cpp\
+	config/validators/DuplicateServerValidator.cpp\
 	config/validators/RequiredKey.cpp\
 	config/validators/IntValidator.cpp\
 	config/validators/IsDirectory.cpp\
@@ -161,6 +162,7 @@ HEADERS	=\
 	config/validators/UploadValidator.hpp\
 	config/validators/DomainNameValidator.hpp\
 	config/validators/ErrorCodeValidator.hpp\
+	config/validators/DuplicateServerValidator.hpp\
 	config/validators/RequiredKey.hpp\
 	config/validators/IntValidator.hpp\
 	config/validators/MutuallyExclusive.hpp\
