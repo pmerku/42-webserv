@@ -33,6 +33,10 @@ AConfigBlock *AConfigBlock::getParent() const {
 }
 
 void AConfigBlock::runPostValidators() {
+	// run post validators on children blocks;
+	for (std::vector<AConfigBlock *>::const_iterator i = _blocks.begin(); i != _blocks.end(); ++i)
+		(*i)->runPostValidators();
+
 	// run post validators
 	for (std::vector<ConfigLine>::const_iterator i = _lines.begin(); i != _lines.end(); ++i) {
 		validatorListType	validators = getValidatorForKey(*i);
@@ -47,10 +51,6 @@ void AConfigBlock::runPostValidators() {
 	for (validatorListType::const_iterator i = getBlockValidators().begin(); i != getBlockValidators().end(); ++i) {
 		(*i)->test(testLine, *this);
 	}
-
-	// run post validators on children blocks;
-	for (std::vector<AConfigBlock *>::const_iterator i = _blocks.begin(); i != _blocks.end(); ++i)
-		(*i)->runPostValidators();
 }
 
 AConfigBlock::AConfigBlock(const ConfigLine &line, int lineNumber, AConfigBlock *parent): _parent(parent), _lineNumber(lineNumber), _isParsed(false) {

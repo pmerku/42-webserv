@@ -86,10 +86,11 @@ void ServerBlock::parseData() {
 	_serverName = "_";
 	_bodyLimit = -1;
 	_errorPages.clear();
-
-	_port = utils::stoi(getKey("port")->getArg(0));
+	_port = 42;
 	_host = 0;
 
+	if (hasKey("port"))
+		_port = utils::stoi(getKey("port")->getArg(0));
 	if (hasKey("host"))
 		_host = inet_addr(getKey("host")->getArg(0).c_str());
 

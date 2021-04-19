@@ -11,7 +11,7 @@ set(FLAGS "-O3 -Wall -Wextra -Werror -pedantic-errors")
 if(NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE Release)
 endif()
-set(CMAKE_CXX_FLAGS_DEBUG "-g -DERROR_THROW=1")
+set(CMAKE_CXX_FLAGS_DEBUG "-g -DDEBUG_THROW=1")
 
 # set cmake output directory
 set(dir ${CMAKE_CURRENT_SOURCE_DIR})

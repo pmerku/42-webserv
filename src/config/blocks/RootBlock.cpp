@@ -6,8 +6,8 @@
 #include "config/ConfigValidatorBuilder.hpp"
 #include "config/validators/ArgumentLength.hpp"
 #include "config/validators/IntValidator.hpp"
+#include "config/validators/DuplicateServerValidator.hpp"
 #include "utils/atoi.hpp"
-#include <cstdlib>
 
 using namespace config;
 
@@ -21,6 +21,7 @@ const AConfigBlock::validatorsMapType	RootBlock::_validators =
 
 const AConfigBlock::validatorListType 	RootBlock::_blockValidators =
 		ConfigValidatorListBuilder()
+		.add(new DuplicateServerValidator())
 		.build();
 
 const std::string 						RootBlock::_allowedBlocks[] = { "server", "" };

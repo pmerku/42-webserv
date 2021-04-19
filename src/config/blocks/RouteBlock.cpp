@@ -147,12 +147,16 @@ void	RouteBlock::cleanup() {
 }
 
 void RouteBlock::parseData() {
-	std::string loc = getKey("location")->getArg(0);
-	if (loc == "/")
-		loc = "/.*"; // if its a single slash, make a valid regex out of it. quality of life feature
-    _shouldRewrite = loc.length() >= 1 && loc.compare(loc.length() - 1, 1, "/") == 0; // ends with slash
-	if (loc.length() > 1 && _shouldRewrite) // remove slash from end if it exists
-		loc = loc.substr(0, loc.length()-1);
+	std::string loc = "/.*";
+	_shouldRewrite = false;
+	if (hasKey("location")) {
+		loc = getKey("location")->getArg(0);
+		if (loc == "/")
+			loc = "/.*"; // if its a single slash, make a valid regex out of it. quality of life feature
+		_shouldRewrite = loc.length() >= 1 && loc.compare(loc.length() - 1, 1, "/") == 0; // ends with slash
+		if (loc.length() > 1 && _shouldRewrite) // remove slash from end if it exists
+			loc = loc.substr(0, loc.length()-1);
+	}
 	_location = new regex::Regex(loc);
 	_root = "";
 	_directoryListing = false;
