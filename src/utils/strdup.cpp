@@ -5,11 +5,11 @@
 #include <cstdlib>
 #include <string>
 #include "utils/strdup.hpp"
+#include <cstring>
 
 char *utils::strdup(const std::string &str) {
 	size_t len = str.length();
 	char *mem = new char[len + 1]();
-	for (size_t i = 0; i < len; i++)
-		mem[i] = str[i];
+	std::memcpy(mem, str.c_str(), len);
 	return mem;
 }

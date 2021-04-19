@@ -4,11 +4,14 @@ project(42-webserv C CXX)
 
 # set compiler flags and standard
 set(CMAKE_C_STANDARD 99)
-set(FLAGS "-O3 -Wall -Wextra -Werror -pedantic-errors")
-
 set(CMAKE_CXX_STANDARD 98)
 set(FLAGS "-O3 -Wall -Wextra -Werror -pedantic-errors")
-set(CMAKE_LINK_F)
+
+# set debug flags on debug build
+if(NOT CMAKE_BUILD_TYPE)
+	set(CMAKE_BUILD_TYPE Release)
+endif()
+set(CMAKE_CXX_FLAGS_DEBUG "-g -DERROR_THROW=1")
 
 # set cmake output directory
 set(dir ${CMAKE_CURRENT_SOURCE_DIR})
