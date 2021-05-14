@@ -54,6 +54,13 @@ namespace config {
 			}
 		};
 
+		class UrlProtocolMissingError: public std::exception {
+		  public:
+			const char * what() const throw() {
+				return "Url protocol is missing";
+			}
+		};
+
 		class UrlParseError: public std::exception {
 		public:
 			const char * what() const throw() {

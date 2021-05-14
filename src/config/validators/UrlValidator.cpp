@@ -37,6 +37,8 @@ UrlValidator::urlParsed UrlValidator::parseUrl(const std::string &str) {
 			ERROR_THROW(UrlParseProtocolError());
 		out.protocol = protocol;
 		ipPos = protocolSeperator + 3;
+	} else {
+		ERROR_THROW(UrlProtocolMissingError());
 	}
 
 	// check ip address
