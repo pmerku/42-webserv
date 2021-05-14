@@ -271,10 +271,10 @@ re:
 
 exec:
 	$(MAKE) all
-	cd build && ./not-apache -f ../tests/provided/test.conf -c
+	cd build && ./not-apache
 
 valgrind:
-	cd build && valgrind --undef-value-errors=no --leak-check=full ./not-apache -f ../tests/provided/test.conf -c
+	cd build && valgrind --undef-value-errors=no --leak-check=full ./not-apache -f ../eval/eval.conf -c
 
 debug:
 	$(MAKE) BUILD_DEBUG=1 all
